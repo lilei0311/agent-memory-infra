@@ -3,10 +3,14 @@ from dataclasses import dataclass
 
 @dataclass
 class LearnedPolicy:
-    """Score = similarity + alpha * historical utility.
+    """V0.1 adaptive scoring.
 
-    alpha is the only learned knob in v0. Positive feedback raises it
-    only when the policy pick beats the baseline pick.
+    score = similarity + alpha * utility
+
+    alpha is the only learned knob. Full four-weight scoring
+    (relevance + utility + reliability + context_fit) is the
+    documented target; v0.1 starts with the two-term form so the
+    feedback loop can be validated before adding weights.
     """
 
     alpha: float = 0.5
