@@ -1,3 +1,4 @@
+import pytest
 from memory_infra.learner import FeedbackLearner
 from memory_infra.memory import MemoryItem, MemoryStore
 from memory_infra.policy import LearnedPolicy
@@ -27,8 +28,8 @@ def test_learner_nudges_alpha_only_when_policy_beats_baseline() -> None:
     store = _store()
     policy = LearnedPolicy(alpha=0.8)
     FeedbackLearner().observe(store, policy, "far-ok", success=True, baseline_id="near-fail")
-    assert policy.alpha == 0.85
-    assert store.get("far-ok").success == 1
+    assert policy.alpha == pytest.approx(0.85)
+    assert store.get("far-ok").success == 6  # initial success=5, observe increments by 1
 
 
 def test_learner_unchanged_when_same_pick() -> None:
