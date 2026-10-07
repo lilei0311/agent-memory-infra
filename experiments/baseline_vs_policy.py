@@ -21,12 +21,18 @@ def main() -> None:
     store = build_store()
     query = [1.0, 0.0]
     policy = LearnedPolicy(alpha=0.8)
-    base = retrieve(store, query)
-    learned = retrieve(store, query, policy)
-    print("baseline", base.ids)
-    print("policy  ", learned.ids)
-    FeedbackLearner().observe(store, policy, learned.ids[0], success=True, baseline_id=base.ids[0])
+    base = retrieve(store, query, task_id="task_001")
+    learned = retrieve(store, query, policy, task_id="task_001")
+    print("baseline", [t.memory_id for t in base], [round(t.scores[0], 3) for t in base])
+    print("policy  ", [t.memory_id for t in learned], [round(t.scores[0], 3) for t in learned])
+    for t in learned:
+        t.task_success = True
+        t.used = True
+    FeedbackLearner().observe(
+        store, policy, learned[0].memory_id, success=True, baseline_id=base[0].memory_id
+    )
     print("alpha   ", round(policy.alpha, 3))
+    print("trace   ", learned[0])
 
 
 if __name__ == "__main__":
