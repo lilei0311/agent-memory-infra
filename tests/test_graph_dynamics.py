@@ -179,3 +179,37 @@ def test_required_lifecycle_pairs_are_recorded() -> None:
     for row in g.log:
         if row.kind == "lifecycle":
             assert row.source_state and row.target_state and row.trigger and row.reason is not None and row.signals is not None
+
+
+def test_reopen_is_mechanism_not_topic_return() -> None:
+    g, drinks, other, tea, coffee = _world()
+    members = list(g.threads[other].member_event_ids)
+    merged = g.merge(drinks, other, "same-goal")
+    assert g.threads[other].status == "merged"
+    assert g.threads[other].member_event_ids == members
+    reopened = g.reopen(other, "later-reference")
+    assert reopened.status == "active"
+    assert g.threads[other].member_event_ids == members
+    assert tea in g.events and coffee in g.events
+    row = next(t for t in g.log if t.kind == "thread.reopen")
+    assert row.source_state == "merged" and row.target_state == "active"
+    assert row.trigger == "reopen" and "later-reference" in row.signals and row.evidence_refs
+    assert g.states[other].lifecycle_state == Lifecycle.REACTIVATED
+    assert all(t.reason != "topic-return-restore" for t in g.log)
+    with pytest.raises(ValueError):
+        g.reopen(other, "again")
+
+
+def test_causal_relation_keeps_evidence() -> None:
+    g, _, _, tea, coffee = _world()
+    rel = g.link_causal(coffee, tea, "causal.caused_by", "observed-order", inferred=False)
+    assert rel.relation_type == "causal.caused_by"
+    assert rel.evidence_ref == "observed-order"
+    assert rel.inferred is False
+    assert tea in g.events and coffee in g.events
+    row = next(t for t in g.log if t.kind == "relation.causal")
+    assert row.target_state == "causal.caused_by"
+    assert g.events[tea].evidence_ref in row.evidence_refs
+    assert g.events[coffee].evidence_ref in row.evidence_refs
+    with pytest.raises(ValueError):
+        g.link_causal(tea, coffee, "temporal.before", "not-causal")

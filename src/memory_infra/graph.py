@@ -261,6 +261,43 @@ class GraphMemory:
         self._transition("thread.merge", left_id, "separate", "merged", "continuity-evidence", (signal,), "graph merge, events kept", (rel.evidence_ref,))
         return left
 
+    def reopen(self, thread_id: str, signal: str) -> Thread:
+        """Mechanism-layer reopen. Not attention topic-return."""
+        if not signal:
+            raise ValueError("reopen requires an explicit signal")
+        thread = self.threads[thread_id]
+        source = thread.status
+        if source == "active":
+            raise ValueError("thread is already active")
+        self.tick += 1
+        members = list(thread.member_event_ids)
+        thread.status = "active"
+        evidence = tuple(self.events[eid].evidence_ref for eid in members if eid in self.events)
+        rel = self._rel(thread_id, members[-1] if members else thread_id, "referential.revisits", signal)
+        if thread_id in self.states:
+            self.states[thread_id].accessibility = 1.0
+            self._move(thread_id, Lifecycle.REACTIVATED, "reopen", (signal,), "thread reopened", evidence + (rel.evidence_ref,))
+        self._transition("thread.reopen", thread_id, source, "active", "reopen", (signal,), "mechanism reopen; members unchanged", evidence + (rel.evidence_ref,))
+        if thread.member_event_ids != members:
+            raise RuntimeError("reopen must not rewrite members")
+        return thread
+
+    def link_causal(self, source_id: str, target_id: str, kind: str, evidence: str, inferred: bool = False) -> Relation:
+        kinds = ("causal.caused_by", "causal.caused", "causal.enabled", "causal.prevented")
+        if kind not in kinds:
+            raise ValueError("causal kind must be caused_by, caused, enabled, or prevented")
+        if not evidence:
+            raise ValueError("causal relation requires evidence")
+        self.tick += 1
+        rel = self._rel(source_id, target_id, kind, evidence)
+        rel.inferred = inferred
+        refs = [rel.evidence_ref]
+        for eid in (source_id, target_id):
+            if eid in self.events:
+                refs.append(self.events[eid].evidence_ref)
+        self._transition("relation.causal", rel.relation_id, "", kind, "causal-evidence", (kind,), "causal edge kept; endpoints unchanged", tuple(refs))
+        return rel
+
     def contradict(self, left_event: str, right_event: str, evidence: str) -> Relation:
         self.tick += 1
         rel = self._rel(left_event, right_event, "evidential.contradicts", evidence)
