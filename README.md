@@ -340,3 +340,15 @@ Status
 Research / Experimental
 
 This project is currently focused on validating the core hypothesis before building a production-grade implementation.
+
+
+## Stage 1 Design
+
+The current implementation is deliberately focused on validating the Memory Policy Layer before any public Skill or external-user feedback loop.
+
+- [Architecture](docs/ARCHITECTURE.md)
+- [Protocols](docs/PROTOCOLS.md)
+- [Experiment Plan](docs/EXPERIMENT_PLAN.md)
+- [Roadmap](docs/ROADMAP.md)
+
+Stage 1 uses controlled simulation and reproducible experiments. External adoption and anonymous telemetry begin only after the Stage 1 exit gate is passed.
