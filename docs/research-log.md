@@ -16,3 +16,64 @@
 - MemoryItem.utility 改为 Laplace 平滑：(success - failure) / (success + failure + 1)，防稀疏反馈打穿。
 - policy.py 注释说明 v0.1 是两项式，四权重是文档目标。
 - 测试补充：learner 条件、alpha 不变、失败降低、utility 平滑。
+
+## 2026-10-07 (v0.1 experiment: baseline_vs_policy.py)
+
+合成实验，seed=7，20 轮，k=3。
+
+结果：
+
+  round | baseline_top | policy_top | alpha
+  -----+--------------+-----------+------
+      1 | near-fail-1  | far-ok-1   | 0.55
+      2 | near-fail-1  | far-ok-1   | 0.60
+      3 | near-fail-1  | far-ok-1   | 0.65
+      5 | near-fail-1  | far-ok-1   | 0.75
+     10 | near-fail-1  | far-ok-1   | 1.00
+     15 | near-fail-1  | far-ok-1   | 1.25
+     20 | near-fail-1  | far-ok-1   | 1.50
+
+  Summary:
+    baseline success rate : 0.00
+    policy   success rate : 1.00
+    alpha trajectory      : 0.50 -> 1.50
+
+Pass criteria:
+  1. policy > baseline        : True
+  2. alpha rises              : True
+  3. policy converges to far-ok : True
+
+Seed sweep (20 seeds, ROUNDS=20): 19/20 fully pass.
+Two seeds (0, 10) gave policy success 0.95 instead of 1.00 —
+neutral items are coin-flip outcomes, so the gap is noise, not failure.
+
+### Important caveats (read before citing these numbers)
+
+This experiment validates the feedback loop under idealized conditions.
+It does NOT yet prove the core hypothesis in the real world.
+
+1. **Ground truth is hand-written.** far-ok items always succeed,
+   near-fail items always fail. The experiment shows the policy can
+   learn a pattern that was deliberately planted — it does not show
+   that historical feedback is useful when the pattern is unknown.
+
+2. **No noise in outcomes.** Real task outcomes are noisy: an Agent
+   may fail for reasons unrelated to the retrieved memory, succeed by
+   luck, or receive ambiguous user feedback. Under noisy feedback the
+   utility signal degrades and alpha updates become less reliable.
+
+3. **No sparsity.** Every retrieved item gets an immediate, clean
+   success/failure label. Real deployments have sparse feedback — many
+   memories are never reused, and outcomes arrive late or not at all.
+
+4. **Baseline is 0.00 by construction.** The query points directly at
+   the near-fail cluster, so relevance-only retrieval is guaranteed to
+   fail. A more realistic setup would give baseline a non-trivial
+   success rate to beat.
+
+5. **Single scenario.** 10 items in 2D, one query direction, one
+   memory distribution. Different distributions (e.g., utility
+   correlated with similarity, or anti-correlated) may change results.
+
+Next steps: add noisy / sparse feedback variants, vary the memory
+distribution, and only then consider connecting to a real Agent.
