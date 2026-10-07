@@ -1,13 +1,13 @@
 # Phase G attention comparison
 
-Re-run at the current code HEAD requested by Issue #6 review comment 6043291048. Attention rules and locked comparison inputs were not changed. Reopen and causal relation are not used by this runner.
+Issue #7 required direct execution evidence at final HEAD `500eb01223ec112ec5d4cffc043069bcbd62c3ca`. Tests and the locked attention experiment were executed at that SHA. Seeds, stream, budget, policies, and scoring weights were not changed. No attention retune. V0.1 scripts and historical results were not edited. Reopen and causal relation are not used by this runner.
 
 ## Git
 
-- experiment and tests executed at code HEAD: d2faa8e1709b7cc5ecd58048807c4422a689f36a
-- parent of that HEAD: ea2498db25c32e6d676a61b40da102805be2e3c0 (evidence record of the prior locked run at e19b530; scoring code unchanged)
+- experiment and tests executed at code HEAD: 500eb01223ec112ec5d4cffc043069bcbd62c3ca
+- parent of that HEAD: d2faa8e1709b7cc5ecd58048807c4422a689f36a (prior evidence record of the locked run at d2faa8e; scoring code unchanged)
 - scoring code: `src/memory_infra/graph.py` `_distribution` and `_allocate_with_attention`
-- d2faa8e itself only corrected the divergent row in this evidence table; `src/` and `tests/` match e19b5308368f66981e740da6038d20227cde5633
+- 500eb01223ec112ec5d4cffc043069bcbd62c3ca itself only recorded the parent-HEAD run; `src/` and `tests/` match d2faa8e1709b7cc5ecd58048807c4422a689f36a
 - this results file is the only change after the executed HEAD
 
 ## Command
@@ -17,7 +17,24 @@ PYTHONPATH=src python -m pytest -q tests
 PYTHONPATH=src python experiments/phase_g_attention.py
 ```
 
-Pytest on d2faa8e1709b7cc5ecd58048807c4422a689f36a: 22 passed in 0.07s.
+Executed 2026-10-07T18:36:27Z, Python 3.10.21, at 500eb01223ec112ec5d4cffc043069bcbd62c3ca.
+
+Pytest stdout:
+
+```text
+......................                                                   [100%]
+22 passed in 0.06s
+```
+
+Experiment stdout:
+
+```text
+locked {'seeds': [7, 11, 19, 23, 42], 'budget': 4, 'stream': 10}
+none {'target_thread_precision': 0.425, 'irrelevant_context_ratio': 0.575, 'cross_thread_contamination': 1.0, 'topic_switch_recovery': 0.625, 'context_budget_utilization': 1.0, 'divergent_active_thread_count': 2.0, 'diversity': 0.5, 'cross_thread_retrieval_rate': 1.0, 'useful_cross_thread_association': 0.4783, 'related_cross_thread_count': 11.0, 'unrelated_cross_thread_count': 12.0}
+focus {'target_thread_precision': 0.75, 'irrelevant_context_ratio': 0.25, 'cross_thread_contamination': 1.0, 'topic_switch_recovery': 1.0, 'context_budget_utilization': 1.0, 'divergent_active_thread_count': 2.0, 'diversity': 0.5, 'cross_thread_retrieval_rate': 1.0, 'useful_cross_thread_association': 0.7, 'related_cross_thread_count': 7.0, 'unrelated_cross_thread_count': 3.0}
+divergent {'target_thread_precision': 0.275, 'irrelevant_context_ratio': 0.725, 'cross_thread_contamination': 1.0, 'topic_switch_recovery': 0.625, 'context_budget_utilization': 1.0, 'divergent_active_thread_count': 2.0, 'diversity': 0.5, 'cross_thread_retrieval_rate': 1.0, 'useful_cross_thread_association': 0.5862, 'related_cross_thread_count': 17.0, 'unrelated_cross_thread_count': 12.0}
+automatic {'target_thread_precision': 0.675, 'irrelevant_context_ratio': 0.325, 'cross_thread_contamination': 1.0, 'topic_switch_recovery': 0.875, 'context_budget_utilization': 1.0, 'divergent_active_thread_count': 2.0, 'diversity': 0.5, 'cross_thread_retrieval_rate': 1.0, 'useful_cross_thread_association': 0.5385, 'related_cross_thread_count': 7.0, 'unrelated_cross_thread_count': 6.0}
+```
 
 ## Locked config
 
@@ -48,4 +65,4 @@ Pytest on d2faa8e1709b7cc5ecd58048807c4422a689f36a: 22 passed in 0.07s.
 | divergent | 0.275 | 0.725 | 1.000 | 0.625 | 0.5862 | 17 | 12 |
 | automatic | 0.675 | 0.325 | 1.000 | 0.875 | 0.5385 | 7 | 6 |
 
-Counts are seed-means of the per-seed counts. Ratios are seed-means. No retune. V0.1 experiment scripts, seeds, and historical result files were not edited.
+Counts are seed-means of the per-seed counts. Ratios are seed-means. No retune. V0.1 experiment scripts, seeds, and historical result files were not edited. Phase G PASS is not declared here.
