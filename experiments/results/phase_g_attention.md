@@ -1,13 +1,14 @@
 # Phase G attention comparison
 
-Re-run at the current code HEAD requested by Issue #6 review comment 6043207209. Attention rules and locked comparison inputs were not changed. Reopen and causal relation are not used by this runner.
+Re-run at the current code HEAD requested by Issue #6 review comment 6043291048. Attention rules and locked comparison inputs were not changed. Reopen and causal relation are not used by this runner.
 
 ## Git
 
-- experiment and tests executed at code HEAD: e19b5308368f66981e740da6038d20227cde5633
-- parent of that HEAD: 5fe08282d5a492d462e72daf68446a05a7f70e4e (float-assertion fix; scoring code unchanged)
+- experiment and tests executed at code HEAD: d2faa8e1709b7cc5ecd58048807c4422a689f36a
+- parent of that HEAD: ea2498db25c32e6d676a61b40da102805be2e3c0 (evidence record of the prior locked run at e19b530; scoring code unchanged)
 - scoring code: `src/memory_infra/graph.py` `_distribution` and `_allocate_with_attention`
-- this results file is the only change after the executed HEAD; `src/` and `tests/` match e19b5308368f66981e740da6038d20227cde5633
+- d2faa8e itself only corrected the divergent row in this evidence table; `src/` and `tests/` match e19b5308368f66981e740da6038d20227cde5633
+- this results file is the only change after the executed HEAD
 
 ## Command
 
@@ -16,7 +17,7 @@ PYTHONPATH=src python -m pytest -q tests
 PYTHONPATH=src python experiments/phase_g_attention.py
 ```
 
-Pytest on e19b5308368f66981e740da6038d20227cde5633: 22 passed in 0.07s.
+Pytest on d2faa8e1709b7cc5ecd58048807c4422a689f36a: 22 passed in 0.07s.
 
 ## Locked config
 
