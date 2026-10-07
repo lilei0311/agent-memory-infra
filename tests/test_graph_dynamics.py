@@ -137,3 +137,45 @@ def test_memory_state_dimensions_stay_separate() -> None:
     state.retrieval_history.append("q")
     state.usefulness_history.append("u")
     assert {"accessibility", "confidence", "contextual_fit", "recency", "reinforcement_history", "contradiction_history", "retrieval_history", "usefulness_history", "lifecycle_state"} <= set(state.__dict__)
+
+
+def test_required_lifecycle_pairs_are_recorded() -> None:
+    g = GraphMemory(seed=4)
+    event = g.promote(g.add_point("rule").point_id, "task-relevance")
+    assert ("FORMING", "LABILE") in [(t.source_state, t.target_state) for t in g.log if t.kind == "lifecycle"]
+    g.consolidate(event.event_id, "repeat")
+    g.retrieve("rule")
+    g.begin_reconsolidation(event.event_id, "after-retrieval")
+    g.resolve_reconsolidation(event.event_id, "confirm", "confirmed")
+    other = g.promote(g.add_point("other").point_id, "task-relevance")
+    g.consolidate(other.event_id, "repeat")
+    g.retrieve("other")
+    g.begin_reconsolidation(other.event_id, "after-retrieval")
+    g.resolve_reconsolidation(other.event_id, "weaken", "conflict")
+    stable = g.promote(g.add_point("stable").point_id, "task-relevance")
+    g.consolidate(stable.event_id, "repeat")
+    g.decay(stable.event_id)
+    assert g.states[stable.event_id].lifecycle_state == Lifecycle.DORMANT
+    g.decay(stable.event_id)
+    assert g.states[stable.event_id].lifecycle_state == Lifecycle.INACCESSIBLE
+    wake = g.promote(g.add_point("wake").point_id, "task-relevance")
+    g.consolidate(wake.event_id, "repeat")
+    g.decay(wake.event_id)
+    g.retrieve("wake")
+    pairs = {(t.source_state, t.target_state) for t in g.log if t.kind == "lifecycle"}
+    required = {
+        ("FORMING", "LABILE"),
+        ("LABILE", "STABLE"),
+        ("STABLE", "REACTIVATED"),
+        ("REACTIVATED", "RECONSOLIDATING"),
+        ("RECONSOLIDATING", "STABLE"),
+        ("RECONSOLIDATING", "WEAKENED"),
+        ("STABLE", "DORMANT"),
+        ("DORMANT", "REACTIVATED"),
+        ("DORMANT", "INACCESSIBLE"),
+    }
+    missing = required - pairs
+    assert not missing, missing
+    for row in g.log:
+        if row.kind == "lifecycle":
+            assert row.source_state and row.target_state and row.trigger and row.reason is not None and row.signals is not None
