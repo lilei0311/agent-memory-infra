@@ -30,9 +30,16 @@ def test_repeated_events_remain_distinct() -> None:
 def test_thread_create_extend_split_merge_reopen() -> None:
     row = run_thread_lifecycle(7)
     assert row["created"] and row["extended"] and row["split"]
+    assert row["merged_status"]
+    assert row["right_status_after_merge"] == "merged"
+    assert row["left_absorbed_right_member"]
     assert row["reopened"] and row["members_unchanged_on_reopen"]
     assert row["not_topic_return"]
     assert row["child_topic"] == "beta"
+    by_type = {item["relation_type"]: item for item in row["relations"]}
+    assert by_type["contextual.changed_context"]["evidence_ref"]
+    assert by_type["referential.same_thread"]["evidence_ref"]
+    assert by_type["referential.revisits"]["evidence_ref"]
 
 
 def test_memory_lifecycle_confirm_revise_weaken_and_reactivation() -> None:
@@ -64,6 +71,11 @@ def test_evidence_paths_and_relation_provenance() -> None:
     assert "temporal.before" in types
     assert "evidential.contradicts" in types
     assert "causal.caused_by" in types
+    by_type = {item["relation_type"]: item for item in row["relations"]}
+    for kind in ("temporal.before", "causal.caused_by", "evidential.contradicts"):
+        item = by_type[kind]
+        assert item["evidence_ref"]
+        assert item["source_id"] and item["target_id"]
 
 
 def test_replay_is_deterministic_across_locked_seeds() -> None:

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from pathlib import Path
 
 from memory_infra.graph import GraphMemory, Lifecycle
 
@@ -27,6 +28,19 @@ def _graph(seed: int) -> GraphMemory:
     return GraphMemory(seed=seed, context_budget=BUDGET, policy=POLICY)
 
 
+
+def _relation_rows(graph: GraphMemory) -> list[dict]:
+    return [
+        {
+            "relation_type": rel.relation_type,
+            "source_id": rel.source_id,
+            "target_id": rel.target_id,
+            "evidence_ref": rel.evidence_ref,
+        }
+        for rel in graph.relations.values()
+    ]
+
+
 def trace_digest(graph: GraphMemory) -> str:
     payload = json.dumps(graph.snapshot()["trace"], sort_keys=True)
     return hashlib.sha256(payload.encode()).hexdigest()
@@ -40,6 +54,7 @@ def run_event_identity(seed: int) -> dict:
         "distinct_events": first.event_id != second.event_id,
         "distinct_evidence": first.evidence_ref != second.evidence_ref,
         "event_count": len(g.events),
+        "trace": g.snapshot()["trace"],
         "trace_digest": trace_digest(g),
     }
 
@@ -56,18 +71,23 @@ def run_thread_lifecycle(seed: int) -> dict:
     other = g.promote(g.add_point("other").point_id, "task-relevance")
     other_thread = g.open_thread(other.event_id, "gamma")
     before = list(other_thread.member_event_ids)
-    g.merge(thread.thread_id, other_thread.thread_id, "same-goal")
+    merged = g.merge(thread.thread_id, other_thread.thread_id, "same-goal")
+    right_status_after_merge = g.threads[other_thread.thread_id].status
     reopened = g.reopen(other_thread.thread_id, "later-reference")
     kinds = {row.kind for row in g.log}
     return {
         "created": "thread.create" in kinds,
         "extended": "thread.extend" in kinds,
         "split": "thread.split" in kinds,
-        "merged_status": g.threads[other_thread.thread_id].status == "active",
+        "merged_status": right_status_after_merge == "merged",
+        "right_status_after_merge": right_status_after_merge,
+        "left_absorbed_right_member": bool(before) and before[0] in merged.member_event_ids,
         "reopened": reopened.status == "active",
         "members_unchanged_on_reopen": g.threads[other_thread.thread_id].member_event_ids == before,
         "child_topic": child.topic,
         "not_topic_return": all(row.reason != "topic-return-restore" for row in g.log),
+        "relations": _relation_rows(g),
+        "trace": g.snapshot()["trace"],
         "trace_digest": trace_digest(g),
     }
 
@@ -114,6 +134,7 @@ def run_memory_lifecycle(seed: int) -> dict:
         "inaccessible": inaccessible,
         "evidence_kept": g.events[dormant.event_id].evidence_ref == evidence_before and bool(buried_evidence),
         "pairs": sorted(pairs),
+        "trace": g.snapshot()["trace"],
         "trace_digest": trace_digest(g),
     }
 
@@ -133,7 +154,9 @@ def run_evidence_integrity(seed: int) -> dict:
         "contradiction": contra.relation_type,
         "causal": causal.relation_type,
         "relation_types": types,
+        "relations": _relation_rows(g),
         "endpoints_unchanged": g.events[left.event_id].observation == "tea" and g.events[right.event_id].observation == "coffee",
+        "trace": g.snapshot()["trace"],
         "trace_digest": trace_digest(g),
     }
 
@@ -160,9 +183,25 @@ def run_seed(seed: int) -> dict:
 
 def main() -> None:
     print("locked", {"seeds": SEEDS, "budget": BUDGET, "policy": POLICY, "conditions": CONDITIONS})
+    artifact = {
+        "seeds": SEEDS,
+        "budget": BUDGET,
+        "policy": POLICY,
+        "conditions": list(CONDITIONS),
+        "runs": [],
+    }
     for seed in SEEDS:
         row = run_seed(seed)
+        traces = {}
+        for name in ("event_identity", "thread_lifecycle", "memory_lifecycle", "evidence_integrity"):
+            traces[name] = row[name].pop("trace")
+        artifact["runs"].append({"seed": seed, "traces": traces})
         print(json.dumps(row, sort_keys=True))
+    path = Path(__file__).resolve().parent / "results" / "phase_h_trace.json"
+    payload = json.dumps(artifact, indent=2, sort_keys=True) + "\n"
+    path.write_text(payload)
+    digest = hashlib.sha256(payload.encode()).hexdigest()
+    print("trace_artifact", str(path), digest)
 
 
 if __name__ == "__main__":
