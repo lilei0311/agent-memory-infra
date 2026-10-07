@@ -9,6 +9,8 @@ STREAM = [
     ("T1", False), ("T1", False), ("T2", False), ("T3", False), ("T1", False),
     ("T2", True), ("T3", True), ("T1", False), ("T4", True), ("T1", False),
 ]
+# Locked before the run. Related pairs are ground truth, not inferred.
+RELATED = {frozenset(("T1", "T2")), frozenset(("T3", "T4"))}
 
 
 def run(seed: int, policy: str) -> dict:
@@ -25,6 +27,8 @@ def run(seed: int, policy: str) -> dict:
     active_counts = []
     cross = 0
     used = 0
+    related = 0
+    unrelated = 0
     prev = None
     for topic, diverge in STREAM:
         g.observe(Signals(
@@ -42,6 +46,13 @@ def run(seed: int, policy: str) -> dict:
         other += sum(1 for i in ctx if i.thread_id != target) / max(1, len(ctx))
         if len(threads_in) > 1:
             cross += 1
+        for item in ctx:
+            other_topic = next((name for name, tid in threads.items() if tid == item.thread_id), None)
+            if other_topic and other_topic != topic:
+                if frozenset((topic, other_topic)) in RELATED:
+                    related += 1
+                else:
+                    unrelated += 1
         diversities.append(len(threads_in) / 4)
         active_counts.append(len(threads_in))
         if prev and prev != topic:
@@ -58,6 +69,9 @@ def run(seed: int, policy: str) -> dict:
         "divergent_active_thread_count": sum(active_counts) / len(active_counts),
         "diversity": sum(diversities) / len(diversities),
         "cross_thread_retrieval_rate": cross / len(STREAM),
+        "useful_cross_thread_association": related / (related + unrelated) if related + unrelated else 0.0,
+        "related_cross_thread_count": related,
+        "unrelated_cross_thread_count": unrelated,
     }
 
 
