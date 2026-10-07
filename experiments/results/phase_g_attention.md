@@ -1,13 +1,13 @@
 # Phase G attention comparison
 
-Re-run on the Issue #6 float-assertion fix HEAD. Attention rules and locked comparison inputs were not changed. Reopen and causal relation are not used by this runner.
+Re-run at the current code HEAD requested by Issue #6 review comment 6043207209. Attention rules and locked comparison inputs were not changed. Reopen and causal relation are not used by this runner.
 
 ## Git
 
-- experiment executed at code HEAD: 5fe08282d5a492d462e72daf68446a05a7f70e4e
-- parent before the float-assertion fix: 4d3845279c1c2bc6e4d33dbdab5eed4704a17abf
-- scoring code: `src/memory_infra/graph.py` `_distribution` and `_allocate_with_attention` (unchanged by the test-only patch)
-- this results file is the only addition after that code HEAD; `src/` and `tests/` match 5fe08282d5a492d462e72daf68446a05a7f70e4e
+- experiment and tests executed at code HEAD: e19b5308368f66981e740da6038d20227cde5633
+- parent of that HEAD: 5fe08282d5a492d462e72daf68446a05a7f70e4e (float-assertion fix; scoring code unchanged)
+- scoring code: `src/memory_infra/graph.py` `_distribution` and `_allocate_with_attention`
+- this results file is the only change after the executed HEAD; `src/` and `tests/` match e19b5308368f66981e740da6038d20227cde5633
 
 ## Command
 
@@ -16,7 +16,7 @@ PYTHONPATH=src python -m pytest -q tests
 PYTHONPATH=src python experiments/phase_g_attention.py
 ```
 
-Pytest on 5fe08282d5a492d462e72daf68446a05a7f70e4e: 22 passed.
+Pytest on e19b5308368f66981e740da6038d20227cde5633: 22 passed in 0.07s.
 
 ## Locked config
 
@@ -44,7 +44,7 @@ Pytest on 5fe08282d5a492d462e72daf68446a05a7f70e4e: 22 passed.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | none | 0.425 | 0.575 | 1.000 | 0.625 | 0.4783 | 11 | 12 |
 | focus | 0.750 | 0.250 | 1.000 | 1.000 | 0.700 | 7 | 3 |
-| divergent | 0.275 | 0.725 | 1.000 | 0.625 | 0.5862 | 17 | 12 |
+| divergent | 0.275 | 0.725 | 1.000 | 1.000 | 0.625 | 0.5862 | 17 | 12 |
 | automatic | 0.675 | 0.325 | 1.000 | 0.875 | 0.5385 | 7 | 6 |
 
 Counts are seed-means of the per-seed counts. Ratios are seed-means. No retune. V0.1 experiment scripts, seeds, and historical result files were not edited.
