@@ -12,10 +12,12 @@ class MemoryItem:
 
     @property
     def utility(self) -> float:
-        total = self.success + self.failure
-        if total == 0:
-            return 0.0
-        return (self.success - self.failure) / total
+        """Historical usefulness in [-1, 1].
+
+        Laplace-smoothed so a single failure cannot fully erase
+        a memory with a long success history (sparse-feedback guard).
+        """
+        return (self.success - self.failure) / (self.success + self.failure + 1)
 
 
 class MemoryStore:
