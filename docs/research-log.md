@@ -15,7 +15,7 @@
 - FeedbackLearner：alpha 只在 policy 选对且不等于 baseline 时推高（成功）或降低（失败）；同选时不变。
 - MemoryItem.utility 改为 Laplace 平滑：(success - failure) / (success + failure + 1)，防稀疏反馈打穿。
 - policy.py 注释说明 v0.1 是两项式，四权重是文档目标。
-- 测试补充：learner 条件、alpha 不变、失败降低、utility 平滑。
+- 测试补充：leaner 条件、alpha 不变、失败降低、utility 平滑。
 
 ## 2026-10-07 (v0.1 experiment: baseline_vs_policy.py)
 
@@ -75,5 +75,15 @@ It does NOT yet prove the core hypothesis in the real world.
    memory distribution. Different distributions (e.g., utility
    correlated with similarity, or anti-correlated) may change results.
 
-Next steps: add noisy / sparse feedback variants, vary the memory
-distribution, and only then consider connecting to a real Agent.
+## 2026-10-07 (Issue #1 Phase A/B/C)
+
+Locked config: 500 tasks, K=3, seeds 7/11/19/23/42, alpha0=0.5, step=0.05, cap=2.0.
+No retune after results. Full table: experiments/results/stage1_issue1.md.
+
+Phase A mean: baseline success 0.0992, adaptive 0.9992. Seed 23 baseline is 0.496 because a neutral outranked near-fail; the other four baseline seeds are 0.00.
+
+Phase B: adaptive success stays about 0.999 through 20% noise and drops to 0.9872 at 30%. Seed 11 at 30% is 0.936. Waste rises slightly.
+
+Phase C: adaptive success stays about 0.999 down to 10% feedback. Waste rises from 0.0015 to 0.0115. Missing feedback does not write a label.
+
+Limitation: alpha hits the cap inside the first 50 tasks, so this control cannot show a later robustness cliff. Do not start cold-start or distribution-shift until review.
