@@ -87,3 +87,22 @@ Phase B: adaptive success stays about 0.999 through 20% noise and drops to 0.987
 Phase C: adaptive success stays about 0.999 down to 10% feedback. Waste rises from 0.0015 to 0.0115. Missing feedback does not write a label.
 
 Limitation: alpha hits the cap inside the first 50 tasks, so this control cannot show a later robustness cliff. Do not start cold-start or distribution-shift until review.
+
+
+## 2026-10-07 — Memory Dynamics research direction
+
+After reviewing the V0.1 Phase D/E findings, the research direction was broadened from simple temporal decay to a human-inspired memory-dynamics model.
+
+Key decisions:
+
+- The fundamental unit is an Event Instance rather than a detached MemoryItem.
+- Action, feedback and outcome should remain connected as one experiential unit where they belong to the same episode.
+- Repeated occurrences should remain separate events and be linked through an Event Thread rather than overwritten into one record.
+- Event relations should represent temporal, causal, referential, evidential and contextual links.
+- Memory state should distinguish existence, accessibility, confidence/trust, evidence and current usefulness rather than collapsing everything into one scalar.
+- Retrieval is itself an event because reactivation may lead to reconsolidation and state change.
+- Forgetting should not automatically mean deletion; reduced accessibility is a valid state.
+- The research state machine is: forming → labile/new → consolidation → stable; retrieval → reactivation → reconsolidation; low use/time → dormant; contradiction → weakened; prolonged low accessibility → forgotten/inaccessible.
+- V0.2 implementation is intentionally not started from this commit. First establish the event/thread/state specification and review the biological evidence behind each transition.
+
+Design document: docs/MEMORY_DYNAMICS.md
