@@ -17,7 +17,13 @@ def retrieve(
     query: list[float],
     policy: LearnedPolicy | None = None,
     k: int = 3,
-) -> RetrievalTrace:
+    task_id: str = "unknown",
+) -> list[RetrievalTrace]:
+    """Rank memories and return one trace per retrieved item.
+
+    Baseline: score = cosine similarity.
+    Adaptive: score = similarity + alpha * utility.
+    """
     scored: list[tuple[MemoryItem, float, float]] = []
     for item in store.all():
         sim = cosine(query, item.embedding)
@@ -25,9 +31,19 @@ def retrieve(
         scored.append((item, sim, score))
     scored.sort(key=lambda row: row[2], reverse=True)
     top = scored[:k]
-    return RetrievalTrace(
-        mode="baseline" if policy is None else "policy",
-        ids=[item.id for item, _, _ in top],
-        similarities=[sim for _, sim, _ in top],
-        scores=[score for _, _, score in top],
-    )
+    mode = "baseline" if policy is None else "policy"
+    policy_version = "baseline-v0.1" if policy is None else f"adaptive-v0.1-alpha{policy.alpha}"
+    return [
+        RetrievalTrace(
+            trace_id=f"{task_id}-{item.id}",
+            task_id=task_id,
+            memory_id=item.id,
+            retrieved=True,
+            rank=rank,
+            mode=mode,
+            policy_version=policy_version,
+            similarities=[sim],
+            scores=[score],
+        )
+        for rank, (item, sim, score) in enumerate(top, start=1)
+    ]
