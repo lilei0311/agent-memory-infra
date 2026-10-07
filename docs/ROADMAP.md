@@ -42,12 +42,14 @@ External usage data begins here, not before.
 - [x] Architecture design
 - [x] Experiment design
 - [x] Stage roadmap
-- [ ] src package skeleton
-- [ ] protocol types
-- [ ] in-memory adapter
-- [ ] baseline policy
-- [ ] adaptive policy
-- [ ] trace recorder
-- [ ] simulator
-- [ ] evaluator
-- [ ] first experiment
+- [x] src package skeleton
+- [x] protocol types (RetrievalTrace aligned with PROTOCOLS.md; V0.2 object types live in graph.py)
+- [x] in-memory adapter (MemoryStore)
+- [x] baseline policy
+- [x] adaptive policy
+- [x] trace recorder
+- [x] simulator
+- [x] evaluator (metrics recorded in experiment scripts; no separate module yet)
+- [x] first experiment (Issue #1 A/B/C, plus later D/E)
+- [ ] learning-curve analysis beyond the recorded windows
+- [ ] V0.2 graph dynamics review (Issue #5 / #6)
