@@ -97,3 +97,42 @@ def test_trace_records_trigger_and_evidence_refs() -> None:
     assert row["source_state"] == "LABILE"
     assert row["target_state"] == "STABLE"
     assert "repeat" in row["evidence_refs"]
+
+
+def _relations(graph, kind: str):
+    return [rel for rel in graph.relations.values() if rel.relation_type == kind]
+
+
+def test_split_merge_reopen_relation_provenance() -> None:
+    graph = GraphMemory(seed=7)
+    root = graph.promote(graph.add_point("start").point_id, "task-relevance")
+    thread = graph.open_thread(root.event_id, "alpha")
+    extra = graph.promote(graph.add_point("continue").point_id, "repeated-reference")
+    graph.extend(thread.thread_id, extra.event_id, "same-topic")
+    branch_event = graph.promote(graph.add_point("branch").point_id, "task-relevance")
+    child = graph.split(thread.thread_id, branch_event.event_id, "new-context")
+    split_rels = _relations(graph, "contextual.changed_context")
+    assert len(split_rels) == 1
+    assert split_rels[0].source_id == thread.thread_id
+    assert split_rels[0].target_id == child.thread_id
+    assert split_rels[0].evidence_ref == "new-context"
+    assert split_rels[0].inferred is False
+    other = graph.promote(graph.add_point("other").point_id, "task-relevance")
+    right = graph.open_thread(other.event_id, "gamma")
+    graph.merge(thread.thread_id, right.thread_id, "same-goal")
+    merge_rels = _relations(graph, "referential.same_thread")
+    assert len(merge_rels) == 1
+    assert merge_rels[0].source_id == thread.thread_id
+    assert merge_rels[0].target_id == right.thread_id
+    assert merge_rels[0].evidence_ref == "same-goal"
+    assert merge_rels[0].inferred is False
+    assert other.event_id in graph.events
+    graph.reopen(right.thread_id, "later-reference")
+    reopen_rels = _relations(graph, "referential.revisits")
+    assert len(reopen_rels) == 1
+    assert reopen_rels[0].source_id == right.thread_id
+    assert reopen_rels[0].target_id == other.event_id
+    assert reopen_rels[0].evidence_ref == "later-reference"
+    assert reopen_rels[0].inferred is False
+    assert right.status == "active"
+    assert right.member_event_ids == [other.event_id]
