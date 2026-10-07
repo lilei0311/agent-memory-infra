@@ -44,7 +44,7 @@ Pytest on e19b5308368f66981e740da6038d20227cde5633: 22 passed in 0.07s.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | none | 0.425 | 0.575 | 1.000 | 0.625 | 0.4783 | 11 | 12 |
 | focus | 0.750 | 0.250 | 1.000 | 1.000 | 0.700 | 7 | 3 |
-| divergent | 0.275 | 0.725 | 1.000 | 1.000 | 0.625 | 0.5862 | 17 | 12 |
+| divergent | 0.275 | 0.725 | 1.000 | 0.625 | 0.5862 | 17 | 12 |
 | automatic | 0.675 | 0.325 | 1.000 | 0.875 | 0.5385 | 7 | 6 |
 
 Counts are seed-means of the per-seed counts. Ratios are seed-means. No retune. V0.1 experiment scripts, seeds, and historical result files were not edited.
