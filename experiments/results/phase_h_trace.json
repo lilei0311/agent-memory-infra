@@ -1,0 +1,2910 @@
+{
+  "budget": 4,
+  "conditions": [
+    "event_identity",
+    "thread_lifecycle",
+    "memory_lifecycle",
+    "evidence_integrity",
+    "deterministic_replay"
+  ],
+  "policy": "none",
+  "runs": [
+    {
+      "seed": 7,
+      "traces": {
+        "event_identity": [
+          {
+            "evidence_refs": [
+              "ev-pt-7-1"
+            ],
+            "kind": "point.create",
+            "reason": "candidate recorded",
+            "signals": [
+              "observation"
+            ],
+            "source_state": "",
+            "target_id": "pt-7-1",
+            "target_state": "CANDIDATE",
+            "tick": 1,
+            "trigger": "observation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-7-1"
+            ],
+            "kind": "lifecycle",
+            "reason": "task-relevance",
+            "signals": [
+              "task-relevance"
+            ],
+            "source_state": "FORMING",
+            "target_id": "ev-7-2",
+            "target_state": "LABILE",
+            "tick": 2,
+            "trigger": "promote"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-7-3"
+            ],
+            "kind": "point.create",
+            "reason": "candidate recorded",
+            "signals": [
+              "observation"
+            ],
+            "source_state": "",
+            "target_id": "pt-7-3",
+            "target_state": "CANDIDATE",
+            "tick": 3,
+            "trigger": "observation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-7-3"
+            ],
+            "kind": "lifecycle",
+            "reason": "repeated-reference",
+            "signals": [
+              "repeated-reference"
+            ],
+            "source_state": "FORMING",
+            "target_id": "ev-7-4",
+            "target_state": "LABILE",
+            "tick": 4,
+            "trigger": "promote"
+          }
+        ],
+        "evidence_integrity": [
+          {
+            "evidence_refs": [
+              "ev-pt-7-1"
+            ],
+            "kind": "point.create",
+            "reason": "candidate recorded",
+            "signals": [
+              "observation"
+            ],
+            "source_state": "",
+            "target_id": "pt-7-1",
+            "target_state": "CANDIDATE",
+            "tick": 1,
+            "trigger": "observation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-7-1"
+            ],
+            "kind": "lifecycle",
+            "reason": "task-relevance",
+            "signals": [
+              "task-relevance"
+            ],
+            "source_state": "FORMING",
+            "target_id": "ev-7-2",
+            "target_state": "LABILE",
+            "tick": 2,
+            "trigger": "promote"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-7-3"
+            ],
+            "kind": "point.create",
+            "reason": "candidate recorded",
+            "signals": [
+              "observation"
+            ],
+            "source_state": "",
+            "target_id": "pt-7-3",
+            "target_state": "CANDIDATE",
+            "tick": 3,
+            "trigger": "observation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-7-3"
+            ],
+            "kind": "lifecycle",
+            "reason": "contradiction-signal",
+            "signals": [
+              "contradiction-signal"
+            ],
+            "source_state": "FORMING",
+            "target_id": "ev-7-4",
+            "target_state": "LABILE",
+            "tick": 4,
+            "trigger": "promote"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-7-1"
+            ],
+            "kind": "thread.create",
+            "reason": "coherent cluster",
+            "signals": [
+              "drinks"
+            ],
+            "source_state": "",
+            "target_id": "th-7-5",
+            "target_state": "active",
+            "tick": 5,
+            "trigger": "first-event"
+          },
+          {
+            "evidence_refs": [
+              "same-topic"
+            ],
+            "kind": "thread.extend",
+            "reason": "extend thread",
+            "signals": [
+              "same-topic"
+            ],
+            "source_state": "active",
+            "target_id": "th-7-5",
+            "target_state": "active",
+            "tick": 6,
+            "trigger": "continuity"
+          },
+          {
+            "evidence_refs": [
+              "both-observed",
+              "ev-pt-7-1"
+            ],
+            "kind": "lifecycle",
+            "reason": "enter reconsolidation; evidence kept",
+            "signals": [
+              "both-observed"
+            ],
+            "source_state": "LABILE",
+            "target_id": "ev-7-2",
+            "target_state": "RECONSOLIDATING",
+            "tick": 7,
+            "trigger": "contradiction"
+          },
+          {
+            "evidence_refs": [
+              "both-observed",
+              "ev-pt-7-3"
+            ],
+            "kind": "lifecycle",
+            "reason": "enter reconsolidation; evidence kept",
+            "signals": [
+              "both-observed"
+            ],
+            "source_state": "LABILE",
+            "target_id": "ev-7-4",
+            "target_state": "RECONSOLIDATING",
+            "tick": 7,
+            "trigger": "contradiction"
+          },
+          {
+            "evidence_refs": [
+              "both-observed"
+            ],
+            "kind": "relation.contradict",
+            "reason": "neither side overwritten",
+            "signals": [
+              "both-observed"
+            ],
+            "source_state": "both-present",
+            "target_id": "rel-7-7",
+            "target_state": "both-present",
+            "tick": 7,
+            "trigger": "contradiction"
+          },
+          {
+            "evidence_refs": [
+              "observed-order",
+              "ev-pt-7-3",
+              "ev-pt-7-1"
+            ],
+            "kind": "relation.causal",
+            "reason": "causal edge kept; endpoints unchanged",
+            "signals": [
+              "causal.caused_by"
+            ],
+            "source_state": "",
+            "target_id": "rel-7-8",
+            "target_state": "causal.caused_by",
+            "tick": 8,
+            "trigger": "causal-evidence"
+          }
+        ],
+        "memory_lifecycle": [
+          {
+            "evidence_refs": [
+              "ev-pt-7-1"
+            ],
+            "kind": "point.create",
+            "reason": "candidate recorded",
+            "signals": [
+              "observation"
+            ],
+            "source_state": "",
+            "target_id": "pt-7-1",
+            "target_state": "CANDIDATE",
+            "tick": 1,
+            "trigger": "observation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-7-1"
+            ],
+            "kind": "lifecycle",
+            "reason": "task-relevance",
+            "signals": [
+              "task-relevance"
+            ],
+            "source_state": "FORMING",
+            "target_id": "ev-7-2",
+            "target_state": "LABILE",
+            "tick": 2,
+            "trigger": "promote"
+          },
+          {
+            "evidence_refs": [
+              "repeat"
+            ],
+            "kind": "lifecycle",
+            "reason": "labile to stable",
+            "signals": [
+              "repeat"
+            ],
+            "source_state": "LABILE",
+            "target_id": "ev-7-2",
+            "target_state": "STABLE",
+            "tick": 3,
+            "trigger": "consolidation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-7-1"
+            ],
+            "kind": "lifecycle",
+            "reason": "retrieval reactivates",
+            "signals": [
+              "rule"
+            ],
+            "source_state": "STABLE",
+            "target_id": "ev-7-2",
+            "target_state": "REACTIVATED",
+            "tick": 4,
+            "trigger": "retrieval"
+          },
+          {
+            "evidence_refs": [
+              "ev-7-2"
+            ],
+            "kind": "retrieval.log",
+            "reason": "allocation recorded",
+            "signals": [
+              "rule"
+            ],
+            "source_state": "",
+            "target_id": "ret-7-3",
+            "target_state": "ev-7-2",
+            "tick": 4,
+            "trigger": "retrieve"
+          },
+          {
+            "evidence_refs": [
+              "after-retrieval"
+            ],
+            "kind": "lifecycle",
+            "reason": "reactivated opens reconsolidation",
+            "signals": [
+              "after-retrieval"
+            ],
+            "source_state": "REACTIVATED",
+            "target_id": "ev-7-2",
+            "target_state": "RECONSOLIDATING",
+            "tick": 5,
+            "trigger": "retrieval-followup"
+          },
+          {
+            "evidence_refs": [
+              "confirmed"
+            ],
+            "kind": "lifecycle",
+            "reason": "confirmed",
+            "signals": [
+              "confirm"
+            ],
+            "source_state": "RECONSOLIDATING",
+            "target_id": "ev-7-2",
+            "target_state": "STABLE",
+            "tick": 6,
+            "trigger": "reconsolidation-decision"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-7-4"
+            ],
+            "kind": "point.create",
+            "reason": "candidate recorded",
+            "signals": [
+              "observation"
+            ],
+            "source_state": "",
+            "target_id": "pt-7-4",
+            "target_state": "CANDIDATE",
+            "tick": 7,
+            "trigger": "observation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-7-4"
+            ],
+            "kind": "lifecycle",
+            "reason": "task-relevance",
+            "signals": [
+              "task-relevance"
+            ],
+            "source_state": "FORMING",
+            "target_id": "ev-7-5",
+            "target_state": "LABILE",
+            "tick": 8,
+            "trigger": "promote"
+          },
+          {
+            "evidence_refs": [
+              "repeat"
+            ],
+            "kind": "lifecycle",
+            "reason": "labile to stable",
+            "signals": [
+              "repeat"
+            ],
+            "source_state": "LABILE",
+            "target_id": "ev-7-5",
+            "target_state": "STABLE",
+            "tick": 9,
+            "trigger": "consolidation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-7-1"
+            ],
+            "kind": "lifecycle",
+            "reason": "retrieval reactivates",
+            "signals": [
+              "revise-me"
+            ],
+            "source_state": "STABLE",
+            "target_id": "ev-7-2",
+            "target_state": "REACTIVATED",
+            "tick": 10,
+            "trigger": "retrieval"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-7-4"
+            ],
+            "kind": "lifecycle",
+            "reason": "retrieval reactivates",
+            "signals": [
+              "revise-me"
+            ],
+            "source_state": "STABLE",
+            "target_id": "ev-7-5",
+            "target_state": "REACTIVATED",
+            "tick": 10,
+            "trigger": "retrieval"
+          },
+          {
+            "evidence_refs": [
+              "ev-7-2",
+              "ev-7-5"
+            ],
+            "kind": "retrieval.log",
+            "reason": "allocation recorded",
+            "signals": [
+              "revise-me"
+            ],
+            "source_state": "",
+            "target_id": "ret-7-6",
+            "target_state": "ev-7-2,ev-7-5",
+            "tick": 10,
+            "trigger": "retrieve"
+          },
+          {
+            "evidence_refs": [
+              "after-retrieval"
+            ],
+            "kind": "lifecycle",
+            "reason": "reactivated opens reconsolidation",
+            "signals": [
+              "after-retrieval"
+            ],
+            "source_state": "REACTIVATED",
+            "target_id": "ev-7-5",
+            "target_state": "RECONSOLIDATING",
+            "tick": 11,
+            "trigger": "retrieval-followup"
+          },
+          {
+            "evidence_refs": [
+              "new-outcome"
+            ],
+            "kind": "lifecycle",
+            "reason": "new-outcome",
+            "signals": [
+              "revise"
+            ],
+            "source_state": "RECONSOLIDATING",
+            "target_id": "ev-7-5",
+            "target_state": "UPDATED",
+            "tick": 12,
+            "trigger": "reconsolidation-decision"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-7-7"
+            ],
+            "kind": "point.create",
+            "reason": "candidate recorded",
+            "signals": [
+              "observation"
+            ],
+            "source_state": "",
+            "target_id": "pt-7-7",
+            "target_state": "CANDIDATE",
+            "tick": 13,
+            "trigger": "observation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-7-7"
+            ],
+            "kind": "lifecycle",
+            "reason": "task-relevance",
+            "signals": [
+              "task-relevance"
+            ],
+            "source_state": "FORMING",
+            "target_id": "ev-7-8",
+            "target_state": "LABILE",
+            "tick": 14,
+            "trigger": "promote"
+          },
+          {
+            "evidence_refs": [
+              "repeat"
+            ],
+            "kind": "lifecycle",
+            "reason": "labile to stable",
+            "signals": [
+              "repeat"
+            ],
+            "source_state": "LABILE",
+            "target_id": "ev-7-8",
+            "target_state": "STABLE",
+            "tick": 15,
+            "trigger": "consolidation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-7-7"
+            ],
+            "kind": "lifecycle",
+            "reason": "retrieval reactivates",
+            "signals": [
+              "weaken-me"
+            ],
+            "source_state": "STABLE",
+            "target_id": "ev-7-8",
+            "target_state": "REACTIVATED",
+            "tick": 16,
+            "trigger": "retrieval"
+          },
+          {
+            "evidence_refs": [
+              "ev-7-2",
+              "ev-7-5",
+              "ev-7-8"
+            ],
+            "kind": "retrieval.log",
+            "reason": "allocation recorded",
+            "signals": [
+              "weaken-me"
+            ],
+            "source_state": "",
+            "target_id": "ret-7-9",
+            "target_state": "ev-7-2,ev-7-5,ev-7-8",
+            "tick": 16,
+            "trigger": "retrieve"
+          },
+          {
+            "evidence_refs": [
+              "after-retrieval"
+            ],
+            "kind": "lifecycle",
+            "reason": "reactivated opens reconsolidation",
+            "signals": [
+              "after-retrieval"
+            ],
+            "source_state": "REACTIVATED",
+            "target_id": "ev-7-8",
+            "target_state": "RECONSOLIDATING",
+            "tick": 17,
+            "trigger": "retrieval-followup"
+          },
+          {
+            "evidence_refs": [
+              "conflict"
+            ],
+            "kind": "lifecycle",
+            "reason": "conflict",
+            "signals": [
+              "weaken"
+            ],
+            "source_state": "RECONSOLIDATING",
+            "target_id": "ev-7-8",
+            "target_state": "WEAKENED",
+            "tick": 18,
+            "trigger": "reconsolidation-decision"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-7-10"
+            ],
+            "kind": "point.create",
+            "reason": "candidate recorded",
+            "signals": [
+              "observation"
+            ],
+            "source_state": "",
+            "target_id": "pt-7-10",
+            "target_state": "CANDIDATE",
+            "tick": 19,
+            "trigger": "observation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-7-10"
+            ],
+            "kind": "lifecycle",
+            "reason": "task-relevance",
+            "signals": [
+              "task-relevance"
+            ],
+            "source_state": "FORMING",
+            "target_id": "ev-7-11",
+            "target_state": "LABILE",
+            "tick": 20,
+            "trigger": "promote"
+          },
+          {
+            "evidence_refs": [
+              "repeat"
+            ],
+            "kind": "lifecycle",
+            "reason": "labile to stable",
+            "signals": [
+              "repeat"
+            ],
+            "source_state": "LABILE",
+            "target_id": "ev-7-11",
+            "target_state": "STABLE",
+            "tick": 21,
+            "trigger": "consolidation"
+          },
+          {
+            "evidence_refs": [],
+            "kind": "lifecycle",
+            "reason": "stable to dormant",
+            "signals": [
+              "low-accessibility"
+            ],
+            "source_state": "STABLE",
+            "target_id": "ev-7-11",
+            "target_state": "DORMANT",
+            "tick": 22,
+            "trigger": "time"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-7-10"
+            ],
+            "kind": "lifecycle",
+            "reason": "retrieval reactivates",
+            "signals": [
+              "sleep"
+            ],
+            "source_state": "DORMANT",
+            "target_id": "ev-7-11",
+            "target_state": "REACTIVATED",
+            "tick": 23,
+            "trigger": "retrieval"
+          },
+          {
+            "evidence_refs": [
+              "ev-7-2",
+              "ev-7-5",
+              "ev-7-8",
+              "ev-7-11"
+            ],
+            "kind": "retrieval.log",
+            "reason": "allocation recorded",
+            "signals": [
+              "sleep"
+            ],
+            "source_state": "",
+            "target_id": "ret-7-12",
+            "target_state": "ev-7-2,ev-7-5,ev-7-8,ev-7-11",
+            "tick": 23,
+            "trigger": "retrieve"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-7-13"
+            ],
+            "kind": "point.create",
+            "reason": "candidate recorded",
+            "signals": [
+              "observation"
+            ],
+            "source_state": "",
+            "target_id": "pt-7-13",
+            "target_state": "CANDIDATE",
+            "tick": 24,
+            "trigger": "observation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-7-13"
+            ],
+            "kind": "lifecycle",
+            "reason": "task-relevance",
+            "signals": [
+              "task-relevance"
+            ],
+            "source_state": "FORMING",
+            "target_id": "ev-7-14",
+            "target_state": "LABILE",
+            "tick": 25,
+            "trigger": "promote"
+          },
+          {
+            "evidence_refs": [
+              "repeat"
+            ],
+            "kind": "lifecycle",
+            "reason": "labile to stable",
+            "signals": [
+              "repeat"
+            ],
+            "source_state": "LABILE",
+            "target_id": "ev-7-14",
+            "target_state": "STABLE",
+            "tick": 26,
+            "trigger": "consolidation"
+          },
+          {
+            "evidence_refs": [],
+            "kind": "lifecycle",
+            "reason": "stable to dormant",
+            "signals": [
+              "low-accessibility"
+            ],
+            "source_state": "STABLE",
+            "target_id": "ev-7-14",
+            "target_state": "DORMANT",
+            "tick": 27,
+            "trigger": "time"
+          },
+          {
+            "evidence_refs": [],
+            "kind": "lifecycle",
+            "reason": "dormant to inaccessible",
+            "signals": [
+              "zero-accessibility"
+            ],
+            "source_state": "DORMANT",
+            "target_id": "ev-7-14",
+            "target_state": "INACCESSIBLE",
+            "tick": 28,
+            "trigger": "time"
+          }
+        ],
+        "thread_lifecycle": [
+          {
+            "evidence_refs": [
+              "ev-pt-7-1"
+            ],
+            "kind": "point.create",
+            "reason": "candidate recorded",
+            "signals": [
+              "observation"
+            ],
+            "source_state": "",
+            "target_id": "pt-7-1",
+            "target_state": "CANDIDATE",
+            "tick": 1,
+            "trigger": "observation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-7-1"
+            ],
+            "kind": "lifecycle",
+            "reason": "task-relevance",
+            "signals": [
+              "task-relevance"
+            ],
+            "source_state": "FORMING",
+            "target_id": "ev-7-2",
+            "target_state": "LABILE",
+            "tick": 2,
+            "trigger": "promote"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-7-1"
+            ],
+            "kind": "thread.create",
+            "reason": "coherent cluster",
+            "signals": [
+              "alpha"
+            ],
+            "source_state": "",
+            "target_id": "th-7-3",
+            "target_state": "active",
+            "tick": 3,
+            "trigger": "first-event"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-7-4"
+            ],
+            "kind": "point.create",
+            "reason": "candidate recorded",
+            "signals": [
+              "observation"
+            ],
+            "source_state": "",
+            "target_id": "pt-7-4",
+            "target_state": "CANDIDATE",
+            "tick": 4,
+            "trigger": "observation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-7-4"
+            ],
+            "kind": "lifecycle",
+            "reason": "repeated-reference",
+            "signals": [
+              "repeated-reference"
+            ],
+            "source_state": "FORMING",
+            "target_id": "ev-7-5",
+            "target_state": "LABILE",
+            "tick": 5,
+            "trigger": "promote"
+          },
+          {
+            "evidence_refs": [
+              "same-topic"
+            ],
+            "kind": "thread.extend",
+            "reason": "extend thread",
+            "signals": [
+              "same-topic"
+            ],
+            "source_state": "active",
+            "target_id": "th-7-3",
+            "target_state": "active",
+            "tick": 6,
+            "trigger": "continuity"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-7-7"
+            ],
+            "kind": "point.create",
+            "reason": "candidate recorded",
+            "signals": [
+              "observation"
+            ],
+            "source_state": "",
+            "target_id": "pt-7-7",
+            "target_state": "CANDIDATE",
+            "tick": 7,
+            "trigger": "observation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-7-7"
+            ],
+            "kind": "lifecycle",
+            "reason": "divergent-goal",
+            "signals": [
+              "divergent-goal"
+            ],
+            "source_state": "FORMING",
+            "target_id": "ev-7-8",
+            "target_state": "LABILE",
+            "tick": 8,
+            "trigger": "promote"
+          },
+          {
+            "evidence_refs": [
+              "same-topic"
+            ],
+            "kind": "thread.extend",
+            "reason": "extend thread",
+            "signals": [
+              "same-topic"
+            ],
+            "source_state": "active",
+            "target_id": "th-7-3",
+            "target_state": "active",
+            "tick": 9,
+            "trigger": "continuity"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-7-7"
+            ],
+            "kind": "thread.split",
+            "reason": "independent context",
+            "signals": [
+              "beta"
+            ],
+            "source_state": "th-7-3",
+            "target_id": "th-7-10",
+            "target_state": "active",
+            "tick": 10,
+            "trigger": "divergent-goal"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-7-12"
+            ],
+            "kind": "point.create",
+            "reason": "candidate recorded",
+            "signals": [
+              "observation"
+            ],
+            "source_state": "",
+            "target_id": "pt-7-12",
+            "target_state": "CANDIDATE",
+            "tick": 11,
+            "trigger": "observation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-7-12"
+            ],
+            "kind": "lifecycle",
+            "reason": "task-relevance",
+            "signals": [
+              "task-relevance"
+            ],
+            "source_state": "FORMING",
+            "target_id": "ev-7-13",
+            "target_state": "LABILE",
+            "tick": 12,
+            "trigger": "promote"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-7-12"
+            ],
+            "kind": "thread.create",
+            "reason": "coherent cluster",
+            "signals": [
+              "gamma"
+            ],
+            "source_state": "",
+            "target_id": "th-7-14",
+            "target_state": "active",
+            "tick": 13,
+            "trigger": "first-event"
+          },
+          {
+            "evidence_refs": [
+              "same-goal"
+            ],
+            "kind": "thread.merge",
+            "reason": "graph merge, events kept",
+            "signals": [
+              "same-goal"
+            ],
+            "source_state": "separate",
+            "target_id": "th-7-3",
+            "target_state": "merged",
+            "tick": 14,
+            "trigger": "continuity-evidence"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-7-12",
+              "later-reference"
+            ],
+            "kind": "lifecycle",
+            "reason": "thread reopened",
+            "signals": [
+              "later-reference"
+            ],
+            "source_state": "LABILE",
+            "target_id": "th-7-14",
+            "target_state": "REACTIVATED",
+            "tick": 15,
+            "trigger": "reopen"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-7-12",
+              "later-reference"
+            ],
+            "kind": "thread.reopen",
+            "reason": "mechanism reopen; members unchanged",
+            "signals": [
+              "later-reference"
+            ],
+            "source_state": "merged",
+            "target_id": "th-7-14",
+            "target_state": "active",
+            "tick": 15,
+            "trigger": "reopen"
+          }
+        ]
+      }
+    },
+    {
+      "seed": 11,
+      "traces": {
+        "event_identity": [
+          {
+            "evidence_refs": [
+              "ev-pt-11-1"
+            ],
+            "kind": "point.create",
+            "reason": "candidate recorded",
+            "signals": [
+              "observation"
+            ],
+            "source_state": "",
+            "target_id": "pt-11-1",
+            "target_state": "CANDIDATE",
+            "tick": 1,
+            "trigger": "observation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-11-1"
+            ],
+            "kind": "lifecycle",
+            "reason": "task-relevance",
+            "signals": [
+              "task-relevance"
+            ],
+            "source_state": "FORMING",
+            "target_id": "ev-11-2",
+            "target_state": "LABILE",
+            "tick": 2,
+            "trigger": "promote"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-11-3"
+            ],
+            "kind": "point.create",
+            "reason": "candidate recorded",
+            "signals": [
+              "observation"
+            ],
+            "source_state": "",
+            "target_id": "pt-11-3",
+            "target_state": "CANDIDATE",
+            "tick": 3,
+            "trigger": "observation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-11-3"
+            ],
+            "kind": "lifecycle",
+            "reason": "repeated-reference",
+            "signals": [
+              "repeated-reference"
+            ],
+            "source_state": "FORMING",
+            "target_id": "ev-11-4",
+            "target_state": "LABILE",
+            "tick": 4,
+            "trigger": "promote"
+          }
+        ],
+        "evidence_integrity": [
+          {
+            "evidence_refs": [
+              "ev-pt-11-1"
+            ],
+            "kind": "point.create",
+            "reason": "candidate recorded",
+            "signals": [
+              "observation"
+            ],
+            "source_state": "",
+            "target_id": "pt-11-1",
+            "target_state": "CANDIDATE",
+            "tick": 1,
+            "trigger": "observation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-11-1"
+            ],
+            "kind": "lifecycle",
+            "reason": "task-relevance",
+            "signals": [
+              "task-relevance"
+            ],
+            "source_state": "FORMING",
+            "target_id": "ev-11-2",
+            "target_state": "LABILE",
+            "tick": 2,
+            "trigger": "promote"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-11-3"
+            ],
+            "kind": "point.create",
+            "reason": "candidate recorded",
+            "signals": [
+              "observation"
+            ],
+            "source_state": "",
+            "target_id": "pt-11-3",
+            "target_state": "CANDIDATE",
+            "tick": 3,
+            "trigger": "observation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-11-3"
+            ],
+            "kind": "lifecycle",
+            "reason": "contradiction-signal",
+            "signals": [
+              "contradiction-signal"
+            ],
+            "source_state": "FORMING",
+            "target_id": "ev-11-4",
+            "target_state": "LABILE",
+            "tick": 4,
+            "trigger": "promote"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-11-1"
+            ],
+            "kind": "thread.create",
+            "reason": "coherent cluster",
+            "signals": [
+              "drinks"
+            ],
+            "source_state": "",
+            "target_id": "th-11-5",
+            "target_state": "active",
+            "tick": 5,
+            "trigger": "first-event"
+          },
+          {
+            "evidence_refs": [
+              "same-topic"
+            ],
+            "kind": "thread.extend",
+            "reason": "extend thread",
+            "signals": [
+              "same-topic"
+            ],
+            "source_state": "active",
+            "target_id": "th-11-5",
+            "target_state": "active",
+            "tick": 6,
+            "trigger": "continuity"
+          },
+          {
+            "evidence_refs": [
+              "both-observed",
+              "ev-pt-11-1"
+            ],
+            "kind": "lifecycle",
+            "reason": "enter reconsolidation; evidence kept",
+            "signals": [
+              "both-observed"
+            ],
+            "source_state": "LABILE",
+            "target_id": "ev-11-2",
+            "target_state": "RECONSOLIDATING",
+            "tick": 7,
+            "trigger": "contradiction"
+          },
+          {
+            "evidence_refs": [
+              "both-observed",
+              "ev-pt-11-3"
+            ],
+            "kind": "lifecycle",
+            "reason": "enter reconsolidation; evidence kept",
+            "signals": [
+              "both-observed"
+            ],
+            "source_state": "LABILE",
+            "target_id": "ev-11-4",
+            "target_state": "RECONSOLIDATING",
+            "tick": 7,
+            "trigger": "contradiction"
+          },
+          {
+            "evidence_refs": [
+              "both-observed"
+            ],
+            "kind": "relation.contradict",
+            "reason": "neither side overwritten",
+            "signals": [
+              "both-observed"
+            ],
+            "source_state": "both-present",
+            "target_id": "rel-11-7",
+            "target_state": "both-present",
+            "tick": 7,
+            "trigger": "contradiction"
+          },
+          {
+            "evidence_refs": [
+              "observed-order",
+              "ev-pt-11-3",
+              "ev-pt-11-1"
+            ],
+            "kind": "relation.causal",
+            "reason": "causal edge kept; endpoints unchanged",
+            "signals": [
+              "causal.caused_by"
+            ],
+            "source_state": "",
+            "target_id": "rel-11-8",
+            "target_state": "causal.caused_by",
+            "tick": 8,
+            "trigger": "causal-evidence"
+          }
+        ],
+        "memory_lifecycle": [
+          {
+            "evidence_refs": [
+              "ev-pt-11-1"
+            ],
+            "kind": "point.create",
+            "reason": "candidate recorded",
+            "signals": [
+              "observation"
+            ],
+            "source_state": "",
+            "target_id": "pt-11-1",
+            "target_state": "CANDIDATE",
+            "tick": 1,
+            "trigger": "observation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-11-1"
+            ],
+            "kind": "lifecycle",
+            "reason": "task-relevance",
+            "signals": [
+              "task-relevance"
+            ],
+            "source_state": "FORMING",
+            "target_id": "ev-11-2",
+            "target_state": "LABILE",
+            "tick": 2,
+            "trigger": "promote"
+          },
+          {
+            "evidence_refs": [
+              "repeat"
+            ],
+            "kind": "lifecycle",
+            "reason": "labile to stable",
+            "signals": [
+              "repeat"
+            ],
+            "source_state": "LABILE",
+            "target_id": "ev-11-2",
+            "target_state": "STABLE",
+            "tick": 3,
+            "trigger": "consolidation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-11-1"
+            ],
+            "kind": "lifecycle",
+            "reason": "retrieval reactivates",
+            "signals": [
+              "rule"
+            ],
+            "source_state": "STABLE",
+            "target_id": "ev-11-2",
+            "target_state": "REACTIVATED",
+            "tick": 4,
+            "trigger": "retrieval"
+          },
+          {
+            "evidence_refs": [
+              "ev-11-2"
+            ],
+            "kind": "retrieval.log",
+            "reason": "allocation recorded",
+            "signals": [
+              "rule"
+            ],
+            "source_state": "",
+            "target_id": "ret-11-3",
+            "target_state": "ev-11-2",
+            "tick": 4,
+            "trigger": "retrieve"
+          },
+          {
+            "evidence_refs": [
+              "after-retrieval"
+            ],
+            "kind": "lifecycle",
+            "reason": "reactivated opens reconsolidation",
+            "signals": [
+              "after-retrieval"
+            ],
+            "source_state": "REACTIVATED",
+            "target_id": "ev-11-2",
+            "target_state": "RECONSOLIDATING",
+            "tick": 5,
+            "trigger": "retrieval-followup"
+          },
+          {
+            "evidence_refs": [
+              "confirmed"
+            ],
+            "kind": "lifecycle",
+            "reason": "confirmed",
+            "signals": [
+              "confirm"
+            ],
+            "source_state": "RECONSOLIDATING",
+            "target_id": "ev-11-2",
+            "target_state": "STABLE",
+            "tick": 6,
+            "trigger": "reconsolidation-decision"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-11-4"
+            ],
+            "kind": "point.create",
+            "reason": "candidate recorded",
+            "signals": [
+              "observation"
+            ],
+            "source_state": "",
+            "target_id": "pt-11-4",
+            "target_state": "CANDIDATE",
+            "tick": 7,
+            "trigger": "observation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-11-4"
+            ],
+            "kind": "lifecycle",
+            "reason": "task-relevance",
+            "signals": [
+              "task-relevance"
+            ],
+            "source_state": "FORMING",
+            "target_id": "ev-11-5",
+            "target_state": "LABILE",
+            "tick": 8,
+            "trigger": "promote"
+          },
+          {
+            "evidence_refs": [
+              "repeat"
+            ],
+            "kind": "lifecycle",
+            "reason": "labile to stable",
+            "signals": [
+              "repeat"
+            ],
+            "source_state": "LABILE",
+            "target_id": "ev-11-5",
+            "target_state": "STABLE",
+            "tick": 9,
+            "trigger": "consolidation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-11-1"
+            ],
+            "kind": "lifecycle",
+            "reason": "retrieval reactivates",
+            "signals": [
+              "revise-me"
+            ],
+            "source_state": "STABLE",
+            "target_id": "ev-11-2",
+            "target_state": "REACTIVATED",
+            "tick": 10,
+            "trigger": "retrieval"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-11-4"
+            ],
+            "kind": "lifecycle",
+            "reason": "retrieval reactivates",
+            "signals": [
+              "revise-me"
+            ],
+            "source_state": "STABLE",
+            "target_id": "ev-11-5",
+            "target_state": "REACTIVATED",
+            "tick": 10,
+            "trigger": "retrieval"
+          },
+          {
+            "evidence_refs": [
+              "ev-11-2",
+              "ev-11-5"
+            ],
+            "kind": "retrieval.log",
+            "reason": "allocation recorded",
+            "signals": [
+              "revise-me"
+            ],
+            "source_state": "",
+            "target_id": "ret-11-6",
+            "target_state": "ev-11-2,ev-11-5",
+            "tick": 10,
+            "trigger": "retrieve"
+          },
+          {
+            "evidence_refs": [
+              "after-retrieval"
+            ],
+            "kind": "lifecycle",
+            "reason": "reactivated opens reconsolidation",
+            "signals": [
+              "after-retrieval"
+            ],
+            "source_state": "REACTIVATED",
+            "target_id": "ev-11-5",
+            "target_state": "RECONSOLIDATING",
+            "tick": 11,
+            "trigger": "retrieval-followup"
+          },
+          {
+            "evidence_refs": [
+              "new-outcome"
+            ],
+            "kind": "lifecycle",
+            "reason": "new-outcome",
+            "signals": [
+              "revise"
+            ],
+            "source_state": "RECONSOLIDATING",
+            "target_id": "ev-11-5",
+            "target_state": "UPDATED",
+            "tick": 12,
+            "trigger": "reconsolidation-decision"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-11-7"
+            ],
+            "kind": "point.create",
+            "reason": "candidate recorded",
+            "signals": [
+              "observation"
+            ],
+            "source_state": "",
+            "target_id": "pt-11-7",
+            "target_state": "CANDIDATE",
+            "tick": 13,
+            "trigger": "observation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-11-7"
+            ],
+            "kind": "lifecycle",
+            "reason": "task-relevance",
+            "signals": [
+              "task-relevance"
+            ],
+            "source_state": "FORMING",
+            "target_id": "ev-11-8",
+            "target_state": "LABILE",
+            "tick": 14,
+            "trigger": "promote"
+          },
+          {
+            "evidence_refs": [
+              "repeat"
+            ],
+            "kind": "lifecycle",
+            "reason": "labile to stable",
+            "signals": [
+              "repeat"
+            ],
+            "source_state": "LABILE",
+            "target_id": "ev-11-8",
+            "target_state": "STABLE",
+            "tick": 15,
+            "trigger": "consolidation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-11-7"
+            ],
+            "kind": "lifecycle",
+            "reason": "retrieval reactivates",
+            "signals": [
+              "weaken-me"
+            ],
+            "source_state": "STABLE",
+            "target_id": "ev-11-8",
+            "target_state": "REACTIVATED",
+            "tick": 16,
+            "trigger": "retrieval"
+          },
+          {
+            "evidence_refs": [
+              "ev-11-2",
+              "ev-11-5",
+              "ev-11-8"
+            ],
+            "kind": "retrieval.log",
+            "reason": "allocation recorded",
+            "signals": [
+              "weaken-me"
+            ],
+            "source_state": "",
+            "target_id": "ret-11-9",
+            "target_state": "ev-11-2,ev-11-5,ev-11-8",
+            "tick": 16,
+            "trigger": "retrieve"
+          },
+          {
+            "evidence_refs": [
+              "after-retrieval"
+            ],
+            "kind": "lifecycle",
+            "reason": "reactivated opens reconsolidation",
+            "signals": [
+              "after-retrieval"
+            ],
+            "source_state": "REACTIVATED",
+            "target_id": "ev-11-8",
+            "target_state": "RECONSOLIDATING",
+            "tick": 17,
+            "trigger": "retrieval-followup"
+          },
+          {
+            "evidence_refs": [
+              "conflict"
+            ],
+            "kind": "lifecycle",
+            "reason": "conflict",
+            "signals": [
+              "weaken"
+            ],
+            "source_state": "RECONSOLIDATING",
+            "target_id": "ev-11-8",
+            "target_state": "WEAKENED",
+            "tick": 18,
+            "trigger": "reconsolidation-decision"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-11-10"
+            ],
+            "kind": "point.create",
+            "reason": "candidate recorded",
+            "signals": [
+              "observation"
+            ],
+            "source_state": "",
+            "target_id": "pt-11-10",
+            "target_state": "CANDIDATE",
+            "tick": 19,
+            "trigger": "observation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-11-10"
+            ],
+            "kind": "lifecycle",
+            "reason": "task-relevance",
+            "signals": [
+              "task-relevance"
+            ],
+            "source_state": "FORMING",
+            "target_id": "ev-11-11",
+            "target_state": "LABILE",
+            "tick": 20,
+            "trigger": "promote"
+          },
+          {
+            "evidence_refs": [
+              "repeat"
+            ],
+            "kind": "lifecycle",
+            "reason": "labile to stable",
+            "signals": [
+              "repeat"
+            ],
+            "source_state": "LABILE",
+            "target_id": "ev-11-11",
+            "target_state": "STABLE",
+            "tick": 21,
+            "trigger": "consolidation"
+          },
+          {
+            "evidence_refs": [],
+            "kind": "lifecycle",
+            "reason": "stable to dormant",
+            "signals": [
+              "low-accessibility"
+            ],
+            "source_state": "STABLE",
+            "target_id": "ev-11-11",
+            "target_state": "DORMANT",
+            "tick": 22,
+            "trigger": "time"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-11-10"
+            ],
+            "kind": "lifecycle",
+            "reason": "retrieval reactivates",
+            "signals": [
+              "sleep"
+            ],
+            "source_state": "DORMANT",
+            "target_id": "ev-11-11",
+            "target_state": "REACTIVATED",
+            "tick": 23,
+            "trigger": "retrieval"
+          },
+          {
+            "evidence_refs": [
+              "ev-11-2",
+              "ev-11-5",
+              "ev-11-8",
+              "ev-11-11"
+            ],
+            "kind": "retrieval.log",
+            "reason": "allocation recorded",
+            "signals": [
+              "sleep"
+            ],
+            "source_state": "",
+            "target_id": "ret-11-12",
+            "target_state": "ev-11-2,ev-11-5,ev-11-8,ev-11-11",
+            "tick": 23,
+            "trigger": "retrieve"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-11-13"
+            ],
+            "kind": "point.create",
+            "reason": "candidate recorded",
+            "signals": [
+              "observation"
+            ],
+            "source_state": "",
+            "target_id": "pt-11-13",
+            "target_state": "CANDIDATE",
+            "tick": 24,
+            "trigger": "observation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-11-13"
+            ],
+            "kind": "lifecycle",
+            "reason": "task-relevance",
+            "signals": [
+              "task-relevance"
+            ],
+            "source_state": "FORMING",
+            "target_id": "ev-11-14",
+            "target_state": "LABILE",
+            "tick": 25,
+            "trigger": "promote"
+          },
+          {
+            "evidence_refs": [
+              "repeat"
+            ],
+            "kind": "lifecycle",
+            "reason": "labile to stable",
+            "signals": [
+              "repeat"
+            ],
+            "source_state": "LABILE",
+            "target_id": "ev-11-14",
+            "target_state": "STABLE",
+            "tick": 26,
+            "trigger": "consolidation"
+          },
+          {
+            "evidence_refs": [],
+            "kind": "lifecycle",
+            "reason": "stable to dormant",
+            "signals": [
+              "low-accessibility"
+            ],
+            "source_state": "STABLE",
+            "target_id": "ev-11-14",
+            "target_state": "DORMANT",
+            "tick": 27,
+            "trigger": "time"
+          },
+          {
+            "evidence_refs": [],
+            "kind": "lifecycle",
+            "reason": "dormant to inaccessible",
+            "signals": [
+              "zero-accessibility"
+            ],
+            "source_state": "DORMANT",
+            "target_id": "ev-11-14",
+            "target_state": "INACCESSIBLE",
+            "tick": 28,
+            "trigger": "time"
+          }
+        ],
+        "thread_lifecycle": [
+          {
+            "evidence_refs": [
+              "ev-pt-11-1"
+            ],
+            "kind": "point.create",
+            "reason": "candidate recorded",
+            "signals": [
+              "observation"
+            ],
+            "source_state": "",
+            "target_id": "pt-11-1",
+            "target_state": "CANDIDATE",
+            "tick": 1,
+            "trigger": "observation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-11-1"
+            ],
+            "kind": "lifecycle",
+            "reason": "task-relevance",
+            "signals": [
+              "task-relevance"
+            ],
+            "source_state": "FORMING",
+            "target_id": "ev-11-2",
+            "target_state": "LABILE",
+            "tick": 2,
+            "trigger": "promote"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-11-1"
+            ],
+            "kind": "thread.create",
+            "reason": "coherent cluster",
+            "signals": [
+              "alpha"
+            ],
+            "source_state": "",
+            "target_id": "th-11-3",
+            "target_state": "active",
+            "tick": 3,
+            "trigger": "first-event"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-11-4"
+            ],
+            "kind": "point.create",
+            "reason": "candidate recorded",
+            "signals": [
+              "observation"
+            ],
+            "source_state": "",
+            "target_id": "pt-11-4",
+            "target_state": "CANDIDATE",
+            "tick": 4,
+            "trigger": "observation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-11-4"
+            ],
+            "kind": "lifecycle",
+            "reason": "repeated-reference",
+            "signals": [
+              "repeated-reference"
+            ],
+            "source_state": "FORMING",
+            "target_id": "ev-11-5",
+            "target_state": "LABILE",
+            "tick": 5,
+            "trigger": "promote"
+          },
+          {
+            "evidence_refs": [
+              "same-topic"
+            ],
+            "kind": "thread.extend",
+            "reason": "extend thread",
+            "signals": [
+              "same-topic"
+            ],
+            "source_state": "active",
+            "target_id": "th-11-3",
+            "target_state": "active",
+            "tick": 6,
+            "trigger": "continuity"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-11-7"
+            ],
+            "kind": "point.create",
+            "reason": "candidate recorded",
+            "signals": [
+              "observation"
+            ],
+            "source_state": "",
+            "target_id": "pt-11-7",
+            "target_state": "CANDIDATE",
+            "tick": 7,
+            "trigger": "observation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-11-7"
+            ],
+            "kind": "lifecycle",
+            "reason": "divergent-goal",
+            "signals": [
+              "divergent-goal"
+            ],
+            "source_state": "FORMING",
+            "target_id": "ev-11-8",
+            "target_state": "LABILE",
+            "tick": 8,
+            "trigger": "promote"
+          },
+          {
+            "evidence_refs": [
+              "same-topic"
+            ],
+            "kind": "thread.extend",
+            "reason": "extend thread",
+            "signals": [
+              "same-topic"
+            ],
+            "source_state": "active",
+            "target_id": "th-11-3",
+            "target_state": "active",
+            "tick": 9,
+            "trigger": "continuity"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-11-7"
+            ],
+            "kind": "thread.split",
+            "reason": "independent context",
+            "signals": [
+              "beta"
+            ],
+            "source_state": "th-11-3",
+            "target_id": "th-11-10",
+            "target_state": "active",
+            "tick": 10,
+            "trigger": "divergent-goal"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-11-12"
+            ],
+            "kind": "point.create",
+            "reason": "candidate recorded",
+            "signals": [
+              "observation"
+            ],
+            "source_state": "",
+            "target_id": "pt-11-12",
+            "target_state": "CANDIDATE",
+            "tick": 11,
+            "trigger": "observation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-11-12"
+            ],
+            "kind": "lifecycle",
+            "reason": "task-relevance",
+            "signals": [
+              "task-relevance"
+            ],
+            "source_state": "FORMING",
+            "target_id": "ev-11-13",
+            "target_state": "LABILE",
+            "tick": 12,
+            "trigger": "promote"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-11-12"
+            ],
+            "kind": "thread.create",
+            "reason": "coherent cluster",
+            "signals": [
+              "gamma"
+            ],
+            "source_state": "",
+            "target_id": "th-11-14",
+            "target_state": "active",
+            "tick": 13,
+            "trigger": "first-event"
+          },
+          {
+            "evidence_refs": [
+              "same-goal"
+            ],
+            "kind": "thread.merge",
+            "reason": "graph merge, events kept",
+            "signals": [
+              "same-goal"
+            ],
+            "source_state": "separate",
+            "target_id": "th-11-3",
+            "target_state": "merged",
+            "tick": 14,
+            "trigger": "continuity-evidence"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-11-12",
+              "later-reference"
+            ],
+            "kind": "lifecycle",
+            "reason": "thread reopened",
+            "signals": [
+              "later-reference"
+            ],
+            "source_state": "LABILE",
+            "target_id": "th-11-14",
+            "target_state": "REACTIVATED",
+            "tick": 15,
+            "trigger": "reopen"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-11-12",
+              "later-reference"
+            ],
+            "kind": "thread.reopen",
+            "reason": "mechanism reopen; members unchanged",
+            "signals": [
+              "later-reference"
+            ],
+            "source_state": "merged",
+            "target_id": "th-11-14",
+            "target_state": "active",
+            "tick": 15,
+            "trigger": "reopen"
+          }
+        ]
+      }
+    },
+    {
+      "seed": 19,
+      "traces": {
+        "event_identity": [
+          {
+            "evidence_refs": [
+              "ev-pt-19-1"
+            ],
+            "kind": "point.create",
+            "reason": "candidate recorded",
+            "signals": [
+              "observation"
+            ],
+            "source_state": "",
+            "target_id": "pt-19-1",
+            "target_state": "CANDIDATE",
+            "tick": 1,
+            "trigger": "observation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-19-1"
+            ],
+            "kind": "lifecycle",
+            "reason": "task-relevance",
+            "signals": [
+              "task-relevance"
+            ],
+            "source_state": "FORMING",
+            "target_id": "ev-19-2",
+            "target_state": "LABILE",
+            "tick": 2,
+            "trigger": "promote"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-19-3"
+            ],
+            "kind": "point.create",
+            "reason": "candidate recorded",
+            "signals": [
+              "observation"
+            ],
+            "source_state": "",
+            "target_id": "pt-19-3",
+            "target_state": "CANDIDATE",
+            "tick": 3,
+            "trigger": "observation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-19-3"
+            ],
+            "kind": "lifecycle",
+            "reason": "repeated-reference",
+            "signals": [
+              "repeated-reference"
+            ],
+            "source_state": "FORMING",
+            "target_id": "ev-19-4",
+            "target_state": "LABILE",
+            "tick": 4,
+            "trigger": "promote"
+          }
+        ],
+        "evidence_integrity": [
+          {
+            "evidence_refs": [
+              "ev-pt-19-1"
+            ],
+            "kind": "point.create",
+            "reason": "candidate recorded",
+            "signals": [
+              "observation"
+            ],
+            "source_state": "",
+            "target_id": "pt-19-1",
+            "target_state": "CANDIDATE",
+            "tick": 1,
+            "trigger": "observation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-19-1"
+            ],
+            "kind": "lifecycle",
+            "reason": "task-relevance",
+            "signals": [
+              "task-relevance"
+            ],
+            "source_state": "FORMING",
+            "target_id": "ev-19-2",
+            "target_state": "LABILE",
+            "tick": 2,
+            "trigger": "promote"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-19-3"
+            ],
+            "kind": "point.create",
+            "reason": "candidate recorded",
+            "signals": [
+              "observation"
+            ],
+            "source_state": "",
+            "target_id": "pt-19-3",
+            "target_state": "CANDIDATE",
+            "tick": 3,
+            "trigger": "observation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-19-3"
+            ],
+            "kind": "lifecycle",
+            "reason": "contradiction-signal",
+            "signals": [
+              "contradiction-signal"
+            ],
+            "source_state": "FORMING",
+            "target_id": "ev-19-4",
+            "target_state": "LABILE",
+            "tick": 4,
+            "trigger": "promote"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-19-1"
+            ],
+            "kind": "thread.create",
+            "reason": "coherent cluster",
+            "signals": [
+              "drinks"
+            ],
+            "source_state": "",
+            "target_id": "th-19-5",
+            "target_state": "active",
+            "tick": 5,
+            "trigger": "first-event"
+          },
+          {
+            "evidence_refs": [
+              "same-topic"
+            ],
+            "kind": "thread.extend",
+            "reason": "extend thread",
+            "signals": [
+              "same-topic"
+            ],
+            "source_state": "active",
+            "target_id": "th-19-5",
+            "target_state": "active",
+            "tick": 6,
+            "trigger": "continuity"
+          },
+          {
+            "evidence_refs": [
+              "both-observed",
+              "ev-pt-19-1"
+            ],
+            "kind": "lifecycle",
+            "reason": "enter reconsolidation; evidence kept",
+            "signals": [
+              "both-observed"
+            ],
+            "source_state": "LABILE",
+            "target_id": "ev-19-2",
+            "target_state": "RECONSOLIDATING",
+            "tick": 7,
+            "trigger": "contradiction"
+          },
+          {
+            "evidence_refs": [
+              "both-observed",
+              "ev-pt-19-3"
+            ],
+            "kind": "lifecycle",
+            "reason": "enter reconsolidation; evidence kept",
+            "signals": [
+              "both-observed"
+            ],
+            "source_state": "LABILE",
+            "target_id": "ev-19-4",
+            "target_state": "RECONSOLIDATING",
+            "tick": 7,
+            "trigger": "contradiction"
+          },
+          {
+            "evidence_refs": [
+              "both-observed"
+            ],
+            "kind": "relation.contradict",
+            "reason": "neither side overwritten",
+            "signals": [
+              "both-observed"
+            ],
+            "source_state": "both-present",
+            "target_id": "rel-19-7",
+            "target_state": "both-present",
+            "tick": 7,
+            "trigger": "contradiction"
+          },
+          {
+            "evidence_refs": [
+              "observed-order",
+              "ev-pt-19-3",
+              "ev-pt-19-1"
+            ],
+            "kind": "relation.causal",
+            "reason": "causal edge kept; endpoints unchanged",
+            "signals": [
+              "causal.caused_by"
+            ],
+            "source_state": "",
+            "target_id": "rel-19-8",
+            "target_state": "causal.caused_by",
+            "tick": 8,
+            "trigger": "causal-evidence"
+          }
+        ],
+        "memory_lifecycle": [
+          {
+            "evidence_refs": [
+              "ev-pt-19-1"
+            ],
+            "kind": "point.create",
+            "reason": "candidate recorded",
+            "signals": [
+              "observation"
+            ],
+            "source_state": "",
+            "target_id": "pt-19-1",
+            "target_state": "CANDIDATE",
+            "tick": 1,
+            "trigger": "observation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-19-1"
+            ],
+            "kind": "lifecycle",
+            "reason": "task-relevance",
+            "signals": [
+              "task-relevance"
+            ],
+            "source_state": "FORMING",
+            "target_id": "ev-19-2",
+            "target_state": "LABILE",
+            "tick": 2,
+            "trigger": "promote"
+          },
+          {
+            "evidence_refs": [
+              "repeat"
+            ],
+            "kind": "lifecycle",
+            "reason": "labile to stable",
+            "signals": [
+              "repeat"
+            ],
+            "source_state": "LABILE",
+            "target_id": "ev-19-2",
+            "target_state": "STABLE",
+            "tick": 3,
+            "trigger": "consolidation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-19-1"
+            ],
+            "kind": "lifecycle",
+            "reason": "retrieval reactivates",
+            "signals": [
+              "rule"
+            ],
+            "source_state": "STABLE",
+            "target_id": "ev-19-2",
+            "target_state": "REACTIVATED",
+            "tick": 4,
+            "trigger": "retrieval"
+          },
+          {
+            "evidence_refs": [
+              "ev-19-2"
+            ],
+            "kind": "retrieval.log",
+            "reason": "allocation recorded",
+            "signals": [
+              "rule"
+            ],
+            "source_state": "",
+            "target_id": "ret-19-3",
+            "target_state": "ev-19-2",
+            "tick": 4,
+            "trigger": "retrieve"
+          },
+          {
+            "evidence_refs": [
+              "after-retrieval"
+            ],
+            "kind": "lifecycle",
+            "reason": "reactivated opens reconsolidation",
+            "signals": [
+              "after-retrieval"
+            ],
+            "source_state": "REACTIVATED",
+            "target_id": "ev-19-2",
+            "target_state": "RECONSOLIDATING",
+            "tick": 5,
+            "trigger": "retrieval-followup"
+          },
+          {
+            "evidence_refs": [
+              "confirmed"
+            ],
+            "kind": "lifecycle",
+            "reason": "confirmed",
+            "signals": [
+              "confirm"
+            ],
+            "source_state": "RECONSOLIDATING",
+            "target_id": "ev-19-2",
+            "target_state": "STABLE",
+            "tick": 6,
+            "trigger": "reconsolidation-decision"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-19-4"
+            ],
+            "kind": "point.create",
+            "reason": "candidate recorded",
+            "signals": [
+              "observation"
+            ],
+            "source_state": "",
+            "target_id": "pt-19-4",
+            "target_state": "CANDIDATE",
+            "tick": 7,
+            "trigger": "observation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-19-4"
+            ],
+            "kind": "lifecycle",
+            "reason": "task-relevance",
+            "signals": [
+              "task-relevance"
+            ],
+            "source_state": "FORMING",
+            "target_id": "ev-19-5",
+            "target_state": "LABILE",
+            "tick": 8,
+            "trigger": "promote"
+          },
+          {
+            "evidence_refs": [
+              "repeat"
+            ],
+            "kind": "lifecycle",
+            "reason": "labile to stable",
+            "signals": [
+              "repeat"
+            ],
+            "source_state": "LABILE",
+            "target_id": "ev-19-5",
+            "target_state": "STABLE",
+            "tick": 9,
+            "trigger": "consolidation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-19-1"
+            ],
+            "kind": "lifecycle",
+            "reason": "retrieval reactivates",
+            "signals": [
+              "revise-me"
+            ],
+            "source_state": "STABLE",
+            "target_id": "ev-19-2",
+            "target_state": "REACTIVATED",
+            "tick": 10,
+            "trigger": "retrieval"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-19-4"
+            ],
+            "kind": "lifecycle",
+            "reason": "retrieval reactivates",
+            "signals": [
+              "revise-me"
+            ],
+            "source_state": "STABLE",
+            "target_id": "ev-19-5",
+            "target_state": "REACTIVATED",
+            "tick": 10,
+            "trigger": "retrieval"
+          },
+          {
+            "evidence_refs": [
+              "ev-19-2",
+              "ev-19-5"
+            ],
+            "kind": "retrieval.log",
+            "reason": "allocation recorded",
+            "signals": [
+              "revise-me"
+            ],
+            "source_state": "",
+            "target_id": "ret-19-6",
+            "target_state": "ev-19-2,ev-19-5",
+            "tick": 10,
+            "trigger": "retrieve"
+          },
+          {
+            "evidence_refs": [
+              "after-retrieval"
+            ],
+            "kind": "lifecycle",
+            "reason": "reactivated opens reconsolidation",
+            "signals": [
+              "after-retrieval"
+            ],
+            "source_state": "REACTIVATED",
+            "target_id": "ev-19-5",
+            "target_state": "RECONSOLIDATING",
+            "tick": 11,
+            "trigger": "retrieval-followup"
+          },
+          {
+            "evidence_refs": [
+              "new-outcome"
+            ],
+            "kind": "lifecycle",
+            "reason": "new-outcome",
+            "signals": [
+              "revise"
+            ],
+            "source_state": "RECONSOLIDATING",
+            "target_id": "ev-19-5",
+            "target_state": "UPDATED",
+            "tick": 12,
+            "trigger": "reconsolidation-decision"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-19-7"
+            ],
+            "kind": "point.create",
+            "reason": "candidate recorded",
+            "signals": [
+              "observation"
+            ],
+            "source_state": "",
+            "target_id": "pt-19-7",
+            "target_state": "CANDIDATE",
+            "tick": 13,
+            "trigger": "observation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-19-7"
+            ],
+            "kind": "lifecycle",
+            "reason": "task-relevance",
+            "signals": [
+              "task-relevance"
+            ],
+            "source_state": "FORMING",
+            "target_id": "ev-19-8",
+            "target_state": "LABILE",
+            "tick": 14,
+            "trigger": "promote"
+          },
+          {
+            "evidence_refs": [
+              "repeat"
+            ],
+            "kind": "lifecycle",
+            "reason": "labile to stable",
+            "signals": [
+              "repeat"
+            ],
+            "source_state": "LABILE",
+            "target_id": "ev-19-8",
+            "target_state": "STABLE",
+            "tick": 15,
+            "trigger": "consolidation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-19-7"
+            ],
+            "kind": "lifecycle",
+            "reason": "retrieval reactivates",
+            "signals": [
+              "weaken-me"
+            ],
+            "source_state": "STABLE",
+            "target_id": "ev-19-8",
+            "target_state": "REACTIVATED",
+            "tick": 16,
+            "trigger": "retrieval"
+          },
+          {
+            "evidence_refs": [
+              "ev-19-2",
+              "ev-19-5",
+              "ev-19-8"
+            ],
+            "kind": "retrieval.log",
+            "reason": "allocation recorded",
+            "signals": [
+              "weaken-me"
+            ],
+            "source_state": "",
+            "target_id": "ret-19-9",
+            "target_state": "ev-19-2,ev-19-5,ev-19-8",
+            "tick": 16,
+            "trigger": "retrieve"
+          },
+          {
+            "evidence_refs": [
+              "after-retrieval"
+            ],
+            "kind": "lifecycle",
+            "reason": "reactivated opens reconsolidation",
+            "signals": [
+              "after-retrieval"
+            ],
+            "source_state": "REACTIVATED",
+            "target_id": "ev-19-8",
+            "target_state": "RECONSOLIDATING",
+            "tick": 17,
+            "trigger": "retrieval-followup"
+          },
+          {
+            "evidence_refs": [
+              "conflict"
+            ],
+            "kind": "lifecycle",
+            "reason": "conflict",
+            "signals": [
+              "weaken"
+            ],
+            "source_state": "RECONSOLIDATING",
+            "target_id": "ev-19-8",
+            "target_state": "WEAKENED",
+            "tick": 18,
+            "trigger": "reconsolidation-decision"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-19-10"
+            ],
+            "kind": "point.create",
+            "reason": "candidate recorded",
+            "signals": [
+              "observation"
+            ],
+            "source_state": "",
+            "target_id": "pt-19-10",
+            "target_state": "CANDIDATE",
+            "tick": 19,
+            "trigger": "observation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-19-10"
+            ],
+            "kind": "lifecycle",
+            "reason": "task-relevance",
+            "signals": [
+              "task-relevance"
+            ],
+            "source_state": "FORMING",
+            "target_id": "ev-19-11",
+            "target_state": "LABILE",
+            "tick": 20,
+            "trigger": "promote"
+          },
+          {
+            "evidence_refs": [
+              "repeat"
+            ],
+            "kind": "lifecycle",
+            "reason": "labile to stable",
+            "signals": [
+              "repeat"
+            ],
+            "source_state": "LABILE",
+            "target_id": "ev-19-11",
+            "target_state": "STABLE",
+            "tick": 21,
+            "trigger": "consolidation"
+          },
+          {
+            "evidence_refs": [],
+            "kind": "lifecycle",
+            "reason": "stable to dormant",
+            "signals": [
+              "low-accessibility"
+            ],
+            "source_state": "STABLE",
+            "target_id": "ev-19-11",
+            "target_state": "DORMANT",
+            "tick": 22,
+            "trigger": "time"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-19-10"
+            ],
+            "kind": "lifecycle",
+            "reason": "retrieval reactivates",
+            "signals": [
+              "sleep"
+            ],
+            "source_state": "DORMANT",
+            "target_id": "ev-19-11",
+            "target_state": "REACTIVATED",
+            "tick": 23,
+            "trigger": "retrieval"
+          },
+          {
+            "evidence_refs": [
+              "ev-19-2",
+              "ev-19-5",
+              "ev-19-8",
+              "ev-19-11"
+            ],
+            "kind": "retrieval.log",
+            "reason": "allocation recorded",
+            "signals": [
+              "sleep"
+            ],
+            "source_state": "",
+            "target_id": "ret-19-12",
+            "target_state": "ev-19-2,ev-19-5,ev-19-8,ev-19-11",
+            "tick": 23,
+            "trigger": "retrieve"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-19-13"
+            ],
+            "kind": "point.create",
+            "reason": "candidate recorded",
+            "signals": [
+              "observation"
+            ],
+            "source_state": "",
+            "target_id": "pt-19-13",
+            "target_state": "CANDIDATE",
+            "tick": 24,
+            "trigger": "observation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-19-13"
+            ],
+            "kind": "lifecycle",
+            "reason": "task-relevance",
+            "signals": [
+              "task-relevance"
+            ],
+            "source_state": "FORMING",
+            "target_id": "ev-19-14",
+            "target_state": "LABILE",
+            "tick": 25,
+            "trigger": "promote"
+          },
+          {
+            "evidence_refs": [
+              "repeat"
+            ],
+            "kind": "lifecycle",
+            "reason": "labile to stable",
+            "signals": [
+              "repeat"
+            ],
+            "source_state": "LABILE",
+            "target_id": "ev-19-14",
+            "target_state": "STABLE",
+            "tick": 26,
+            "trigger": "consolidation"
+          },
+          {
+            "evidence_refs": [],
+            "kind": "lifecycle",
+            "reason": "stable to dormant",
+            "signals": [
+              "low-accessibility"
+            ],
+            "source_state": "STABLE",
+            "target_id": "ev-19-14",
+            "target_state": "DORMANT",
+            "tick": 27,
+            "trigger": "time"
+          },
+          {
+            "evidence_refs": [],
+            "kind": "lifecycle",
+            "reason": "dormant to inaccessible",
+            "signals": [
+              "zero-accessibility"
+            ],
+            "source_state": "DORMANT",
+            "target_id": "ev-19-14",
+            "target_state": "INACCESSIBLE",
+            "tick": 28,
+            "trigger": "time"
+          }
+        ],
+        "thread_lifecycle": [
+          {
+            "evidence_refs": [
+              "ev-pt-19-1"
+            ],
+            "kind": "point.create",
+            "reason": "candidate recorded",
+            "signals": [
+              "observation"
+            ],
+            "source_state": "",
+            "target_id": "pt-19-1",
+            "target_state": "CANDIDATE",
+            "tick": 1,
+            "trigger": "observation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-19-1"
+            ],
+            "kind": "lifecycle",
+            "reason": "task-relevance",
+            "signals": [
+              "task-relevance"
+            ],
+            "source_state": "FORMING",
+            "target_id": "ev-19-2",
+            "target_state": "LABILE",
+            "tick": 2,
+            "trigger": "promote"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-19-1"
+            ],
+            "kind": "thread.create",
+            "reason": "coherent cluster",
+            "signals": [
+              "alpha"
+            ],
+            "source_state": "",
+            "target_id": "th-19-3",
+            "target_state": "active",
+            "tick": 3,
+            "trigger": "first-event"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-19-4"
+            ],
+            "kind": "point.create",
+            "reason": "candidate recorded",
+            "signals": [
+              "observation"
+            ],
+            "source_state": "",
+            "target_id": "pt-19-4",
+            "target_state": "CANDIDATE",
+            "tick": 4,
+            "trigger": "observation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-19-4"
+            ],
+            "kind": "lifecycle",
+            "reason": "repeated-reference",
+            "signals": [
+              "repeated-reference"
+            ],
+            "source_state": "FORMING",
+            "target_id": "ev-19-5",
+            "target_state": "LABILE",
+            "tick": 5,
+            "trigger": "promote"
+          },
+          {
+            "evidence_refs": [
+              "same-topic"
+            ],
+            "kind": "thread.extend",
+            "reason": "extend thread",
+            "signals": [
+              "same-topic"
+            ],
+            "source_state": "active",
+            "target_id": "th-19-3",
+            "target_state": "active",
+            "tick": 6,
+            "trigger": "continuity"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-19-7"
+            ],
+            "kind": "point.create",
+            "reason": "candidate recorded",
+            "signals": [
+              "observation"
+            ],
+            "source_state": "",
+            "target_id": "pt-19-7",
+            "target_state": "CANDIDATE",
+            "tick": 7,
+            "trigger": "observation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-19-7"
+            ],
+            "kind": "lifecycle",
+            "reason": "divergent-goal",
+            "signals": [
+              "divergent-goal"
+            ],
+            "source_state": "FORMING",
+            "target_id": "ev-19-8",
+            "target_state": "LABILE",
+            "tick": 8,
+            "trigger": "promote"
+          },
+          {
+            "evidence_refs": [
+              "same-topic"
+            ],
+            "kind": "thread.extend",
+            "reason": "extend thread",
+            "signals": [
+              "same-topic"
+            ],
+            "source_state": "active",
+            "target_id": "th-19-3",
+            "target_state": "active",
+            "tick": 9,
+            "trigger": "continuity"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-19-7"
+            ],
+            "kind": "thread.split",
+            "reason": "independent context",
+            "signals": [
+              "beta"
+            ],
+            "source_state": "th-19-3",
+            "target_id": "th-19-10",
+            "target_state": "active",
+            "tick": 10,
+            "trigger": "divergent-goal"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-19-12"
+            ],
+            "kind": "point.create",
+            "reason": "candidate recorded",
+            "signals": [
+              "observation"
+            ],
+            "source_state": "",
+            "target_id": "pt-19-12",
+            "target_state": "CANDIDATE",
+            "tick": 11,
+            "trigger": "observation"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-19-12"
+            ],
+            "kind": "lifecycle",
+            "reason": "task-relevance",
+            "signals": [
+              "task-relevance"
+            ],
+            "source_state": "FORMING",
+            "target_id": "ev-19-13",
+            "target_state": "LABILE",
+            "tick": 12,
+            "trigger": "promote"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-19-12"
+            ],
+            "kind": "thread.create",
+            "reason": "coherent cluster",
+            "signals": [
+              "gamma"
+            ],
+            "source_state": "",
+            "target_id": "th-19-14",
+            "target_state": "active",
+            "tick": 13,
+            "trigger": "first-event"
+          },
+          {
+            "evidence_refs": [
+              "same-goal"
+            ],
+            "kind": "thread.merge",
+            "reason": "graph merge, events kept",
+            "signals": [
+              "same-goal"
+            ],
+            "source_state": "separate",
+            "target_id": "th-19-3",
+            "target_state": "merged",
+            "tick": 14,
+            "trigger": "continuity-evidence"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-19-12",
+              "later-reference"
+            ],
+            "kind": "lifecycle",
+            "reason": "thread reopened",
+            "signals": [
+              "later-reference"
+            ],
+            "source_state": "LABILE",
+            "target_id": "th-19-14",
+            "target_state": "REACTIVATED",
+            "tick": 15,
+            "trigger": "reopen"
+          },
+          {
+            "evidence_refs": [
+              "ev-pt-19-12",
+              "later-reference"
+            ],
+            "kind": "thread.reopen",
+            "reason": "mechanism reopen; members unchanged",
+            "signals": [
+              "later-reference"
+            ],
+            "source_state": "merged",
+            "target_id": "th-19-14",
+            "target_state": "active",
+            "tick": 15,
+            "trigger": "reopen"
+          }
+        ]
+      }
+    }
+  ],
+  "seeds": [
+    7,
+    11,
+    19
+  ]
+}
