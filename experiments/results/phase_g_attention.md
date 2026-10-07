@@ -1,17 +1,22 @@
 # Phase G attention comparison
 
-Re-run for Issue #6 review. Attention rules and locked comparison inputs were not changed after seeing results. Reopen and causal relation are not used by this runner.
+Re-run on the Issue #6 float-assertion fix HEAD. Attention rules and locked comparison inputs were not changed. Reopen and causal relation are not used by this runner.
 
 ## Git
 
-- parent HEAD before this evidence commit: daae8779d9ad44788210f66ed297bdf538d4f4d4
-- scoring code: `src/memory_infra/graph.py` `_distribution` and `_allocate_with_attention` (unchanged by the reopen/causal patch)
+- experiment executed at code HEAD: 5fe08282d5a492d462e72daf68446a05a7f70e4e
+- parent before the float-assertion fix: 4d3845279c1c2bc6e4d33dbdab5eed4704a17abf
+- scoring code: `src/memory_infra/graph.py` `_distribution` and `_allocate_with_attention` (unchanged by the test-only patch)
+- this results file is the only addition after that code HEAD; `src/` and `tests/` match 5fe08282d5a492d462e72daf68446a05a7f70e4e
 
 ## Command
 
 ```text
+PYTHONPATH=src python -m pytest -q tests
 PYTHONPATH=src python experiments/phase_g_attention.py
 ```
+
+Pytest on 5fe08282d5a492d462e72daf68446a05a7f70e4e: 22 passed.
 
 ## Locked config
 
@@ -42,4 +47,4 @@ PYTHONPATH=src python experiments/phase_g_attention.py
 | divergent | 0.275 | 0.725 | 1.000 | 0.625 | 0.5862 | 17 | 12 |
 | automatic | 0.675 | 0.325 | 1.000 | 0.875 | 0.5385 | 7 | 6 |
 
-Counts are seed-means of the per-seed counts, so they match the earlier table's integer counts. Ratios are seed-means. No retune.
+Counts are seed-means of the per-seed counts. Ratios are seed-means. No retune. V0.1 experiment scripts, seeds, and historical result files were not edited.
