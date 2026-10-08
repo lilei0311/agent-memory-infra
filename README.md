@@ -18,9 +18,9 @@ Semantic Search
 Top-K Memories
    ↓
 Agent
-
+```
 We propose an adaptive approach:
-
+```text
                          ┌───────────────┐
                          │ Historical    │
                          │ Experience    │
@@ -39,12 +39,43 @@ Task → Candidate Memories → Memory Policy
                          Policy Update
                                  │
                                  └──────────→ next task
-
+```
 The system continuously learns which memories are actually useful.
 
 ────────
 
-Design Principles
+## Product Architecture
+
+The project has two related but independently installable product directions:
+
+1. **Agent Memory Skill** — a memory-management capability installed inside a single Agent/Harness.
+2. **Agent Memory Hub** — a standalone application that discovers and aggregates memories from multiple Agents/Harnesses.
+
+They share a common memory model and public integration boundary, but they are not required to be installed together.
+
+The first product is the current priority. The second is a later product track.
+
+See [Product Architecture](docs/PRODUCT_ARCHITECTURE.md) for the detailed boundary and evolution plan.
+
+```text
+                 Agent Memory Ecosystem
+                         │
+             ┌───────────┴───────────┐
+             │                       │
+             ▼                       ▼
+      Agent Memory Skill       Agent Memory Hub
+        Single Agent             Multi Agent
+             │                       │
+       Own memory/policy       Discovery/Aggregation
+             │                       │
+             └───────────┬───────────┘
+                         ▼
+               Common Memory Contract
+```
+
+────────
+
+## Design Principles
 
 1. Storage-Agnostic
 
@@ -59,8 +90,6 @@ Agents may store memories as:
 * Other custom formats
 
 The Memory Policy Layer should not depend on any particular storage technology.
-
-────────
 
 2. Agent-Agnostic
 
@@ -78,8 +107,6 @@ Memory Store
 
 This allows the system to become a reusable Skill rather than a memory implementation tied to one Agent.
 
-────────
-
 3. Feedback Driven
 
 A memory should not become important simply because it is semantically similar to the current task.
@@ -96,8 +123,6 @@ similarity = 0.90
 historical usefulness = low
 
 The policy may decide that Memory A is more valuable.
-
-────────
 
 4. Outcome-Oriented
 
@@ -119,7 +144,7 @@ The goal is to measure whether the memory helped.
 
 ────────
 
-Memory Lifecycle
+## Memory Lifecycle
 
 The long-term goal is to learn four related policies:
 
@@ -153,7 +178,41 @@ Should this memory be downgraded, archived, or removed?
 
 ────────
 
-V0.1
+## Historical Memory and Memory Graph
+
+The long-term Agent Memory Skill is not limited to discovering old memory files.
+
+The intended progression is:
+
+```text
+Existing Agent Memory
+        ↓
+Discovery
+        ↓
+Explicit / controlled structuring
+        ↓
+New Memory Structure
+        ├── Event Instance
+        ├── Event Thread
+        ├── Relations
+        ├── Evidence
+        ├── Context
+        └── Dynamic State
+        ↓
+Memory Graph
+        ↓
+Visual Memory Explorer
+```
+
+The Memory Graph represents the project's memory semantics. It is not a requirement to adopt a particular graph database.
+
+The graph should support visual inspection of relationships, timelines, evidence/source provenance, memory state, and retrieval/use history.
+
+Discovery must not silently rewrite or migrate user memory. Historical-memory import or structuring is an explicit later capability.
+
+────────
+
+## V0.1
 
 The first version deliberately avoids:
 
@@ -184,7 +243,7 @@ The weights are updated using historical task outcomes.
 
 ────────
 
-Trace
+## Trace
 
 Every memory interaction should generate a lightweight trace.
 
@@ -205,7 +264,7 @@ This allows the system to evaluate whether the memory policy is actually improvi
 
 ────────
 
-Evaluation
+## Evaluation
 
 The primary research question is:
 
@@ -225,7 +284,7 @@ The first experiment should run controlled simulations before connecting to real
 
 ────────
 
-Agent Skill
+## Agent Skill
 
 Once the Memory Policy is validated, it will be packaged as an Agent Skill.
 
@@ -249,7 +308,33 @@ Different Agents can therefore use different memory stores while sharing the sam
 
 ────────
 
-Privacy
+## Agent Memory Hub
+
+The multi-Agent product is a later, standalone application.
+
+Its first role is discovery and aggregation, not immediate shared-memory synchronization:
+
+```text
+Agent Discovery
+      ↓
+Memory Discovery
+      ↓
+Memory Aggregation
+      ↓
+Unified Search / Unified Graph
+      ↓
+Cross-Agent Relationship Discovery
+      ↓
+Memory Bridge
+      ↓
+Controlled Cross-Agent Sharing
+```
+
+The Hub may interoperate with an already-installed Agent Memory Skill through the common public boundary, while still representing heterogeneous legacy memory sources.
+
+────────
+
+## Privacy
 
 The project should not require users to upload or expose their raw memories.
 
@@ -265,45 +350,52 @@ The actual memory content should remain inside the user’s Agent environment.
 
 ────────
 
-Research Roadmap
+## Research Roadmap
 
 Phase 1 — Policy Prototype
 
-* [ ]	Define memory protocol
-* [ ]	Define adapter interface
-* [ ]	Implement baseline retrieval
-* [ ]	Implement adaptive scoring
-* [ ]	Implement trace format
-* [ ]	Implement online policy update
-* [ ]	Build simulation
+* [ ] Define memory protocol
+* [ ] Define adapter interface
+* [ ] Implement baseline retrieval
+* [ ] Implement adaptive scoring
+* [ ] Implement trace format
+* [ ] Implement online policy update
+* [ ] Build simulation
 
 Phase 2 — Evaluation
 
-* [ ]	Compare baseline vs adaptive policy
-* [ ]	Run controlled experiments
-* [ ]	Analyze learning curves
-* [ ]	Identify useful feedback signals
-* [ ]	Test different memory distributions
+* [ ] Compare baseline vs adaptive policy
+* [ ] Run controlled experiments
+* [ ] Analyze learning curves
+* [ ] Identify useful feedback signals
+* [ ] Test different memory distributions
 
 Phase 3 — Agent Skill
 
-* [ ]	Define Skill specification
-* [ ]	Build storage adapters
-* [ ]	Package reusable Skill
-* [ ]	Test with multiple Agents
-* [ ]	Collect anonymous evaluation signals
+* [ ] Define Skill specification
+* [ ] Build storage adapters
+* [ ] Package reusable Skill
+* [ ] Test with multiple Agents
+* [ ] Collect anonymous evaluation signals
 
 Phase 4 — Real-World Learning
 
-* [ ]	Real Agent integration
-* [ ]	User feedback loop
-* [ ]	Policy versioning
-* [ ]	Cross-Agent evaluation
-* [ ]	Continuous policy improvement
+* [ ] Real Agent integration
+* [ ] User feedback loop
+* [ ] Policy versioning
+* [ ] Cross-Agent evaluation
+* [ ] Continuous policy improvement
+
+Product evolution beyond the current research phases:
+
+* Single-Agent Memory Skill: discovery → structured memory → Memory Graph → visual inspection → policy learning
+* Multi-Agent Memory Hub: Agent discovery → memory aggregation → unified graph/search → later Memory Bridge
+
+The Multi-Agent Hub is intentionally deferred from the current Stage 11 implementation.
 
 ────────
 
-Long-Term Vision
+## Long-Term Vision
 
 The long-term goal is not to build another vector database or another memory store.
 
@@ -335,7 +427,7 @@ Memory should learn from experience.
 
 ────────
 
-Status
+## Status
 
 Research / Experimental
 
@@ -347,6 +439,7 @@ This project is currently focused on validating the core hypothesis before build
 The current implementation is deliberately focused on validating the Memory Policy Layer before any public Skill or external-user feedback loop.
 
 - [Architecture](docs/ARCHITECTURE.md)
+- [Product Architecture](docs/PRODUCT_ARCHITECTURE.md)
 - [Protocols](docs/PROTOCOLS.md)
 - [Experiment Plan](docs/EXPERIMENT_PLAN.md)
 - [Roadmap](docs/ROADMAP.md)
