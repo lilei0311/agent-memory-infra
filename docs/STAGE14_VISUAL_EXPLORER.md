@@ -22,3 +22,7 @@ Presentation identity is kind-qualified. DOM anchors and positions use `(kind, i
 ## Non-claims
 
 This is not a production UI, Hub, Memory Policy, or graph store. Stage 14 is not marked PASS by this document.
+
+## Acceptance provenance
+
+Code-under-test SHA is the exact implementation tree whose source and tests were executed. A later evidence-only commit may record that run, must say it is evidence-only, and must not by itself require another locked rerun solely because HEAD advanced. An evidence-only commit changes only result or provenance documentation, not source, tests, experiment parameters, or frozen artifacts. If that commit also changes implementation, it is a new code-under-test SHA and must be executed before acceptance. Stage 14 is not marked PASS by this rule.

@@ -186,3 +186,51 @@ trace_artifact /tmp/agent-memory-infra/experiments/results/phase_h_trace.json 5b
 ```
 
 `deterministic_replay.match` is true for seeds 7, 11, and 19.
+
+
+## Issue #36 provenance and exact-HEAD run at 2481798
+
+Ancestry check at checkout `24817983426b93865afa81686372c2a322324fe4`:
+
+```
+git rev-parse HEAD
+24817983426b93865afa81686372c2a322324fe4
+
+git diff --name-only 5ade7a8c064c9047983e2e13388090863b5ba386..24817983426b93865afa81686372c2a322324fe4
+experiments/results/stage14_visual_explorer.md
+```
+
+`24817983426b93865afa81686372c2a322324fe4` changes only `experiments/results/stage14_visual_explorer.md` relative to `5ade7a8c064c9047983e2e13388090863b5ba386` (50 insertions). No source, test, parameter, V0.1, Phase G, or V0.2 transition file changed in that commit.
+
+Commands were then executed at `24817983426b93865afa81686372c2a322324fe4`. This section records that run. The commit that adds this section is evidence-only and was not itself executed. It must not by itself force another locked rerun. Stage 14 is not marked PASS.
+
+```bash
+PYTHONPATH=src python -m pytest -q tests
+PYTHONPATH=src python experiments/phase_h_dynamics.py
+```
+
+### pytest output
+
+```
+........................................................................ [ 66%]
+.....................................                                    [100%]
+109 passed in 0.62s
+```
+
+Exit code 0.
+
+### experiment output
+
+Exit code 0. First line:
+
+```
+locked {'seeds': [7, 11, 19], 'budget': 4, 'policy': 'none', 'conditions': ('event_identity', 'thread_lifecycle', 'memory_lifecycle', 'evidence_integrity', 'deterministic_replay')}
+```
+
+Last line:
+
+```
+trace_artifact /tmp/agent-memory-infra/experiments/results/phase_h_trace.json 5ba3af8f5376cf9586a7389293b5205d204a49b7b1de986c45031dc826bfa40c
+```
+
+`deterministic_replay.match` is true for seeds 7, 11, and 19. Historical Phase H trace SHA-256 remains `5ba3af8f5376cf9586a7389293b5205d204a49b7b1de986c45031dc826bfa40c`. Working tree after the commands had no tracked artifact diff. Existing Stage 14 tests still cover kind-qualified same-id anchors, unique fixture HTML ids, contradiction/evidence visibility, and the read-only public boundary. Seeds, budget, and policy were not changed.
