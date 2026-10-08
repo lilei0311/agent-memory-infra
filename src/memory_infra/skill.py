@@ -32,6 +32,7 @@ SUPPORTED_OPS = (
     "read_lifecycle",
     "read_event",
     "read_relations",
+    "read_graph",
     "inspect_trace",
     "read_caller_context",
     "save",

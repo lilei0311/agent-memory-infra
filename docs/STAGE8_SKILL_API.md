@@ -18,6 +18,7 @@ Stage 8 packages the validated `CallerSession` boundary as the smallest explicit
 | `read_lifecycle` | `target_id` | lifecycle record |
 | `read_event` | `event_id` | event record |
 | `read_relations` | none | relation records |
+| `read_graph` | none | read-only projection of mechanism-owned nodes and edges |
 | `inspect_trace` | none | trace records |
 | `read_caller_context` | none | caller-scoped notes and attributions |
 | `save` | none | mechanism snapshot write |

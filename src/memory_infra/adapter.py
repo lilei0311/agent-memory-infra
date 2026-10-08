@@ -13,6 +13,7 @@ from types import MappingProxyType
 from typing import Mapping
 
 from memory_infra.graph import GraphMemory
+from memory_infra.graph_view import project_graph
 
 ALLOWED_SIGNALS = (
     "promote",
@@ -137,6 +138,10 @@ class MemoryAdapter:
             for rel in self._graph.relations.values()
         ]
         return _freeze(rows)
+
+    def read_graph(self) -> Mapping:
+        """Projection only. Does not allocate ids or append trace."""
+        return _freeze(project_graph(self._graph))
 
     def inspect_trace(self) -> tuple:
         return _freeze(self._graph.snapshot()["trace"])

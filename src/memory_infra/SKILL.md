@@ -10,6 +10,7 @@ Framework-neutral in-process entrypoint. This is not an MCP server, HTTP service
 4. Only after discovery, call `handle.enable_memory()` and then `handle.invoke(...)`.
 5. Do not import, rewrite, or migrate existing caller memory. Installation does not ingest files into mechanism state.
 6. Historical structuring is a separate call: `handle.import_selected(paths)` after discovery. It imports only selected recognized sources and does not rewrite caller files.
+7. `read_graph` is a read-only projection of mechanism-owned objects. It does not create graph state.
 
 The entrypoint uses `SkillBootstrap` and `SkillApi` only. It does not import `memory_infra.store`.
 

@@ -76,6 +76,18 @@ CALLER_SCOPE_FIELDS = frozenset(
         "impersonate",
     }
 )
+GRAPH_WRITE_FIELDS = frozenset(
+    {
+        "nodes",
+        "edges",
+        "relations",
+        "relation_id",
+        "event_id",
+        "point_id",
+        "thread_id",
+        "graph",
+    }
+)
 
 
 class SnapshotError(ValueError):
@@ -375,6 +387,11 @@ class MemoryService:
             return {"ok": True, "op": op, "result": self.adapter.read_event(body["event_id"])}
         if op == "read_relations":
             return {"ok": True, "op": op, "result": self.adapter.read_relations()}
+        if op == "read_graph":
+            owned = set(body) & (CALLER_OWNERSHIP_FIELDS | GRAPH_WRITE_FIELDS)
+            if owned:
+                raise SnapshotError(f"caller cannot own mechanism fields: {sorted(owned)}")
+            return {"ok": True, "op": op, "result": self.adapter.read_graph()}
         if op == "inspect_trace":
             return {"ok": True, "op": op, "result": self.adapter.inspect_trace()}
         if op == "read_caller_context":
