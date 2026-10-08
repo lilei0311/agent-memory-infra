@@ -92,9 +92,12 @@ def test_graph_read_does_not_mutate_and_is_deterministic():
     assert first == second
     assert after_event == before_event
     assert after_trace == before_trace
-    assert [row["id"] for row in first["nodes"]] == sorted(row["id"] for row in first["nodes"]) or True
-    kinds = [row["kind"] for row in first["nodes"]]
-    assert kinds == sorted(kinds)
+    ordered = [(row["kind"], row["id"]) for row in first["nodes"]]
+    assert ordered == sorted(ordered)
+    assert len(ordered) >= 2
+    assert ordered[0][0] <= ordered[-1][0]
+    same_kind = [row[1] for row in ordered if row[0] == ordered[0][0]]
+    assert same_kind == sorted(same_kind)
 
 
 def test_caller_isolation_and_ownership_rejection():
