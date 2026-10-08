@@ -100,3 +100,48 @@ Literal trace line:
 ```
 trace_artifact /tmp/agent-memory-infra/experiments/results/phase_h_trace.json 5ba3af8f5376cf9586a7389293b5205d204a49b7b1de986c45031dc826bfa40c
 ```
+
+## Issue #33 current-HEAD run at 0ac2c39
+
+Executed at exact HEAD `0ac2c39f332174a58030dbd2e667fabc85683b07`. This evidence commit only records that run. It is not the executed HEAD. Stage 13 is not marked PASS. Issues #32 and #33 stay open.
+
+Changed-file scope of the executed HEAD relative to `8873d52fa5adee1a8d42d7a273eb40aadafb0c24`: `experiments/results/stage13_memory_graph.md` only. No implementation or test files changed. Projection stayed a read-only view. The run did not modify V0.1 A/B/C/D/E artifacts, Phase G/H locked artifacts, or V0.2 transition semantics. `git diff` on tracked files after the run was empty. Generated `__pycache__` was not committed.
+
+Commands run at that HEAD:
+
+```bash
+PYTHONPATH=src python -m pytest -q tests
+PYTHONPATH=src python experiments/phase_h_dynamics.py
+```
+
+### pytest output
+
+Exit code 0.
+
+```
+........................................................................ [ 69%]
+...............................                                          [100%]
+103 passed in 0.63s
+```
+
+### experiment output
+
+Exit code 0. Literal locked line:
+
+```
+locked {'seeds': [7, 11, 19], 'budget': 4, 'policy': 'none', 'conditions': ('event_identity', 'thread_lifecycle', 'memory_lifecycle', 'evidence_integrity', 'deterministic_replay')}
+```
+
+Replay match: true.
+
+Historical Phase H trace SHA-256:
+
+```
+5ba3af8f5376cf9586a7389293b5205d204a49b7b1de986c45031dc826bfa40c
+```
+
+Literal trace line:
+
+```
+trace_artifact /tmp/agent-memory-infra/experiments/results/phase_h_trace.json 5ba3af8f5376cf9586a7389293b5205d204a49b7b1de986c45031dc826bfa40c
+```
