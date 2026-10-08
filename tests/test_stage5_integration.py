@@ -79,8 +79,22 @@ def test_separate_service_instances_do_not_share_mechanism_state(tmp_path):
 
 
 def test_service_request_cannot_set_mechanism_owned_fields(tmp_path):
-    stores = (InMemoryDurableStore(), FileDurableStore(tmp_path / "snap.json"))
-    owned = (
+    """Each forbidden field is rejected on an otherwise valid promote request.
+
+    A missing point_id must not be the reason the assertion passes.
+    """
+    import pytest
+
+    service_owned = (
+        "assign_ids",
+        "rewrite_lifecycle",
+        "rewrite_threads",
+        "rewrite_relations",
+        "caller_lifecycle",
+        "overwrite",
+        "delete",
+    )
+    signal_owned = (
         "lifecycle_state",
         "candidate_status",
         "status",
@@ -89,19 +103,38 @@ def test_service_request_cannot_set_mechanism_owned_fields(tmp_path):
         "evidence_ref",
         "relation_id",
         "trace",
-        "overwrite",
-        "delete",
-        "assign_ids",
-        "rewrite_lifecycle",
-        "rewrite_threads",
-        "rewrite_relations",
-        "caller_lifecycle",
     )
+    stores = (InMemoryDurableStore(), FileDurableStore(tmp_path / "snap.json"))
     for store in stores:
         service = _service(store)
-        for field in owned:
-            try:
-                service.request("signal", {"name": "promote", "point_id": "pt-x", "reason": "useful", field: "caller"})
-            except (SnapshotError, BoundaryError):
-                continue
-            raise AssertionError(f"caller field accepted: {field}")
+        observed = service.request("observe", {"content": "owned-field probe", "source": "caller"})
+        point_id = observed["point_id"]
+        accepted = service.request(
+            "signal",
+            {"name": "promote", "point_id": point_id, "reason": "useful"},
+        )
+        assert accepted["ok"] is True
+        for field in service_owned:
+            with pytest.raises(SnapshotError, match="caller cannot own mechanism fields") as caught:
+                service.request(
+                    "signal",
+                    {
+                        "name": "promote",
+                        "point_id": point_id,
+                        "reason": "useful",
+                        field: "caller",
+                    },
+                )
+            assert field in str(caught.value)
+        for field in signal_owned:
+            with pytest.raises(BoundaryError, match="caller cannot set mechanism-owned fields") as caught:
+                service.request(
+                    "signal",
+                    {
+                        "name": "promote",
+                        "point_id": point_id,
+                        "reason": "useful",
+                        field: "caller",
+                    },
+                )
+            assert field in str(caught.value)
