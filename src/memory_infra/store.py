@@ -11,6 +11,7 @@ import copy
 import hashlib
 import hmac
 import json
+import secrets
 from typing import Mapping
 
 from memory_infra.adapter import DurableStorePort
@@ -33,11 +34,6 @@ from memory_infra.graph import (
 
 SNAPSHOT_VERSION = 1
 PRODUCER = "mechanism"
-# Process-local mechanism key. Not serialized. A persistence consumer
-# cannot recompute this seal from the public snapshot body.
-_MECHANISM_SEAL_KEY = bytes.fromhex(
-    "6d656d6f72792d696e6672612d6d656368616e69736d2d7365616c2d7631"
-)
 REQUIRED_KEYS = (
     "version",
     "producer",
@@ -81,8 +77,13 @@ def _integrity(body: Mapping) -> str:
     return hashlib.sha256(_canonical(body).encode()).hexdigest()
 
 
-def _mechanism_seal(body: Mapping) -> str:
-    return hmac.new(_MECHANISM_SEAL_KEY, _canonical(body).encode(), hashlib.sha256).hexdigest()
+def _mechanism_seal(body: Mapping, seal_key: bytes) -> str:
+    return hmac.new(seal_key, _canonical(body).encode(), hashlib.sha256).hexdigest()
+
+
+def new_seal_key() -> bytes:
+    """Instance key. Not a source constant and not part of the snapshot."""
+    return secrets.token_bytes(32)
 
 
 def _enum_value(value) -> str:
@@ -114,13 +115,16 @@ def export_snapshot(graph: GraphMemory) -> dict:
         "attention": _attention(graph.attention),
         "trace": [_transition(value) for value in graph.log],
     }
+    seal_key = getattr(graph, "_seal_key", None)
+    if not isinstance(seal_key, bytes) or not seal_key:
+        raise SnapshotError("mechanism seal is missing; snapshot cannot be authored")
     snapshot = dict(body)
     snapshot["integrity"] = _integrity(body)
-    snapshot["authenticity"] = _mechanism_seal(body)
+    snapshot["authenticity"] = _mechanism_seal(body, seal_key)
     return snapshot
 
 
-def validate_snapshot(snapshot: Mapping) -> dict:
+def validate_snapshot(snapshot: Mapping, seal_key: bytes | None = None) -> dict:
     if not isinstance(snapshot, Mapping):
         raise SnapshotError("snapshot must be a mapping")
     extra = set(snapshot) - set(REQUIRED_KEYS) - CALLER_OWNERSHIP_FIELDS
@@ -139,16 +143,18 @@ def validate_snapshot(snapshot: Mapping) -> dict:
     body = {key: snapshot[key] for key in REQUIRED_KEYS if key not in {"integrity", "authenticity"}}
     if snapshot["integrity"] != _integrity(body):
         raise SnapshotError("snapshot integrity mismatch; caller rewrite rejected")
+    if not isinstance(seal_key, bytes) or not seal_key:
+        raise SnapshotError("snapshot authenticity rejected; no mechanism-owned seal is bound")
     seal = snapshot["authenticity"]
-    if not isinstance(seal, str) or not hmac.compare_digest(seal, _mechanism_seal(body)):
+    if not isinstance(seal, str) or not hmac.compare_digest(seal, _mechanism_seal(body, seal_key)):
         raise SnapshotError("snapshot authenticity rejected; caller rewrite is not mechanism-authored")
     _check_records(body)
     return copy.deepcopy(dict(snapshot))
 
 
-def restore_graph(snapshot: Mapping) -> GraphMemory:
+def restore_graph(snapshot: Mapping, seal_key: bytes | None = None) -> GraphMemory:
     """Install a validated snapshot. Does not replay or retune transitions."""
-    data = validate_snapshot(snapshot)
+    data = validate_snapshot(snapshot, seal_key)
     config = data["config"]
     graph = GraphMemory(
         seed=config["seed"],
@@ -168,6 +174,7 @@ def restore_graph(snapshot: Mapping) -> GraphMemory:
     graph.contexts = [[ContextItem(**item) for item in ctx] for ctx in data["contexts"]]
     graph.attention = _restore_attention(data["attention"])
     graph.log = [Transition(**_with_tuples(row, ("signals", "evidence_refs"))) for row in data["trace"]]
+    graph._seal_key = seal_key
     return graph
 
 
@@ -176,9 +183,14 @@ class InMemoryDurableStore(DurableStorePort):
 
     def __init__(self) -> None:
         self._snapshot: dict | None = None
+        self._seal_key: bytes | None = None
+
+    def bind_seal(self, seal_key: bytes) -> None:
+        if self._seal_key is None:
+            self._seal_key = seal_key
 
     def save_snapshot(self, snapshot: Mapping) -> None:
-        self._snapshot = validate_snapshot(snapshot)
+        self._snapshot = validate_snapshot(snapshot, self._seal_key)
 
     def load_snapshot(self) -> dict | None:
         if self._snapshot is None:
@@ -197,9 +209,15 @@ class MemoryService:
         policy: str = "none",
     ) -> None:
         self.store = store if store is not None else InMemoryDurableStore()
+        bound = getattr(self.store, "_seal_key", None)
+        self._seal_key = bound if isinstance(bound, bytes) and bound else new_seal_key()
+        if hasattr(self.store, "bind_seal"):
+            self.store.bind_seal(self._seal_key)
         self.adapter = self._new_adapter(seed, context_budget, policy)
+        self.adapter._graph._seal_key = self._seal_key
 
     def save(self) -> Mapping:
+        self.adapter._graph._seal_key = self._seal_key
         snapshot = export_snapshot(self.adapter._graph)
         self.store.save_snapshot(snapshot)
         return {"ok": True, "op": "save", "integrity": snapshot["integrity"]}
@@ -208,7 +226,9 @@ class MemoryService:
         snapshot = self.store.load_snapshot()
         if snapshot is None:
             raise SnapshotError("no snapshot to load")
-        self.adapter._graph = restore_graph(snapshot)
+        seal_key = getattr(self.store, "_seal_key", None) or self._seal_key
+        self.adapter._graph = restore_graph(snapshot, seal_key)
+        self._seal_key = seal_key
         return {"ok": True, "op": "load", "integrity": snapshot["integrity"]}
 
     def request(self, op: str, payload: Mapping | None = None) -> Mapping:

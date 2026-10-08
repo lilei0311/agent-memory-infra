@@ -143,3 +143,19 @@ def test_service_request_boundary_round_trip():
     loaded = reloaded.request("load")
     assert loaded["integrity"]
     assert reloaded.adapter.inspect_trace() == service.adapter.inspect_trace()
+
+
+def test_instance_seal_is_not_a_source_constant():
+    source = open("src/memory_infra/store.py", encoding="utf-8").read()
+    assert "_MECHANISM_SEAL_KEY" not in source
+    assert "6d656d6f72792d696e667261" not in source
+    left = _populated()
+    right = _populated()
+    assert left._seal_key != right._seal_key
+    snapshot = export_snapshot(left.adapter._graph)
+    forged = _recompute_public_checksum(copy.deepcopy(snapshot))
+    forged["authenticity"] = "0" * 64
+    with pytest.raises(SnapshotError):
+        left.store.save_snapshot(forged)
+    with pytest.raises(SnapshotError):
+        restore_graph(forged, left._seal_key)
