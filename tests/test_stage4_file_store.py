@@ -17,7 +17,7 @@ from memory_infra.store import (
     MemoryService,
     SnapshotError,
     export_snapshot,
-    restart_seal,
+    _restart_capability,
 )
 
 
@@ -58,7 +58,7 @@ def test_incompatible_file_rejected(tmp_path):
     canonical = json.dumps(body, sort_keys=True, separators=(",", ":")).encode()
     raw["integrity"] = hashlib.sha256(canonical).hexdigest()
     path.write_text(json.dumps(raw))
-    restarted = FileDurableStore(path, seal_key=restart_seal(service.store))
+    restarted = FileDurableStore(path, seal_key=_restart_capability(service.store))
     with pytest.raises(SnapshotError, match="incompatible"):
         restarted.load_snapshot()
 
@@ -86,7 +86,7 @@ def test_same_snapshot_contract_on_memory_and_file(tmp_path):
     _populate(memory)
     memory.save()
     memory_snapshot = memory.store.load_snapshot()
-    file_store = FileDurableStore(tmp_path / "snap.json", seal_key=restart_seal(memory.store))
+    file_store = FileDurableStore(tmp_path / "snap.json", seal_key=_restart_capability(memory.store))
     file_store.save_snapshot(memory_snapshot)
     loaded = file_store.load_snapshot()
     assert loaded == memory_snapshot
@@ -103,7 +103,7 @@ def test_process_restart_round_trip(tmp_path):
     script = r"""
 import os, sys
 from pathlib import Path
-from memory_infra.store import FileDurableStore, MemoryService, export_snapshot, restart_seal
+from memory_infra.store import FileDurableStore, MemoryService, export_snapshot, _restart_capability
 path, seal_path, mode = sys.argv[1:]
 if mode == "save":
     service = MemoryService(store=FileDurableStore(path), seed=7, context_budget=4, policy="none")
@@ -112,7 +112,7 @@ if mode == "save":
     event_id = next(iter(service.adapter._graph.events))
     service.request("signal", {"name": "open_thread", "event_id": event_id, "topic": "boundary"})
     service.save()
-    Path(seal_path).write_bytes(restart_seal(service.store))
+    Path(seal_path).write_bytes(_restart_capability(service.store))
     snap = export_snapshot(service.adapter._graph)
     sys.stdout.write(snap["integrity"])
 else:
@@ -147,6 +147,40 @@ def test_file_store_rejects_recomputed_public_sha(tmp_path):
     forged["integrity"] = hashlib.sha256(canonical).hexdigest()
     forged["authenticity"] = hmac.new(b"attacker-controlled-seal-key-32b!!", canonical, hashlib.sha256).hexdigest()
     path.write_text(json.dumps(forged))
-    restarted = FileDurableStore(path, seal_key=restart_seal(service.store))
+    restarted = FileDurableStore(path, seal_key=_restart_capability(service.store))
     with pytest.raises(SnapshotError, match="authenticity"):
         restarted.load_snapshot()
+
+
+def test_public_api_cannot_extract_seal_or_authorize_file_rewrite(tmp_path):
+    """Caller surface is the package export and service/store methods only."""
+    import memory_infra
+
+    assert "restart_seal" not in memory_infra.__all__
+    assert not hasattr(memory_infra, "restart_seal")
+    path = tmp_path / "snap.json"
+    store = FileDurableStore(path)
+    service = _service(store)
+    _populate(service)
+    service.save()
+    public_names = set(memory_infra.__all__) | set(dir(service)) | set(dir(store))
+    assert "restart_seal" not in public_names
+    assert "_restart_capability" not in memory_infra.__all__
+    for obj in (service, store, service.adapter, service.adapter._graph):
+        assert "seal" not in obj.__dict__
+    raw = json.loads(path.read_text())
+    assert "seal_key" not in raw
+    forged = copy.deepcopy(raw)
+    first_state = next(iter(forged["states"].values()))
+    first_state["lifecycle_state"] = "latent" if first_state["lifecycle_state"] != "latent" else "active"
+    body = {key: forged[key] for key in forged if key not in {"integrity", "authenticity"}}
+    canonical = json.dumps(body, sort_keys=True, separators=(",", ":")).encode()
+    forged["integrity"] = hashlib.sha256(canonical).hexdigest()
+    forged["authenticity"] = hmac.new(b"attacker-controlled-seal-key-32b!!", canonical, hashlib.sha256).hexdigest()
+    path.write_text(json.dumps(forged))
+    with pytest.raises(SnapshotError, match="authenticity"):
+        store.load_snapshot()
+    with pytest.raises(SnapshotError, match="authenticity"):
+        service.request("load")
+    with pytest.raises(SnapshotError):
+        FileDurableStore(path).load_snapshot()

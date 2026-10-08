@@ -2,7 +2,7 @@
 
 Storage substitution only. `FileDurableStore` implements `DurableStorePort` with the Python standard library. It does not allocate identifiers and does not own lifecycle, thread, relation, or trace transitions.
 
-The persisted file is the Stage 3 snapshot. Validation and the mechanism-owned seal stay in front of restore. The seal key is not a snapshot field. A restarted process must receive that key out of band and pass it to `FileDurableStore` before `MemoryService` binds a new key.
+The persisted file is the Stage 3 snapshot. Validation and the mechanism-owned seal stay in front of restore. The seal key is not a snapshot field and is not returned by `MemoryService`, `FileDurableStore`, or the package export list. There is no public `restart_seal`. An operator who already holds the key out of band may pass it to `FileDurableStore` before `MemoryService` binds a new key. That constructor input is a restart handoff, not an extractor. `_restart_capability` is an internal mechanism/test path and is not part of the documented caller API.
 
 File behavior:
 

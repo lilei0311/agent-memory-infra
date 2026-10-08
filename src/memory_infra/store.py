@@ -210,8 +210,12 @@ class InMemoryDurableStore(DurableStorePort):
 
 
 
-def restart_seal(owner: object) -> bytes:
-    """Out-of-band seal for a new process. Not written into the snapshot."""
+def _restart_capability(owner: object) -> bytes:
+    """Internal mechanism/test handoff only. Not a public service API.
+
+    Process restart may receive this capability out of band. Callers using
+    MemoryService, DurableStorePort, or the package export list cannot obtain it.
+    """
     seal_key = _seal_for(owner)
     if not isinstance(seal_key, bytes) or not seal_key:
         raise SnapshotError("no mechanism-owned seal is bound")
@@ -223,7 +227,7 @@ class FileDurableStore(DurableStorePort):
 
     Does not allocate identifiers or own lifecycle, thread, relation, or
     trace transitions. The mechanism seal stays out of the snapshot file.
-    A restarting process must supply the same seal key out of band.
+    A restarting process must supply the same seal key out of band. The store does not return it.
     """
 
     def __init__(self, path: str | os.PathLike[str], seal_key: bytes | None = None) -> None:
