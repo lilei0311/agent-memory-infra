@@ -12,6 +12,7 @@ import hashlib
 import hmac
 import json
 import secrets
+import weakref
 from typing import Mapping
 
 from memory_infra.adapter import DurableStorePort
@@ -34,6 +35,9 @@ from memory_infra.graph import (
 
 SNAPSHOT_VERSION = 1
 PRODUCER = "mechanism"
+# Private capability table. Not a snapshot field and not an attribute of the
+# store, service, or graph objects exposed to callers.
+_SEALS: weakref.WeakKeyDictionary = weakref.WeakKeyDictionary()
 REQUIRED_KEYS = (
     "version",
     "producer",
@@ -86,6 +90,14 @@ def new_seal_key() -> bytes:
     return secrets.token_bytes(32)
 
 
+def _bind_seal(owner: object, seal_key: bytes) -> None:
+    _SEALS[owner] = seal_key
+
+
+def _seal_for(owner: object) -> bytes | None:
+    return _SEALS.get(owner)
+
+
 def _enum_value(value) -> str:
     return value.value if hasattr(value, "value") else value
 
@@ -115,7 +127,7 @@ def export_snapshot(graph: GraphMemory) -> dict:
         "attention": _attention(graph.attention),
         "trace": [_transition(value) for value in graph.log],
     }
-    seal_key = getattr(graph, "_seal_key", None)
+    seal_key = _seal_for(graph)
     if not isinstance(seal_key, bytes) or not seal_key:
         raise SnapshotError("mechanism seal is missing; snapshot cannot be authored")
     snapshot = dict(body)
@@ -174,7 +186,8 @@ def restore_graph(snapshot: Mapping, seal_key: bytes | None = None) -> GraphMemo
     graph.contexts = [[ContextItem(**item) for item in ctx] for ctx in data["contexts"]]
     graph.attention = _restore_attention(data["attention"])
     graph.log = [Transition(**_with_tuples(row, ("signals", "evidence_refs"))) for row in data["trace"]]
-    graph._seal_key = seal_key
+    if isinstance(seal_key, bytes) and seal_key:
+        _bind_seal(graph, seal_key)
     return graph
 
 
@@ -183,14 +196,13 @@ class InMemoryDurableStore(DurableStorePort):
 
     def __init__(self) -> None:
         self._snapshot: dict | None = None
-        self._seal_key: bytes | None = None
 
     def bind_seal(self, seal_key: bytes) -> None:
-        if self._seal_key is None:
-            self._seal_key = seal_key
+        if _seal_for(self) is None:
+            _bind_seal(self, seal_key)
 
     def save_snapshot(self, snapshot: Mapping) -> None:
-        self._snapshot = validate_snapshot(snapshot, self._seal_key)
+        self._snapshot = validate_snapshot(snapshot, _seal_for(self))
 
     def load_snapshot(self) -> dict | None:
         if self._snapshot is None:
@@ -209,15 +221,14 @@ class MemoryService:
         policy: str = "none",
     ) -> None:
         self.store = store if store is not None else InMemoryDurableStore()
-        bound = getattr(self.store, "_seal_key", None)
-        self._seal_key = bound if isinstance(bound, bytes) and bound else new_seal_key()
+        bound = _seal_for(self.store)
+        seal_key = bound if isinstance(bound, bytes) and bound else new_seal_key()
         if hasattr(self.store, "bind_seal"):
-            self.store.bind_seal(self._seal_key)
+            self.store.bind_seal(seal_key)
         self.adapter = self._new_adapter(seed, context_budget, policy)
-        self.adapter._graph._seal_key = self._seal_key
+        _bind_seal(self.adapter._graph, seal_key)
 
     def save(self) -> Mapping:
-        self.adapter._graph._seal_key = self._seal_key
         snapshot = export_snapshot(self.adapter._graph)
         self.store.save_snapshot(snapshot)
         return {"ok": True, "op": "save", "integrity": snapshot["integrity"]}
@@ -226,9 +237,8 @@ class MemoryService:
         snapshot = self.store.load_snapshot()
         if snapshot is None:
             raise SnapshotError("no snapshot to load")
-        seal_key = getattr(self.store, "_seal_key", None) or self._seal_key
+        seal_key = _seal_for(self.store)
         self.adapter._graph = restore_graph(snapshot, seal_key)
-        self._seal_key = seal_key
         return {"ok": True, "op": "load", "integrity": snapshot["integrity"]}
 
     def request(self, op: str, payload: Mapping | None = None) -> Mapping:

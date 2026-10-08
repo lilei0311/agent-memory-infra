@@ -16,7 +16,9 @@ Required fields: `version`, `producer`, `config`, `counters`, `points`, `events`
 
 `integrity` is the sha256 of the canonical JSON body without `integrity` and `authenticity`. It is a public checksum. Recomputing it does not prove authorship.
 
-`authenticity` is an HMAC-SHA256 over that same body. The key is created per mechanism instance with `secrets.token_bytes`, held only on that instance and on the bound reference store, and is not written into the snapshot and not embedded in source. A persistence consumer who edits lifecycle, thread, relation, identifier/counter, or trace fields and recomputes `integrity` cannot produce a matching seal. This is not a claim that the key is secret from someone who can read the process or the store object's private attribute. Checksum integrity and mechanism authorship are different guarantees. Plain SHA-256 does not provide authorship.
+`authenticity` is an HMAC-SHA256 over that same body. The key is created per mechanism instance with `secrets.token_bytes`. It is not written into the snapshot, not embedded in source, and not stored as an attribute of `MemoryService`, `InMemoryDurableStore`, or `GraphMemory`. The documented public API does not return it. A caller who has only the documented service/store methods and a serialized snapshot cannot obtain the key or authorize a rewrite by recomputing `integrity`.
+
+This is not a claim against a caller who inspects process memory or private module tables. Checksum integrity and mechanism authorship are different guarantees. Plain SHA-256 does not provide authorship.
 
 Unknown fields and explicit ownership fields (`caller_lifecycle`, `rewrite_lifecycle`, `assign_ids`, `overwrite`, `delete`) are rejected. A version other than `1` is rejected.
 

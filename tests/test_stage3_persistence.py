@@ -145,17 +145,23 @@ def test_service_request_boundary_round_trip():
     assert reloaded.adapter.inspect_trace() == service.adapter.inspect_trace()
 
 
-def test_instance_seal_is_not_a_source_constant():
+def test_public_api_and_snapshot_do_not_export_seal():
     source = open("src/memory_infra/store.py", encoding="utf-8").read()
     assert "_MECHANISM_SEAL_KEY" not in source
     assert "6d656d6f72792d696e667261" not in source
-    left = _populated()
-    right = _populated()
-    assert left._seal_key != right._seal_key
-    snapshot = export_snapshot(left.adapter._graph)
+    service = _populated()
+    snapshot = export_snapshot(service.adapter._graph)
+    assert "seal_key" not in snapshot
+    assert not any(isinstance(value, bytes) for value in snapshot.values())
+    assert not hasattr(service, "_seal_key")
+    assert not hasattr(service.store, "_seal_key")
+    assert not hasattr(service.adapter._graph, "_seal_key")
+    public = set(MemoryService.__dict__) | set(InMemoryDurableStore.__dict__)
+    assert "seal_key" not in public
     forged = _recompute_public_checksum(copy.deepcopy(snapshot))
     forged["authenticity"] = "0" * 64
     with pytest.raises(SnapshotError):
-        left.store.save_snapshot(forged)
-    with pytest.raises(SnapshotError):
-        restore_graph(forged, left._seal_key)
+        service.store.save_snapshot(forged)
+    other = _populated()
+    other_snapshot = export_snapshot(other.adapter._graph)
+    assert other_snapshot["authenticity"] != snapshot["authenticity"]
