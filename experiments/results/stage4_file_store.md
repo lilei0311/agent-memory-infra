@@ -41,3 +41,25 @@ Replay match true. Seed 7 digests:
 - evidence_integrity `e988e7ba855a07c9c155f92a1f665c253b02c5719a5f509ebdc57f2119b112a2`
 
 Historical Phase H trace sha256 remains `5ba3af8f5376cf9586a7389293b5205d204a49b7b1de986c45031dc826bfa40c`.
+
+## Exact-HEAD re-execution
+
+Code under test: `8138d706a58c01daa988ff95807d361c309de7e2`
+
+Evidence-only parent. Commands re-executed at this HEAD. No mechanism, test, V0.1, Phase G, or Phase H config change.
+
+```bash
+PYTHONPATH=src python -m pytest -q tests
+PYTHONPATH=src python experiments/phase_h_dynamics.py
+```
+
+## pytest output
+
+```
+............................................................             [100%]
+60 passed in 0.27s
+```
+
+## experiment output
+
+Locked config unchanged: seeds `7, 11, 19`, budget `4`, policy `none`. Replay match true. Historical Phase H trace sha256 remains `5ba3af8f5376cf9586a7389293b5205d204a49b7b1de986c45031dc826bfa40c`.
