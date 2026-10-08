@@ -1,6 +1,6 @@
 # Stage 10 Skill bootstrap evidence
 
-Executed at implementation HEAD `ad9180e49fbf991e9f39daa643b1bd63edc65ca6`. This evidence commit only records that run. It is not the executed HEAD. Do not treat this evidence commit as exact-current-HEAD acceptance. Stage 10 is not marked PASS.
+Executed at implementation HEAD `f27803007af8f7311efaf5e2af70276554138ca9`. This evidence commit only records that run. It is not the executed HEAD. Do not treat this evidence commit as exact-current-HEAD acceptance. Stage 10 is not marked PASS.
 
 Changed-file scope of the implementation commit:
 
@@ -11,7 +11,7 @@ Changed-file scope of the implementation commit:
 
 This evidence commit adds only `experiments/results/stage10_skill_bootstrap.md`.
 
-`SkillBootstrap.install` and `discover_environment` scan a caller-supplied directory or artifact map. Recognized names are `MEMORY.md`, `memory.md`, `memories.json`, and `memory.json`. Unknown and unreadable sources are inventoried. The scan is bounded and sorted. Repeated install returns the same result and does not rewrite caller files. Discovery notes stay on the bootstrap seam by caller id. Bootstrap does not call observe/signal and does not create mechanism trace records. Explicit import is not invoked.
+Issue #29 P1: retained discovery notes are bound to the `BootstrapSession` handle from `open`. `session.last_inventory()` takes no caller id. `SkillBootstrap.last_inventory(caller_id)` raises `PermissionError`. A second `open`, including one naming another caller, cannot read the first handle's note. Cross-caller access is rejected in `test_cross_caller_inventory_access_rejected`. Discovery remains read-only and does not import caller memory.
 
 Seeds, budget, and policy were not changed. V0.1 scripts and historical Phase H / Phase G artifacts were not edited. No V0.2 transition semantic change.
 
@@ -23,12 +23,12 @@ PYTHONPATH=src python experiments/phase_h_dynamics.py
 ## pytest output
 
 ```
-........................................................................ [ 87%]
-..........                                                               [100%]
-82 passed in 0.33s
+........................................................................ [ 86%]
+...........                                                              [100%]
+83 passed in 0.56s
 ```
 
-Exit code 0. Baseline before this commit was 72 passed. The ten added tests are the Stage 10 bootstrap checks.
+Exit code 0. Baseline before this commit was 82 passed. The added test is the cross-caller inventory rejection check.
 
 ## experiment output
 
