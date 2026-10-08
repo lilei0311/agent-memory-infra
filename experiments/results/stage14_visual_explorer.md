@@ -86,3 +86,53 @@ trace_artifact /tmp/agent-memory-infra/experiments/results/phase_h_trace.json 5b
 ```
 
 `deterministic_replay.match` is true for seeds 7, 11, and 19.
+
+
+## Exact-current-HEAD rerun at 9c20ce4
+
+Executed at HEAD `9c20ce45168adfbe6baf9a4d8b4d339cb5ba9cfc` as required by Issue #34 comments 6066237182 and 6066518598. This evidence commit only records that run. It is not the executed HEAD. Stage 14 is not marked PASS. Issue #34 is left open.
+
+Changed-file scope of this evidence commit:
+
+- `experiments/results/stage14_visual_explorer.md`
+
+No implementation files were changed. Seeds, budget, and policy were not changed. V0.1 scripts and historical Phase H / Phase G artifacts were not edited. No V0.2 transition semantic change.
+
+Independent checks at the executed tree:
+
+- `PYTHONPATH=src python -m pytest -q tests` exit code 0, 109 passed in 0.59s.
+- `PYTHONPATH=src python experiments/phase_h_dynamics.py` exit code 0; locked config seeds `7,11,19`, budget `4`, policy `none`; `deterministic_replay.match` is true.
+- historical Phase H trace SHA-256 remains `5ba3af8f5376cf9586a7389293b5205d204a49b7b1de986c45031dc826bfa40c`.
+- `src/memory_infra/explorer.py` does not import `memory_infra.store` and does not write a graph store.
+- fixture `experiments/results/stage14_explorer_fixture.html` has 9 unique HTML `id` attributes and no duplicates; anchors `n-event_3a_ev-7-2` and `n-state_3a_ev-7-2` are both present, as are `n-event_3a_ev-7-5` / `n-state_3a_ev-7-5` and `n-thread_3a_th-7-3` / `n-state_3a_th-7-3`. Contradiction label and read-only status remain.
+
+```bash
+PYTHONPATH=src python -m pytest -q tests
+PYTHONPATH=src python experiments/phase_h_dynamics.py
+```
+
+### pytest output
+
+```
+........................................................................ [ 66%]
+.....................................                                    [100%]
+109 passed in 0.59s
+```
+
+Exit code 0.
+
+### experiment output
+
+Exit code 0. First line:
+
+```
+locked {'seeds': [7, 11, 19], 'budget': 4, 'policy': 'none', 'conditions': ('event_identity', 'thread_lifecycle', 'memory_lifecycle', 'evidence_integrity', 'deterministic_replay')}
+```
+
+Last line:
+
+```
+trace_artifact /tmp/agent-memory-infra/experiments/results/phase_h_trace.json 5ba3af8f5376cf9586a7389293b5205d204a49b7b1de986c45031dc826bfa40c
+```
+
+`deterministic_replay.match` is true for seeds 7, 11, and 19.
