@@ -9,14 +9,15 @@ This stage does not add a transport, agent framework, database, or second owner 
 Public imports:
 
 - `SkillBootstrap`
+- `BootstrapSession`
 - `discover_environment`
 - `RECOGNIZED_NAMES`
 - `DEFAULT_SCAN_LIMIT`
 - `DEFAULT_MAX_DEPTH`
 
-from `memory_infra.bootstrap`. `memory_infra.skill` re-exports `SkillBootstrap` so callers do not import `memory_infra.store`.
+from `memory_infra.bootstrap`. `memory_infra.skill` re-exports `SkillBootstrap` and `BootstrapSession` so callers do not import `memory_infra.store`.
 
-`SkillBootstrap.install(caller_id, root=..., artifacts=..., scan_limit=..., max_depth=...)` is the installation action. `discover_environment(...)` is the same read-only scan without retaining a note.
+`SkillBootstrap.open(caller_id)` returns a caller-bound `BootstrapSession`. `session.install(root=..., artifacts=..., scan_limit=..., max_depth=...)` is the installation action and retains the discovery note only on that handle. `SkillBootstrap.install(...)` runs the same scan and does not expose a caller-id lookup. `discover_environment(...)` is the same read-only scan without retaining a note.
 
 ## What is detected
 
@@ -44,7 +45,7 @@ A successful bootstrap returns:
 
 ## Ownership
 
-Caller memory files stay caller-owned. Discovery notes stay on the bootstrap seam and are keyed by `caller_id`. They are not written to `MemoryService`, not restored by save/load, and not mechanism events.
+Caller memory files stay caller-owned. Discovery notes stay on the bootstrap seam and are bound to the `BootstrapSession` handle returned by `open`. They are not written to `MemoryService`, not restored by save/load, and not mechanism events.
 
 Explicit import is not implemented. A later import would have to be a separate caller-invoked operation. Installation does not call it.
 
@@ -54,7 +55,7 @@ A missing or unreadable source does not fail the whole bootstrap. It is recorded
 
 ## Isolation
 
-`last_inventory(caller_id)` returns only that caller's last discovery note. Another caller cannot read it through this seam.
+`session.last_inventory()` takes no caller id and returns only the note retained on that handle. `SkillBootstrap.last_inventory(caller_id)` is rejected. A second `open` call, including one that names another caller, cannot read the first handle's note.
 
 ## Non-claims
 

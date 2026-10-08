@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from typing import Mapping
 
-from memory_infra.bootstrap import SkillBootstrap
+from memory_infra.bootstrap import BootstrapSession, SkillBootstrap
 
 from memory_infra.store import (
     CallerSession,
@@ -38,7 +38,7 @@ SUPPORTED_OPS = (
     "load",
 )
 
-__all__ = ["SUPPORTED_OPS", "SkillApi", "SkillBootstrap", "SkillCaller", "SnapshotError"]
+__all__ = ["SUPPORTED_OPS", "SkillApi", "BootstrapSession", "SkillBootstrap", "SkillCaller", "SnapshotError"]
 
 
 class SkillApi:

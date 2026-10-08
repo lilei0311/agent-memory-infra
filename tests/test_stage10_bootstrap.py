@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from memory_infra.bootstrap import SkillBootstrap, discover_environment
+from memory_infra.bootstrap import BootstrapSession, SkillBootstrap, discover_environment
 from memory_infra.skill import SkillApi, SkillBootstrap as SkillBootstrapFromSkill
 
 
@@ -73,21 +73,40 @@ def test_repeated_bootstrap_is_idempotent(tmp_path: Path):
     target = tmp_path / "memory.md"
     target.write_text("stable\n", encoding="utf-8")
     boot = SkillBootstrap()
-    first = boot.install("agent-a", root=tmp_path)
-    second = boot.install("agent-a", root=tmp_path)
+    session = boot.open("agent-a")
+    first = session.install(root=tmp_path)
+    second = session.install(root=tmp_path)
     assert first == second
     assert target.read_text(encoding="utf-8") == "stable\n"
-    assert boot.last_inventory("agent-a") == first
+    assert session.last_inventory() == first
 
 
 def test_caller_isolation():
     boot = SkillBootstrap()
-    boot.install("agent-a", artifacts={"MEMORY.md": b"a"})
-    boot.install("agent-b", artifacts={"notes.txt": b"b"})
-    assert boot.last_inventory("agent-a")["caller_id"] == "agent-a"
-    assert boot.last_inventory("agent-b")["sources"][0]["path"] == "notes.txt"
-    assert boot.last_inventory("agent-a")["sources"][0]["path"] == "MEMORY.md"
-    assert boot.last_inventory("agent-c") is None
+    agent_a = boot.open("agent-a")
+    agent_b = boot.open("agent-b")
+    agent_a.install(artifacts={"MEMORY.md": b"a"})
+    agent_b.install(artifacts={"notes.txt": b"b"})
+    assert agent_a.last_inventory()["caller_id"] == "agent-a"
+    assert agent_b.last_inventory()["sources"][0]["path"] == "notes.txt"
+    assert agent_a.last_inventory()["sources"][0]["path"] == "MEMORY.md"
+    assert boot.open("agent-c").last_inventory() is None
+
+
+def test_cross_caller_inventory_access_rejected():
+    boot = SkillBootstrap()
+    agent_a = boot.open("agent-a")
+    agent_b = boot.open("agent-b")
+    agent_a.install(artifacts={"MEMORY.md": b"secret-a"})
+    agent_b.install(artifacts={"notes.txt": b"secret-b"})
+    with pytest.raises(TypeError):
+        agent_a.last_inventory("agent-b")
+    with pytest.raises(PermissionError):
+        boot.last_inventory("agent-b")
+    other = boot.open("agent-b")
+    assert other.last_inventory() is None
+    assert "secret-b" not in str(agent_a.last_inventory())
+    assert isinstance(agent_a, BootstrapSession)
 
 
 def test_no_implicit_import_or_mechanism_mutation(tmp_path: Path):

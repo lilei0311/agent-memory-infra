@@ -19,6 +19,7 @@ __all__ = [
     "DEFAULT_MAX_DEPTH",
     "DEFAULT_SCAN_LIMIT",
     "RECOGNIZED_NAMES",
+    "BootstrapSession",
     "SkillBootstrap",
     "discover_environment",
 ]
@@ -181,11 +182,44 @@ def discover_environment(
     }
 
 
+class BootstrapSession:
+    """Caller-bound handle. Discovery notes are readable only through this object."""
+
+    def __init__(self, bootstrap: "SkillBootstrap", caller_id: str, token: object) -> None:
+        self._bootstrap = bootstrap
+        self.caller_id = caller_id
+        self._token = token
+
+    def install(
+        self,
+        *,
+        root: str | Path | None = None,
+        artifacts: Mapping[str, bytes | None] | None = None,
+        scan_limit: int = DEFAULT_SCAN_LIMIT,
+        max_depth: int = DEFAULT_MAX_DEPTH,
+    ) -> dict:
+        return self._bootstrap._install_for(
+            self,
+            root=root,
+            artifacts=artifacts,
+            scan_limit=scan_limit,
+            max_depth=max_depth,
+        )
+
+    def last_inventory(self) -> dict | None:
+        return self._bootstrap._note_for(self._token)
+
+
 class SkillBootstrap:
     """Install seam. Holds discovery notes only; not a mechanism store."""
 
     def __init__(self) -> None:
-        self._notes: dict[str, dict] = {}
+        self._notes: dict[object, dict] = {}
+
+    def open(self, caller_id: str) -> BootstrapSession:
+        if not isinstance(caller_id, str) or not caller_id.strip():
+            raise ValueError("caller_id is required")
+        return BootstrapSession(self, caller_id, object())
 
     def install(
         self,
@@ -196,18 +230,40 @@ class SkillBootstrap:
         scan_limit: int = DEFAULT_SCAN_LIMIT,
         max_depth: int = DEFAULT_MAX_DEPTH,
     ) -> dict:
-        result = discover_environment(
-            caller_id=caller_id,
+        session = self.open(caller_id)
+        return session.install(
             root=root,
             artifacts=artifacts,
             scan_limit=scan_limit,
             max_depth=max_depth,
         )
-        self._notes[caller_id] = result
+
+    def last_inventory(self, caller_id: str | None = None) -> None:
+        raise PermissionError(
+            "discovery notes are caller-bound; use the session handle from open()"
+        )
+
+    def _install_for(
+        self,
+        session: BootstrapSession,
+        *,
+        root: str | Path | None,
+        artifacts: Mapping[str, bytes | None] | None,
+        scan_limit: int,
+        max_depth: int,
+    ) -> dict:
+        result = discover_environment(
+            caller_id=session.caller_id,
+            root=root,
+            artifacts=artifacts,
+            scan_limit=scan_limit,
+            max_depth=max_depth,
+        )
+        self._notes[session._token] = result
         return result
 
-    def last_inventory(self, caller_id: str) -> dict | None:
-        note = self._notes.get(caller_id)
+    def _note_for(self, token: object) -> dict | None:
+        note = self._notes.get(token)
         if note is None:
             return None
         return note
