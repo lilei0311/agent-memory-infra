@@ -14,7 +14,7 @@ Each accepted line becomes a mechanism observation and promotion through the pub
 
 ## Duplicate policy
 
-`idempotent_by_source_digest`. A repeated explicit import of the same path and content digest returns the previously recorded point and event ids and does not create another observation. A changed digest is a new import. The ledger stays on the caller handle.
+`idempotent_by_source_digest`. The digest is the SHA-256 of the selected source snapshot bytes, not a per-line text hash. A repeated explicit import of the same path and the same snapshot digest returns the previously recorded point and event ids and does not create another observation. A changed snapshot digest is a new import. Distinct parsed occurrences inside one snapshot stay separate even when their text is identical. The ledger stays on the caller handle.
 
 ## Rejection
 

@@ -66,6 +66,7 @@ def test_explicit_import_required_and_creates_owned_objects(tmp_path: Path):
 
 def test_repeated_import_is_idempotent(tmp_path: Path):
     (tmp_path / "memory.md").write_text("stable fact\n", encoding="utf-8")
+    before = (tmp_path / "memory.md").read_bytes()
     entry = SkillEntrypoint()
     handle = entry.open("agent-a")
     handle.start(root=tmp_path)
@@ -73,11 +74,60 @@ def test_repeated_import_is_idempotent(tmp_path: Path):
     second = handle.import_selected(["memory.md"])
     assert first["created"][0]["point_id"] == second["reused"][0]["point_id"]
     assert first["created"][0]["event_id"] == second["reused"][0]["event_id"]
+    assert first["created"][0]["source_digest"] == second["reused"][0]["source_digest"]
     assert second["created"] == []
     assert second["mechanism_memory_created"] is False
     traced = handle.invoke("inspect_trace", {})["result"]
     kinds = [step["kind"] for step in traced]
     assert kinds.count("point.create") == 1
+    assert (tmp_path / "memory.md").read_bytes() == before
+
+
+def test_changed_source_digest_is_a_new_import(tmp_path: Path):
+    path = tmp_path / "MEMORY.md"
+    path.write_text("alpha fact\n", encoding="utf-8")
+    before = path.read_bytes()
+    entry = SkillEntrypoint()
+    handle = entry.open("agent-a")
+    handle.start(root=tmp_path)
+    first = handle.import_selected(["MEMORY.md"])
+    path.write_text("alpha fact\nbeta fact\n", encoding="utf-8")
+    changed = path.read_bytes()
+    assert changed != before
+    second = handle.import_selected(["MEMORY.md"])
+    assert second["reused"] == []
+    assert len(second["created"]) == 2
+    assert second["created"][0]["source_digest"] != first["created"][0]["source_digest"]
+    assert second["created"][0]["source_ref"] == "import:MEMORY.md"
+    assert second["created"][1]["source_ref"] == "import:MEMORY.md"
+    created_ids = {item["point_id"] for item in first["created"] + second["created"]}
+    assert len(created_ids) == 3
+    third = handle.import_selected(["MEMORY.md"])
+    assert third["created"] == []
+    assert [item["point_id"] for item in third["reused"]] == [item["point_id"] for item in second["created"]]
+    assert path.read_bytes() == changed
+
+
+def test_repeated_identical_lines_are_not_collapsed(tmp_path: Path):
+    path = tmp_path / "memory.md"
+    path.write_text("same fact\nsame fact\n", encoding="utf-8")
+    before = path.read_bytes()
+    entry = SkillEntrypoint()
+    handle = entry.open("agent-a")
+    handle.start(root=tmp_path)
+    report = handle.import_selected(["memory.md"])
+    assert [item["occurrence"] for item in report["created"]] == [0, 1]
+    assert len({item["point_id"] for item in report["created"]}) == 2
+    assert len({item["event_id"] for item in report["created"]}) == 2
+    assert report["created"][0]["source_digest"] == report["created"][1]["source_digest"]
+    for item in report["created"]:
+        event = handle.invoke("read_event", {"event_id": item["event_id"]})["result"]
+        assert event["observation"] == "same fact"
+        assert event["source"] == "import:memory.md"
+    repeated = handle.import_selected(["memory.md"])
+    assert repeated["created"] == []
+    assert len(repeated["reused"]) == 2
+    assert path.read_bytes() == before
 
 
 def test_unknown_and_unreadable_are_rejected(tmp_path: Path):

@@ -16,7 +16,7 @@ from memory_infra.bootstrap import (
     DEFAULT_SCAN_LIMIT,
     SkillBootstrap,
 )
-from memory_infra.importer import DUPLICATE_POLICY, parse_recognized, source_ref_for
+from memory_infra.importer import DUPLICATE_POLICY, parse_recognized, snapshot_digest, source_ref_for
 from memory_infra.skill import SkillApi
 
 __all__ = ["DUPLICATE_POLICY", "SKILL_NAME", "SkillEntrypoint", "SkillHandle"]
@@ -35,7 +35,7 @@ class SkillHandle:
         self._sequence: list[str] = []
         self._root: Path | None = None
         self._artifacts: Mapping[str, bytes | None] | None = None
-        self._imports: dict[tuple[str, str], dict] = {}
+        self._imports: dict[tuple[str, str], list[dict]] = {}
 
     def start(
         self,
@@ -103,7 +103,9 @@ class SkillHandle:
 
         Discovery never calls this. Unknown and unreadable selections are
         reported and are not ingested. Duplicate policy is idempotent by
-        source path plus content digest. Caller files are not rewritten.
+        source path plus the SHA-256 of the selected source snapshot.
+        Distinct parsed occurrences in that snapshot are preserved.
+        Caller files are not rewritten.
         """
 
         if self._session is None or "discovery" not in self._sequence:
@@ -131,12 +133,14 @@ class SkillHandle:
                 rejected.append({"path": path, "status": "rejected", "reason": parse_error})
                 continue
             source_ref = source_ref_for(path)
-            for parsed_item in parsed:
-                key = (path, parsed_item["digest"])
-                existing = self._imports.get(key)
-                if existing is not None:
-                    reused.append(existing)
-                    continue
+            source_digest = snapshot_digest(payload)
+            key = (path, source_digest)
+            existing = self._imports.get(key)
+            if existing is not None:
+                reused.extend(existing)
+                continue
+            records: list[dict] = []
+            for occurrence, parsed_item in enumerate(parsed):
                 observed = self.invoke(
                     "observe",
                     {"content": parsed_item["text"], "source": source_ref},
@@ -153,14 +157,16 @@ class SkillHandle:
                 record = {
                     "path": path,
                     "status": "imported",
-                    "digest": parsed_item["digest"],
+                    "source_digest": source_digest,
+                    "occurrence": occurrence,
                     "source_ref": source_ref,
                     "point_id": observed["point_id"],
                     "event_id": mechanism["event_id"],
                     "evidence_ref": mechanism["evidence_ref"],
                 }
-                self._imports[key] = record
+                records.append(record)
                 created.append(record)
+            self._imports[key] = records
         if "import" not in self._sequence:
             self._sequence.append("import")
         imported = bool(created or reused)

@@ -14,11 +14,17 @@ from pathlib import Path
 RECOGNIZED_NAMES = frozenset({"MEMORY.md", "memory.md", "memories.json", "memory.json"})
 DUPLICATE_POLICY = "idempotent_by_source_digest"
 
-__all__ = ["DUPLICATE_POLICY", "RECOGNIZED_NAMES", "parse_recognized", "source_ref_for"]
+__all__ = ["DUPLICATE_POLICY", "RECOGNIZED_NAMES", "parse_recognized", "snapshot_digest", "source_ref_for"]
 
 
 def source_ref_for(path: str) -> str:
     return f"import:{path}"
+
+
+def snapshot_digest(payload: bytes) -> str:
+    """SHA-256 of the selected source snapshot bytes."""
+
+    return hashlib.sha256(payload).hexdigest()
 
 
 def _digest(text: str) -> str:
