@@ -2,13 +2,22 @@
 
 import pytest
 
-from memory_infra.skill import SUPPORTED_OPS, SkillApi
-from memory_infra.store import FileDurableStore, InMemoryDurableStore, MemoryService, SnapshotError, _restart_capability
+from memory_infra.skill import SUPPORTED_OPS, SkillApi, SnapshotError
 
 
-def _api(store):
-    service = MemoryService(store=store, seed=7, context_budget=4, policy="none")
-    return service, SkillApi(service)
+def _assert_trace(response, event_id: str) -> None:
+    assert response["ok"] is True
+    assert response["op"] == "inspect_trace"
+    steps = response["result"]
+    assert isinstance(steps, tuple) and steps
+    matched = [row for row in steps if row["target_id"] == event_id]
+    assert matched
+    row = matched[0]
+    assert row["kind"]
+    assert row["reason"]
+    assert isinstance(row["evidence_refs"], tuple) and row["evidence_refs"]
+    assert "note" not in row
+    assert "caller_id" not in row
 
 
 def _exercise(api: SkillApi) -> None:
@@ -30,8 +39,11 @@ def _exercise(api: SkillApi) -> None:
     shared = right.invoke("read_event", {"event_id": event})["result"]
     assert shared["observation"] == "alpha fact"
     assert left.invoke("read_lifecycle", {"target_id": event})["result"]["lifecycle_state"]
-    assert right.invoke("read_relations")["result"] is not None
-    assert "steps" in left.invoke("inspect_trace")["result"] or left.invoke("inspect_trace")["result"] is not None
+    relations = right.invoke("read_relations")
+    assert relations["ok"] is True
+    assert relations["op"] == "read_relations"
+    assert isinstance(relations["result"], tuple)
+    _assert_trace(left.invoke("inspect_trace"), event)
     with pytest.raises(SnapshotError, match="caller cannot impersonate another caller"):
         left.invoke("read_caller_context", {"caller_id": "skill-right"})
     with pytest.raises(SnapshotError, match="caller cannot address another caller scope"):
@@ -62,32 +74,34 @@ def _exercise(api: SkillApi) -> None:
 
 
 def test_skill_api_shares_mechanism_not_context(tmp_path):
-    _, memory_api = _api(InMemoryDurableStore())
-    _exercise(memory_api)
-    _, file_api = _api(FileDurableStore(tmp_path / "snap.json"))
-    _exercise(file_api)
+    _exercise(SkillApi.open_memory())
+    _exercise(SkillApi.open_file(tmp_path / "snap.json"))
 
 
 def test_skill_api_save_load_keeps_mechanism_only(tmp_path):
-    service, api = _api(FileDurableStore(tmp_path / "snap.json"))
-    caller = api.open_caller("skill-left")
-    observed = caller.invoke("observe", {"content": "kept fact", "note": "not-durable"})
-    caller.invoke("signal", {"name": "promote", "point_id": observed["point_id"], "reason": "useful"})
-    caller.invoke("save")
-    reloaded = MemoryService(
-        store=FileDurableStore(tmp_path / "snap.json", seal_key=_restart_capability(service.store)),
-        seed=7,
-        context_budget=4,
-        policy="none",
-    )
-    restored = SkillApi(reloaded).open_caller("skill-left")
-    restored.invoke("load")
-    context = restored.invoke("read_caller_context")["result"]
-    assert context["notes"] == ()
-    assert context["attributions"] == ()
-    events = restored.invoke("inspect_trace")
-    assert events["result"] is not None
-    shared = SkillApi(reloaded).open_caller("skill-right").invoke("read_relations")["result"]
-    assert shared is not None
-    point = restored.invoke("retrieve", {"query": "kept fact"})
-    assert point["result"]
+    for api in (SkillApi.open_memory(), SkillApi.open_file(tmp_path / "file.json")):
+        caller = api.open_caller("skill-left")
+        observed = caller.invoke("observe", {"content": "kept fact", "note": "not-durable"})
+        event = caller.invoke(
+            "signal",
+            {"name": "promote", "point_id": observed["point_id"], "reason": "useful"},
+        )["result"]["result"]["event_id"]
+        saved = caller.invoke("save")
+        assert saved["ok"] is True
+        assert saved["op"] == "save"
+        assert isinstance(saved["integrity"], str) and saved["integrity"]
+        restored_api = api.reopen()
+        restored = restored_api.open_caller("skill-left")
+        loaded = restored.invoke("load")
+        assert loaded["ok"] is True
+        assert loaded["op"] == "load"
+        assert loaded["integrity"] == saved["integrity"]
+        context = restored.invoke("read_caller_context")["result"]
+        assert context["notes"] == ()
+        assert context["attributions"] == ()
+        _assert_trace(restored.invoke("inspect_trace"), event)
+        shared = restored_api.open_caller("skill-right").invoke("read_event", {"event_id": event})
+        assert shared["result"]["observation"] == "kept fact"
+        point = restored.invoke("retrieve", {"query": "kept fact"})
+        assert point["ok"] is True
+        assert point["result"]

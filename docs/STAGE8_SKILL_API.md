@@ -44,3 +44,13 @@ Mechanism reads (events, lifecycle, relations, trace) are shared across callers 
 ## Storage and transport
 
 `InMemoryDurableStore` and `FileDurableStore` accept the same operations through `SkillApi`. Substituting the store does not change the operation names or ownership rules. No HTTP, MCP, or agent SDK is required.
+
+## Public packaging surface
+
+Black-box consumers import `SkillApi`, `SkillCaller`, `SUPPORTED_OPS`, and `SnapshotError` from `memory_infra.skill`. They do not import store internals or the mechanism seal.
+
+`SkillApi.open_memory()` and `SkillApi.open_file(path)` construct the seam over `InMemoryDurableStore` and `FileDurableStore`. Substituting the store does not change operation names or ownership rules.
+
+`reopen()` is the process-restart handoff. It builds a new `SkillApi` and `MemoryService` over the saved store and supplies the mechanism-owned seal out of band. It does not return the seal, does not allocate ids, and does not own lifecycle, thread, relation, trace, or attention transitions. Caller notes are not restored. `save` returns an integrity digest; `load` after `reopen()` must return the same digest.
+
+`inspect_trace` returns mechanism transition records. A substantive trace has `ok`, `op == inspect_trace`, and a non-empty sequence of records with `target_id`, `kind`, `reason`, and `evidence_refs`. Trace records do not carry caller notes.
