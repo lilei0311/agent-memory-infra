@@ -57,15 +57,33 @@ def render_explorer(graph: Mapping) -> str:
     )
 
 
-def _positions(nodes: list[dict]) -> dict[str, tuple[int, int]]:
+def presentation_key(kind: str, mechanism_id: str) -> str:
+    """Deterministic DOM key. Displayed mechanism id is not rewritten."""
+
+    raw = f"{kind}:{mechanism_id}"
+    return "n-" + "".join(
+        ch if ch.isalnum() or ch in "-_" else f"_{ord(ch):x}_" for ch in raw
+    )
+
+
+def _positions(nodes: list[dict]) -> dict[tuple[str, str], tuple[int, int]]:
     counts: dict[str, int] = {}
-    placed: dict[str, tuple[int, int]] = {}
+    placed: dict[tuple[str, str], tuple[int, int]] = {}
     for row in nodes:
         kind = row["kind"]
         index = counts.get(kind, 0)
         counts[kind] = index + 1
-        placed[row["id"]] = (COLUMN.get(kind, 40), 70 + index * 90)
+        placed[(kind, row["id"])] = (COLUMN.get(kind, 40), 70 + index * 90)
     return placed
+
+
+def _endpoint(positions: dict[tuple[str, str], tuple[int, int]], mechanism_id: str):
+    matches = [
+        (kind, pos)
+        for (kind, mid), pos in positions.items()
+        if mid == mechanism_id
+    ]
+    return matches
 
 
 def _status() -> str:
@@ -104,10 +122,13 @@ def _canvas(nodes, edges, positions) -> str:
     parts = ['<main class="canvas" aria-label="Memory graph">']
     parts.append('<svg viewBox="0 0 860 640" role="img" aria-label="Memory graph">')
     for edge in edges:
-        source = positions.get(edge["source_id"])
-        target = positions.get(edge["target_id"])
-        if source is None or target is None:
+        sources = _endpoint(positions, edge["source_id"])
+        targets = _endpoint(positions, edge["target_id"])
+        if not sources or not targets:
             continue
+        # Geometry only. Shared mechanism ids stay separate nodes.
+        source_kind, source = sources[0]
+        target_kind, target = targets[0]
         contradiction = edge["relation_type"] == "evidential.contradicts"
         css = "edge contradiction" if contradiction else "edge"
         parts.append(
@@ -116,7 +137,9 @@ def _canvas(nodes, edges, positions) -> str:
             f'data-relation-id="{html.escape(edge["relation_id"])}" '
             f'data-relation-type="{html.escape(edge["relation_type"])}" '
             f'data-source-id="{html.escape(edge["source_id"])}" '
-            f'data-target-id="{html.escape(edge["target_id"])}" />'
+            f'data-target-id="{html.escape(edge["target_id"])}" '
+            f'data-source-kind="{html.escape(source_kind)}" '
+            f'data-target-kind="{html.escape(target_kind)}" />'
         )
         label_x = (source[0] + target[0]) // 2
         label_y = (source[1] + target[1]) // 2
@@ -125,7 +148,7 @@ def _canvas(nodes, edges, positions) -> str:
             f'{html.escape(edge["relation_type"])}</text>'
         )
     for row in nodes:
-        x, y = positions[row["id"]]
+        x, y = positions[(row["kind"], row["id"])]
         parts.append(_node(row, x, y))
     parts.append("</svg></main>")
     return "\n".join(parts)
@@ -134,9 +157,11 @@ def _canvas(nodes, edges, positions) -> str:
 def _node(row: dict, x: int, y: int) -> str:
     kind = row["kind"]
     label = html.escape(f'{kind} {row["id"]}')
+    anchor = presentation_key(kind, row["id"])
     attrs = (
         f'data-kind="{html.escape(kind)}" data-shape="{SHAPE[kind]}" '
-        f'data-id="{html.escape(row["id"])}" href="#inspect-{html.escape(row["id"])}"'
+        f'data-id="{html.escape(row["id"])}" data-anchor="{anchor}" '
+        f'href="#inspect-{anchor}"'
     )
     if kind == "point":
         shape = f'<circle cx="{x}" cy="{y}" r="22" />'
@@ -160,8 +185,9 @@ def _inspector(nodes, edges) -> str:
             f"<dt>{html.escape(key)}</dt><dd>{html.escape(_text(value))}</dd>"
             for key, value in row.items()
         )
+        anchor = presentation_key(row["kind"], row["id"])
         blocks.append(
-            f'<article id="inspect-{html.escape(row["id"])}" '
+            f'<article id="inspect-{anchor}" data-anchor="{anchor}" '
             f'data-kind="{html.escape(row["kind"])}" '
             f'data-id="{html.escape(row["id"])}">'
             f"<h3>{html.escape(row['kind'])} {html.escape(row['id'])}</h3>"
@@ -172,8 +198,9 @@ def _inspector(nodes, edges) -> str:
             f"<dt>{html.escape(key)}</dt><dd>{html.escape(_text(value))}</dd>"
             for key, value in edge.items()
         )
+        edge_anchor = presentation_key("edge", edge["relation_id"])
         blocks.append(
-            f'<article id="inspect-{html.escape(edge["relation_id"])}" '
+            f'<article id="inspect-{edge_anchor}" data-anchor="{edge_anchor}" '
             f'data-relation-type="{html.escape(edge["relation_type"])}" '
             f'data-relation-id="{html.escape(edge["relation_id"])}">'
             f"<h3>{html.escape(edge['relation_type'])}</h3>"

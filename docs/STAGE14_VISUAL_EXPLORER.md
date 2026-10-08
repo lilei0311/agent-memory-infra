@@ -17,6 +17,8 @@ Node kinds stay distinguishable by shape and text, not color alone: point circle
 
 Ordering follows Stage 13: nodes by kind then id, edges by relation type then relation id. Identical projection input yields identical HTML.
 
+Presentation identity is kind-qualified. DOM anchors and positions use `(kind, id)`. Displayed `data-id` remains the mechanism-owned id. Same-id event and state nodes stay separately positioned and inspectable. Stage 13 graph identity is unchanged.
+
 ## Non-claims
 
 This is not a production UI, Hub, Memory Policy, or graph store. Stage 14 is not marked PASS by this document.

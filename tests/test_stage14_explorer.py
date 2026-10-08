@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from memory_infra.explorer import EDGE_KINDS, NODE_KINDS, render_explorer
+from memory_infra.explorer import EDGE_KINDS, NODE_KINDS, presentation_key, render_explorer
 from memory_infra.skill import SkillApi, SnapshotError
 
 
@@ -127,3 +127,43 @@ def test_caller_isolation_notes_are_not_rendered():
     assert "a-note" not in left and "b-note" not in right
     with pytest.raises(SnapshotError, match="caller cannot own mechanism fields"):
         api.invoke("agent-a", "read_graph", {"nodes": []})
+
+
+def test_same_id_different_kind_nodes_stay_separately_addressable():
+    nodes = [
+        {"kind": "event", "id": "ev-7-2", "observation": "left event"},
+        {"kind": "state", "id": "ev-7-2", "contradiction_history": ["rel-7-6"]},
+        {"kind": "thread", "id": "th-7-3", "member_event_ids": ["ev-7-2"]},
+        {"kind": "state", "id": "th-7-3", "contradiction_history": []},
+        {"kind": "event", "id": "ev-7-5", "observation": "right event"},
+        {"kind": "state", "id": "ev-7-5", "contradiction_history": ["rel-7-6"]},
+    ]
+    edges = [
+        {
+            "relation_id": "rel-7-6",
+            "source_id": "ev-7-2",
+            "target_id": "ev-7-5",
+            "relation_type": "evidential.contradicts",
+            "evidence_ref": "both kept",
+        }
+    ]
+    page = render_explorer(
+        {"read_only": True, "owner": "mechanism", "nodes": nodes, "edges": edges}
+    )
+    anchors = [
+        presentation_key(row["kind"], row["id"])
+        for row in nodes
+    ]
+    assert len(anchors) == len(set(anchors))
+    for anchor in anchors:
+        assert page.count(f'id="inspect-{anchor}"') == 1
+        assert page.count(f'href="#inspect-{anchor}"') == 1
+        assert page.count(f'data-anchor="{anchor}"') == 2
+    assert page.count('data-id="ev-7-2"') == 4
+    assert 'data-id="ev-7-2"' in page
+    assert "ev-7-2" in page
+    event_pos = page.index('data-anchor="' + presentation_key("event", "ev-7-2"))
+    state_pos = page.index('data-anchor="' + presentation_key("state", "ev-7-2"))
+    assert event_pos != state_pos
+    assert 'x="252"' in page
+    assert "680,50" in page
