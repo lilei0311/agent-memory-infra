@@ -2,7 +2,8 @@
 
 Startup opens a caller-bound Stage 10 bootstrap session and runs a bounded
 read-only scan before any memory operation. Existing caller files are not
-imported. This module does not import memory_infra.store.
+imported. Stage 12 import is a separate caller-invoked method. This module
+does not import memory_infra.store.
 """
 
 from __future__ import annotations
@@ -15,9 +16,10 @@ from memory_infra.bootstrap import (
     DEFAULT_SCAN_LIMIT,
     SkillBootstrap,
 )
+from memory_infra.importer import DUPLICATE_POLICY, parse_recognized, source_ref_for
 from memory_infra.skill import SkillApi
 
-__all__ = ["SKILL_NAME", "SkillEntrypoint", "SkillHandle"]
+__all__ = ["DUPLICATE_POLICY", "SKILL_NAME", "SkillEntrypoint", "SkillHandle"]
 
 SKILL_NAME = "agent-memory-infra"
 
@@ -31,6 +33,9 @@ class SkillHandle:
         self._session = None
         self._api = None
         self._sequence: list[str] = []
+        self._root: Path | None = None
+        self._artifacts: Mapping[str, bytes | None] | None = None
+        self._imports: dict[tuple[str, str], dict] = {}
 
     def start(
         self,
@@ -43,6 +48,9 @@ class SkillHandle:
         """Discovery-first startup. Does not open mechanism memory."""
 
         self._session = self._entry._bootstrap.open(self.caller_id)
+        self._root = Path(root) if root is not None else None
+        self._artifacts = artifacts
+        self._imports = {}
         note = self._session.install(
             root=root,
             artifacts=artifacts,
@@ -89,6 +97,104 @@ class SkillHandle:
         if "memory" not in self._sequence:
             raise RuntimeError("memory operations require completed discovery")
         return self._api.invoke(self.caller_id, op, payload)
+
+    def import_selected(self, paths: list[str]) -> dict:
+        """Explicit structuring of selected discovered sources.
+
+        Discovery never calls this. Unknown and unreadable selections are
+        reported and are not ingested. Duplicate policy is idempotent by
+        source path plus content digest. Caller files are not rewritten.
+        """
+
+        if self._session is None or "discovery" not in self._sequence:
+            raise RuntimeError("explicit import requires completed discovery")
+        self.enable_memory()
+        inventory = self.inventory() or {"sources": []}
+        by_path = {item["path"]: item for item in inventory["sources"]}
+        created: list[dict] = []
+        rejected: list[dict] = []
+        reused: list[dict] = []
+        for path in paths:
+            item = by_path.get(path)
+            if item is None:
+                rejected.append({"path": path, "status": "rejected", "reason": "not_in_discovery"})
+                continue
+            if item["status"] != "recognized":
+                rejected.append({"path": path, "status": "rejected", "reason": item["status"]})
+                continue
+            payload, read_error = self._read_source(path)
+            if read_error is not None or payload is None:
+                rejected.append({"path": path, "status": "rejected", "reason": read_error or "unreadable"})
+                continue
+            parsed, parse_error = parse_recognized(path, payload)
+            if parse_error is not None:
+                rejected.append({"path": path, "status": "rejected", "reason": parse_error})
+                continue
+            source_ref = source_ref_for(path)
+            for parsed_item in parsed:
+                key = (path, parsed_item["digest"])
+                existing = self._imports.get(key)
+                if existing is not None:
+                    reused.append(existing)
+                    continue
+                observed = self.invoke(
+                    "observe",
+                    {"content": parsed_item["text"], "source": source_ref},
+                )
+                promoted = self.invoke(
+                    "signal",
+                    {
+                        "name": "promote",
+                        "point_id": observed["point_id"],
+                        "reason": "explicit historical import",
+                    },
+                )
+                mechanism = promoted["result"]["result"]
+                record = {
+                    "path": path,
+                    "status": "imported",
+                    "digest": parsed_item["digest"],
+                    "source_ref": source_ref,
+                    "point_id": observed["point_id"],
+                    "event_id": mechanism["event_id"],
+                    "evidence_ref": mechanism["evidence_ref"],
+                }
+                self._imports[key] = record
+                created.append(record)
+        if "import" not in self._sequence:
+            self._sequence.append("import")
+        imported = bool(created or reused)
+        return {
+            "ok": True,
+            "phase": "imported" if imported else "import_reported",
+            "caller_id": self.caller_id,
+            "explicit_import": "invoked",
+            "duplicate_policy": DUPLICATE_POLICY,
+            "imported": imported,
+            "mechanism_memory_created": bool(created),
+            "created": created,
+            "reused": reused,
+            "rejected": rejected,
+            "sequence": list(self._sequence),
+        }
+
+    def _read_source(self, path: str) -> tuple[bytes | None, str | None]:
+        if self._artifacts is not None and path in self._artifacts:
+            payload = self._artifacts[path]
+            if payload is None:
+                return None, "unreadable"
+            return payload, None
+        if self._root is None:
+            return None, "unreadable"
+        target = (self._root / path).resolve()
+        try:
+            target.relative_to(self._root.resolve())
+        except ValueError:
+            return None, "unreadable"
+        try:
+            return target.read_bytes(), None
+        except OSError:
+            return None, "unreadable"
 
     def inventory(self) -> dict | None:
         if self._session is None:
