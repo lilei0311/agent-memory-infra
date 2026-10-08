@@ -276,3 +276,34 @@ Locked config unchanged: seeds `7, 11, 19`, budget `4`, policy `none`. Replay ma
 trace_artifact experiments/results/phase_h_trace.json `5ba3af8f5376cf9586a7389293b5205d204a49b7b1de986c45031dc826bfa40c`
 
 Public seal extraction remains removed. Historical Phase H trace SHA-256 remains `5ba3af8f5376cf9586a7389293b5205d204a49b7b1de986c45031dc826bfa40c`.
+
+## Exact-HEAD re-execution at 84ee1c0
+
+Code under test: `84ee1c0724b3d9f730283e26c61a061b4f57e993`
+
+Evidence-only parent. Commands re-executed at this HEAD. Changed-file scope of this evidence commit is `experiments/results/stage4_file_store.md` only. No mechanism, test, V0.1 A/B/C/D/E, Phase G, or V0.2 transition change. Phase H config and historical results were not retuned. Public restart-seal extraction remains absent.
+
+```bash
+PYTHONPATH=src python -m pytest -q tests
+PYTHONPATH=src python experiments/phase_h_dynamics.py
+```
+
+## pytest output
+
+```
+.............................................................            [100%]
+61 passed in 0.39s
+```
+
+## experiment output
+
+Locked config unchanged: seeds `7, 11, 19`, budget `4`, policy `none`. Replay match true. Seed 7 digests unchanged:
+
+- event_identity `3347ef522ed602969c1362508ee066ee4238f0a21d8d8eaf848c4a5db879ffe1`
+- thread_lifecycle `8e5dc455d858df20ae28c26afc8a352eae19a97ad8b2dc25b7dfdf22e9c72405`
+- memory_lifecycle `3e34c972193a74938c246be0b275316da08d4b15d5e2148a5d93c00fd69913e9`
+- evidence_integrity `e988e7ba855a07c9c155f92a1f665c253b02c5719a5f509ebdc57f2119b112a2`
+
+trace_artifact experiments/results/phase_h_trace.json `5ba3af8f5376cf9586a7389293b5205d204a49b7b1de986c45031dc826bfa40c`
+
+Public seal extraction remains removed. Historical Phase H trace SHA-256 remains `5ba3af8f5376cf9586a7389293b5205d204a49b7b1de986c45031dc826bfa40c`.
