@@ -68,6 +68,14 @@ CALLER_OWNERSHIP_FIELDS = frozenset(
         "delete",
     }
 )
+CALLER_SCOPE_FIELDS = frozenset(
+    {
+        "target_caller_id",
+        "all_caller_contexts",
+        "caller_contexts",
+        "impersonate",
+    }
+)
 
 
 class SnapshotError(ValueError):
@@ -291,6 +299,33 @@ class MemoryService:
             _bind_seal(self.store, seal_key)
         self.adapter = self._new_adapter(seed, context_budget, policy)
         _bind_seal(self.adapter._graph, seal_key)
+        # Caller notes are request metadata. They are not snapshot fields.
+        self._caller_contexts: dict[str, dict] = {}
+
+    def _caller_bucket(self, caller_id: str) -> dict:
+        bucket = self._caller_contexts.get(caller_id)
+        if bucket is None:
+            bucket = {"caller_id": caller_id, "notes": [], "attributions": []}
+            self._caller_contexts[caller_id] = bucket
+        return bucket
+
+    def _append_note(self, caller_id: str, note: str) -> None:
+        self._caller_bucket(caller_id)["notes"].append(note)
+
+    def _attribute(self, caller_id: str, point_id: str, content: str) -> None:
+        self._caller_bucket(caller_id)["attributions"].append(
+            {"point_id": point_id, "content": content}
+        )
+
+    def read_caller_context(self, caller_id: str) -> Mapping:
+        bucket = self._caller_contexts.get(caller_id)
+        if bucket is None:
+            return {"caller_id": caller_id, "notes": (), "attributions": ()}
+        return {
+            "caller_id": caller_id,
+            "notes": tuple(bucket["notes"]),
+            "attributions": tuple(dict(item) for item in bucket["attributions"]),
+        }
 
     def save(self) -> Mapping:
         snapshot = export_snapshot(self.adapter._graph)
@@ -310,18 +345,30 @@ class MemoryService:
         owned = set(body) & CALLER_OWNERSHIP_FIELDS
         if owned:
             raise SnapshotError(f"caller cannot own mechanism fields: {sorted(owned)}")
+        scoped = set(body) & CALLER_SCOPE_FIELDS
+        if scoped:
+            raise SnapshotError(f"caller cannot address another caller scope: {sorted(scoped)}")
+        caller_id = body.pop("caller_id", "anonymous")
+        if not isinstance(caller_id, str) or not caller_id.strip():
+            raise SnapshotError("caller_id must be a non-empty string")
+        note = body.pop("note", None)
+        if note is not None:
+            if not isinstance(note, str) or not note:
+                raise SnapshotError("caller note must be a non-empty string")
+            self._append_note(caller_id, note)
         if op == "save":
             return self.save()
         if op == "load":
             return self.load()
         if op == "observe":
-            point_id = self.adapter.submit_observation(body["content"], body.get("source", "caller"))
-            return {"ok": True, "op": op, "point_id": point_id}
+            point_id = self.adapter.submit_observation(body["content"], body.get("source", caller_id))
+            self._attribute(caller_id, point_id, body["content"])
+            return {"ok": True, "op": op, "point_id": point_id, "caller_id": caller_id}
         if op == "signal":
             name = body.pop("name")
-            return {"ok": True, "op": op, "result": self.adapter.submit_signal(name, **body)}
+            return {"ok": True, "op": op, "caller_id": caller_id, "result": self.adapter.submit_signal(name, **body)}
         if op == "retrieve":
-            return {"ok": True, "op": op, "result": self.adapter.retrieve(body["query"])}
+            return {"ok": True, "op": op, "caller_id": caller_id, "result": self.adapter.retrieve(body["query"])}
         if op == "read_lifecycle":
             return {"ok": True, "op": op, "result": self.adapter.read_lifecycle(body["target_id"])}
         if op == "read_event":
@@ -330,6 +377,8 @@ class MemoryService:
             return {"ok": True, "op": op, "result": self.adapter.read_relations()}
         if op == "inspect_trace":
             return {"ok": True, "op": op, "result": self.adapter.inspect_trace()}
+        if op == "read_caller_context":
+            return {"ok": True, "op": op, "result": self.read_caller_context(caller_id)}
         raise SnapshotError(f"unsupported service op: {op}")
 
     @staticmethod
@@ -337,6 +386,28 @@ class MemoryService:
         from memory_infra.adapter import MemoryAdapter
 
         return MemoryAdapter(seed=seed, context_budget=context_budget, policy=policy)
+
+
+class CallerSession:
+    """Binds one agent identity to the service boundary.
+
+    caller_id is request metadata. It is not a mechanism-owned durable field
+    and cannot select another caller's notes.
+    """
+
+    def __init__(self, service: MemoryService, caller_id: str) -> None:
+        if not isinstance(caller_id, str) or not caller_id.strip():
+            raise SnapshotError("caller_id must be a non-empty string")
+        self.service = service
+        self.caller_id = caller_id
+
+    def request(self, op: str, payload: Mapping | None = None) -> Mapping:
+        body = dict(payload or {})
+        supplied = body.get("caller_id")
+        if supplied is not None and supplied != self.caller_id:
+            raise SnapshotError("caller cannot impersonate another caller")
+        body["caller_id"] = self.caller_id
+        return self.service.request(op, body)
 
 
 def _check_records(body: Mapping) -> None:
