@@ -16,7 +16,7 @@ Required fields: `version`, `producer`, `config`, `counters`, `points`, `events`
 
 `integrity` is the sha256 of the canonical JSON body without `integrity` and `authenticity`. It is a public checksum. Recomputing it does not prove authorship.
 
-`authenticity` is an HMAC-SHA256 over that same body. The key is created per mechanism instance with `secrets.token_bytes`. It is not written into the snapshot, not embedded in source, and not stored as an attribute of `MemoryService`, `InMemoryDurableStore`, or `GraphMemory`. The documented public API does not return it. A caller who has only the documented service/store methods and a serialized snapshot cannot obtain the key or authorize a rewrite by recomputing `integrity`.
+`authenticity` is an HMAC-SHA256 over that same body. The key is created per mechanism instance with `secrets.token_bytes` inside `MemoryService` and bound only through the private capability table. `InMemoryDurableStore` has no public `bind_seal` method. A caller-defined `bind_seal` on a store subclass is ignored, so pre-binding an attacker key before `MemoryService(store=...)` cannot authorize a rewritten snapshot. The key is not written into the snapshot, not embedded in source, and not stored as an attribute of `MemoryService`, `InMemoryDurableStore`, or `GraphMemory`. The documented public API does not return or replace it. A caller who has only the documented service/store methods and a serialized snapshot cannot obtain the key or authorize a rewrite by recomputing `integrity`.
 
 This is not a claim against a caller who inspects process memory or private module tables. Checksum integrity and mechanism authorship are different guarantees. Plain SHA-256 does not provide authorship.
 

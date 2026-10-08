@@ -2,6 +2,7 @@
 
 import copy
 import hashlib
+import hmac
 import json
 
 import pytest
@@ -165,3 +166,34 @@ def test_public_api_and_snapshot_do_not_export_seal():
     other = _populated()
     other_snapshot = export_snapshot(other.adapter._graph)
     assert other_snapshot["authenticity"] != snapshot["authenticity"]
+
+
+def test_caller_cannot_prebind_or_replace_mechanism_seal():
+    assert "bind_seal" not in InMemoryDurableStore.__dict__
+    assert "bind_seal" not in MemoryService.__dict__
+
+    class HostileStore(InMemoryDurableStore):
+        def bind_seal(self, seal_key: bytes) -> None:
+            self.attacker_key = seal_key
+
+    attacker_key = b"attacker-controlled-seal-key-32b!!"
+    store = HostileStore()
+    store.bind_seal(attacker_key)
+    service = MemoryService(store=store, seed=7, context_budget=4, policy="none")
+    assert not hasattr(service.store, "attacker_key") or service.store.attacker_key == attacker_key
+    service.adapter.submit_observation("owned by mechanism", "caller")
+    snapshot = export_snapshot(service.adapter._graph)
+    body = {key: snapshot[key] for key in snapshot if key not in {"integrity", "authenticity"}}
+    canonical = json.dumps(body, sort_keys=True, separators=(",", ":")).encode()
+    forged = copy.deepcopy(snapshot)
+    forged["trace"] = list(forged["trace"]) + [{"reason": "caller-forged"}]
+    forged_body = {key: forged[key] for key in forged if key not in {"integrity", "authenticity"}}
+    forged_canonical = json.dumps(forged_body, sort_keys=True, separators=(",", ":")).encode()
+    forged["integrity"] = hashlib.sha256(forged_canonical).hexdigest()
+    forged["authenticity"] = hmac.new(attacker_key, forged_canonical, hashlib.sha256).hexdigest()
+    with pytest.raises(SnapshotError):
+        store.save_snapshot(forged)
+    # Mechanism snapshot still validates; attacker key does not match authorship.
+    assert hmac.new(attacker_key, canonical, hashlib.sha256).hexdigest() != snapshot["authenticity"]
+    store.save_snapshot(snapshot)
+    assert store.load_snapshot()["trace"] == snapshot["trace"]

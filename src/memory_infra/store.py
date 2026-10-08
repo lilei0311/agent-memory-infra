@@ -197,10 +197,6 @@ class InMemoryDurableStore(DurableStorePort):
     def __init__(self) -> None:
         self._snapshot: dict | None = None
 
-    def bind_seal(self, seal_key: bytes) -> None:
-        if _seal_for(self) is None:
-            _bind_seal(self, seal_key)
-
     def save_snapshot(self, snapshot: Mapping) -> None:
         self._snapshot = validate_snapshot(snapshot, _seal_for(self))
 
@@ -221,10 +217,12 @@ class MemoryService:
         policy: str = "none",
     ) -> None:
         self.store = store if store is not None else InMemoryDurableStore()
+        # Binding is mechanism-only. A caller-supplied store method named
+        # bind_seal is ignored so a pre-bound attacker key cannot be adopted.
         bound = _seal_for(self.store)
         seal_key = bound if isinstance(bound, bytes) and bound else new_seal_key()
-        if hasattr(self.store, "bind_seal"):
-            self.store.bind_seal(seal_key)
+        if bound is None:
+            _bind_seal(self.store, seal_key)
         self.adapter = self._new_adapter(seed, context_budget, policy)
         _bind_seal(self.adapter._graph, seal_key)
 

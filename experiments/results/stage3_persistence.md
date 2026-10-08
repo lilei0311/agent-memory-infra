@@ -339,3 +339,43 @@ Replay match true. Seed 7 digests:
 - evidence_integrity `e988e7ba855a07c9c155f92a1f665c253b02c5719a5f509ebdc57f2119b112a2`
 
 Historical Phase H trace sha256 remains `5ba3af8f5376cf9586a7389293b5205d204a49b7b1de986c45031dc826bfa40c`.
+
+## bind_seal ownership repair
+
+`InMemoryDurableStore.bind_seal` is no longer a public method. `MemoryService` binds the instance HMAC only through the private capability table and ignores a caller-defined `bind_seal`. Public SHA-256 remains a checksum. V0.2 transitions, Phase H config, and V0.1 artifacts were not changed.
+
+## Changed-file scope
+
+- `src/memory_infra/store.py`
+- `tests/test_stage3_persistence.py`
+- `docs/STAGE3_PERSISTENCE_SEAM.md`
+- `experiments/results/stage3_persistence.md`
+
+## Commands
+
+```bash
+PYTHONPATH=src python -m pytest -q tests
+PYTHONPATH=src python experiments/phase_h_dynamics.py
+```
+
+Executed on the implementation tree recorded by this commit, immediately before the commit object was created.
+
+## pytest output
+
+```
+.................................................                        [100%]
+49 passed in 0.22s
+```
+
+## experiment output
+
+Locked config unchanged: seeds `7, 11, 19`, budget `4`, policy `none`.
+
+Replay match true. Seed 7 digests:
+
+- event_identity `3347ef522ed602969c1362508ee066ee4238f0a21d8d8eaf848c4a5db879ffe1`
+- thread_lifecycle `8e5dc455d858df20ae28c26afc8a352eae19a97ad8b2dc25b7dfdf22e9c72405`
+- memory_lifecycle `3e34c972193a74938c246be0b275316da08d4b15d5e2148a5d93c00fd69913e9`
+- evidence_integrity `e988e7ba855a07c9c155f92a1f665c253b02c5719a5f509ebdc57f2119b112a2`
+
+Historical Phase H trace sha256 remains `5ba3af8f5376cf9586a7389293b5205d204a49b7b1de986c45031dc826bfa40c`.
