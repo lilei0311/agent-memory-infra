@@ -12,9 +12,13 @@ Stage 3 adds the smallest storage/service seam around the frozen V0.2 mechanism.
 
 Version: `1`. Producer: `mechanism`.
 
-Required fields: `version`, `producer`, `config`, `counters`, `points`, `events`, `threads`, `relations`, `states`, `retrievals`, `contexts`, `attention`, `trace`, `integrity`.
+Required fields: `version`, `producer`, `config`, `counters`, `points`, `events`, `threads`, `relations`, `states`, `retrievals`, `contexts`, `attention`, `trace`, `integrity`, `authenticity`.
 
-`integrity` is the sha256 of the canonical JSON body without the integrity field. Load and save recompute it. A caller-edited lifecycle, thread, relation, id, or trace field fails integrity and is rejected. Unknown fields and explicit ownership fields (`caller_lifecycle`, `rewrite_lifecycle`, `assign_ids`, `overwrite`, `delete`) are rejected. A version other than `1` is rejected.
+`integrity` is the sha256 of the canonical JSON body without `integrity` and `authenticity`. It is a public checksum. Recomputing it does not prove authorship. A caller who edits lifecycle, thread, relation, identifier/counter, or trace fields and recomputes `integrity` is still rejected.
+
+`authenticity` is an HMAC-SHA256 seal over that same body, keyed by a mechanism-owned secret that is not part of the snapshot. Only `export_snapshot` attaches a valid seal. Load and save recompute the seal and reject a mismatch. Plain SHA-256 does not provide authorship.
+
+Unknown fields and explicit ownership fields (`caller_lifecycle`, `rewrite_lifecycle`, `assign_ids`, `overwrite`, `delete`) are rejected. A version other than `1` is rejected.
 
 Restore installs the validated copy. It does not replay transitions and does not allocate new ids.
 

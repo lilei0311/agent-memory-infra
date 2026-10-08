@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import copy
 import hashlib
+import hmac
 import json
 from typing import Mapping
 
@@ -32,6 +33,11 @@ from memory_infra.graph import (
 
 SNAPSHOT_VERSION = 1
 PRODUCER = "mechanism"
+# Process-local mechanism key. Not serialized. A persistence consumer
+# cannot recompute this seal from the public snapshot body.
+_MECHANISM_SEAL_KEY = bytes.fromhex(
+    "6d656d6f72792d696e6672612d6d656368616e69736d2d7365616c2d7631"
+)
 REQUIRED_KEYS = (
     "version",
     "producer",
@@ -47,6 +53,7 @@ REQUIRED_KEYS = (
     "attention",
     "trace",
     "integrity",
+    "authenticity",
 )
 CALLER_OWNERSHIP_FIELDS = frozenset(
     {
@@ -70,7 +77,12 @@ def _canonical(payload: Mapping) -> str:
 
 
 def _integrity(body: Mapping) -> str:
+    """Public checksum only. Not proof of mechanism authorship."""
     return hashlib.sha256(_canonical(body).encode()).hexdigest()
+
+
+def _mechanism_seal(body: Mapping) -> str:
+    return hmac.new(_MECHANISM_SEAL_KEY, _canonical(body).encode(), hashlib.sha256).hexdigest()
 
 
 def _enum_value(value) -> str:
@@ -104,6 +116,7 @@ def export_snapshot(graph: GraphMemory) -> dict:
     }
     snapshot = dict(body)
     snapshot["integrity"] = _integrity(body)
+    snapshot["authenticity"] = _mechanism_seal(body)
     return snapshot
 
 
@@ -123,9 +136,12 @@ def validate_snapshot(snapshot: Mapping) -> dict:
         raise SnapshotError(f"incompatible snapshot version: {snapshot['version']}")
     if snapshot["producer"] != PRODUCER:
         raise SnapshotError("snapshot producer must be the mechanism")
-    body = {key: snapshot[key] for key in REQUIRED_KEYS if key != "integrity"}
+    body = {key: snapshot[key] for key in REQUIRED_KEYS if key not in {"integrity", "authenticity"}}
     if snapshot["integrity"] != _integrity(body):
         raise SnapshotError("snapshot integrity mismatch; caller rewrite rejected")
+    seal = snapshot["authenticity"]
+    if not isinstance(seal, str) or not hmac.compare_digest(seal, _mechanism_seal(body)):
+        raise SnapshotError("snapshot authenticity rejected; caller rewrite is not mechanism-authored")
     _check_records(body)
     return copy.deepcopy(dict(snapshot))
 

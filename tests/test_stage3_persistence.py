@@ -1,6 +1,8 @@
 """Contract tests for the Stage 3 persistence seam."""
 
 import copy
+import hashlib
+import json
 
 import pytest
 
@@ -60,6 +62,14 @@ def test_malformed_and_incompatible_snapshots_rejected():
         restore_graph(rewritten)
 
 
+def _recompute_public_checksum(snapshot):
+    body = {key: snapshot[key] for key in snapshot if key not in {"integrity", "authenticity"}}
+    snapshot["integrity"] = hashlib.sha256(
+        json.dumps(body, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    return snapshot
+
+
 def test_caller_cannot_manufacture_ownership_through_persistence():
     service = _populated()
     snapshot = export_snapshot(service.adapter._graph)
@@ -74,6 +84,45 @@ def test_caller_cannot_manufacture_ownership_through_persistence():
         store.save_snapshot(mutated)
     with pytest.raises(SnapshotError):
         service.request("save", {"rewrite_lifecycle": True})
+
+
+def test_recomputed_checksum_cannot_authorize_rewritten_snapshot():
+    service = _populated()
+    other = service.adapter.submit_observation("second fact", "caller")
+    service.adapter.submit_signal("promote", point_id=other, reason="useful")
+    left, right = list(service.adapter._graph.events)
+    service.adapter.submit_signal("contradict", left_event=left, right_event=right, evidence="obs")
+    store = InMemoryDurableStore()
+    graph = service.adapter._graph
+    event_id = next(iter(graph.events))
+    thread_id = next(iter(graph.threads))
+    relation_id = next(iter(graph.relations))
+
+    lifecycle = copy.deepcopy(export_snapshot(graph))
+    lifecycle["states"][event_id]["lifecycle_state"] = "STABLE"
+    with pytest.raises(SnapshotError):
+        store.save_snapshot(_recompute_public_checksum(lifecycle))
+
+    thread = copy.deepcopy(export_snapshot(graph))
+    thread["threads"][thread_id]["status"] = "merged"
+    thread["threads"][thread_id]["member_event_ids"] = []
+    with pytest.raises(SnapshotError):
+        store.save_snapshot(_recompute_public_checksum(thread))
+
+    relation = copy.deepcopy(export_snapshot(graph))
+    relation["relations"][relation_id]["target_id"] = event_id
+    relation["relations"][relation_id]["evidence_ref"] = "caller-forged"
+    with pytest.raises(SnapshotError):
+        store.save_snapshot(_recompute_public_checksum(relation))
+
+    counters = copy.deepcopy(export_snapshot(graph))
+    counters["counters"]["n"] = counters["counters"]["n"] + 9
+    counters["trace"][0]["reason"] = "caller-forged"
+    with pytest.raises(SnapshotError):
+        store.save_snapshot(_recompute_public_checksum(counters))
+
+    with pytest.raises(SnapshotError):
+        restore_graph(_recompute_public_checksum(copy.deepcopy(lifecycle)))
 
 
 def test_existing_adapter_mutation_protection_remains():
