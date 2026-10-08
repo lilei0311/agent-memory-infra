@@ -11,7 +11,9 @@ import copy
 import hashlib
 import hmac
 import json
+import os
 import secrets
+import tempfile
 import weakref
 from typing import Mapping
 
@@ -204,6 +206,66 @@ class InMemoryDurableStore(DurableStorePort):
         if self._snapshot is None:
             return None
         return copy.deepcopy(self._snapshot)
+
+
+
+
+def restart_seal(owner: object) -> bytes:
+    """Out-of-band seal for a new process. Not written into the snapshot."""
+    seal_key = _seal_for(owner)
+    if not isinstance(seal_key, bytes) or not seal_key:
+        raise SnapshotError("no mechanism-owned seal is bound")
+    return seal_key
+
+
+class FileDurableStore(DurableStorePort):
+    """Stdlib file adapter. Persists a validated snapshot only.
+
+    Does not allocate identifiers or own lifecycle, thread, relation, or
+    trace transitions. The mechanism seal stays out of the snapshot file.
+    A restarting process must supply the same seal key out of band.
+    """
+
+    def __init__(self, path: str | os.PathLike[str], seal_key: bytes | None = None) -> None:
+        self.path = os.fspath(path)
+        if seal_key is not None:
+            if not isinstance(seal_key, bytes) or not seal_key:
+                raise SnapshotError("seal key must be non-empty bytes")
+            _bind_seal(self, seal_key)
+
+    def load_snapshot(self) -> dict | None:
+        if not os.path.exists(self.path):
+            return None
+        try:
+            with open(self.path, "rb") as handle:
+                raw = handle.read()
+        except OSError as exc:
+            raise SnapshotError(f"snapshot file unreadable: {exc}") from exc
+        if not raw.strip():
+            raise SnapshotError("truncated snapshot file")
+        try:
+            payload = json.loads(raw.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise SnapshotError("malformed or truncated snapshot file") from exc
+        if not isinstance(payload, dict):
+            raise SnapshotError("malformed snapshot file")
+        return validate_snapshot(payload, _seal_for(self))
+
+    def save_snapshot(self, snapshot: Mapping) -> None:
+        validated = validate_snapshot(snapshot, _seal_for(self))
+        directory = os.path.dirname(self.path) or "."
+        os.makedirs(directory, exist_ok=True)
+        fd, tmp = tempfile.mkstemp(prefix=".snapshot-", suffix=".tmp", dir=directory)
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as handle:
+                json.dump(validated, handle, sort_keys=True, separators=(",", ":"))
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.replace(tmp, self.path)
+        except Exception:
+            if os.path.exists(tmp):
+                os.unlink(tmp)
+            raise
 
 
 class MemoryService:
