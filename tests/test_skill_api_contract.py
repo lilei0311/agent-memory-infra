@@ -371,3 +371,78 @@ def test_rejection_order_and_read_graph_write_keys_match_contract():
     assert type(signal_relation.value) is BoundaryError
     assert str(signal_relation.value) == "caller cannot set mechanism-owned fields: ['relation_id']"
 
+
+def test_exact_read_shapes_note_scope_and_import_rejection():
+    api = SkillApi.open_memory()
+    same = api.invoke("agent-a", "observe", {"content": "fact", "caller_id": "agent-a"})
+    assert same["caller_id"] == "agent-a" and same["point_id"]
+    omitted = api.invoke("agent-a", "observe", {"content": "other"})
+    graph = api.invoke("agent-a", "read_graph")
+    sources = {node["id"]: node["source"] for node in graph["result"]["nodes"] if node["kind"] == "point"}
+    assert sources[omitted["point_id"]] == "agent-a"
+    assert graph["result"]["node_kinds"] == ("event", "point", "state", "thread")
+    assert graph["result"]["edge_kinds"] == (
+        "contextual.changed_context",
+        "causal.caused",
+        "causal.caused_by",
+        "causal.enabled",
+        "causal.prevented",
+        "evidential.contradicts",
+        "referential.revisits",
+        "referential.same_thread",
+        "temporal.before",
+    )
+    assert isinstance(graph["result"]["nodes"], tuple) and isinstance(graph["result"]["edges"], tuple)
+    noted = api.invoke("agent-a", "retrieve", {"query": "fact", "note": "asked"})
+    assert set(noted["result"]) == {"retrieval_id", "query", "selected", "timestamp"}
+    assert isinstance(noted["result"]["selected"], tuple)
+    context = api.invoke("agent-a", "read_caller_context")
+    assert context["result"]["notes"] == ("asked",)
+    left = api.invoke("agent-a", "signal", {"name": "promote", "point_id": same["point_id"], "reason": "left"})
+    right = api.invoke("agent-a", "signal", {"name": "promote", "point_id": omitted["point_id"], "reason": "right"})
+    api.invoke(
+        "agent-a",
+        "signal",
+        {
+            "name": "contradict",
+            "left_event": left["result"]["result"]["event_id"],
+            "right_event": right["result"]["result"]["event_id"],
+            "evidence": "conflict",
+        },
+    )
+    life = api.invoke("agent-a", "read_lifecycle", {"target_id": left["result"]["result"]["event_id"]})
+    assert set(life["result"]) == {
+        "target_id",
+        "lifecycle_state",
+        "accessibility",
+        "recency",
+        "retrieval_history",
+        "contradiction_history",
+    }
+    relations = api.invoke("agent-a", "read_relations")
+    assert len(relations["result"]) == 1
+    assert set(relations["result"][0]) == {
+        "relation_id",
+        "source_id",
+        "target_id",
+        "relation_type",
+        "evidence_ref",
+        "inferred",
+    }
+    with pytest.raises(SnapshotError) as blank:
+        api.invoke("   ", "read_relations")
+    assert str(blank.value) == "caller_id must be a non-empty string"
+    with pytest.raises(ValueError) as opened:
+        SkillEntrypoint().open("   ")
+    assert str(opened.value) == "caller_id is required"
+    early = SkillEntrypoint().open("agent-a")
+    with pytest.raises(RuntimeError) as imported:
+        early.import_selected(["missing.md"])
+    assert str(imported.value) == "explicit import requires completed discovery"
+    started = early.start(artifacts={})
+    report = early.import_selected(["missing.md"])
+    assert report["rejected"] == [{"path": "missing.md", "status": "rejected", "reason": "not_in_discovery"}]
+    assert started["mechanism_memory_created"] is False
+    other = SkillEntrypoint().open("agent-b")
+    assert other.inventory() is None
+    assert early.inventory() is not None
