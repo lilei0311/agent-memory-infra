@@ -2,7 +2,7 @@
 
 Observation date: 2026-10-09. This file is a coordination map, not an acceptance verdict.
 
-Default-branch HEAD at this commit's parent: `8564d18b24fa1e886838ab93cc084b8bbde7ed9a` (evidence-only).
+Default-branch HEAD at this commit's parent: `3ed462109041d2b76fb7dfc0a5363fac332d8674` (evidence-only).
 
 ## Immutable product goal
 
@@ -27,11 +27,12 @@ Numbered Stages 12–14 are the Skill path in `docs/PRODUCT_ARCHITECTURE.md`: ex
 | Role | SHA | What changed |
 | --- | --- | --- |
 | Latest implementation under test | `0d0287207b94288cb10543df223fb90dd561dad6` | Issue #44 search match on relation id, relation type, and evidence text. Files: `src/memory_infra/explorer.py`, `tests/test_stage14_explorer.py`, `docs/STAGE14_VISUAL_EXPLORER.md`. |
-| Evidence-only child | `707d33b972744b646f88f4b1fe28a14f86fdc6fb` | Records the Issue #44 run at `0d02872`. Not the executed tree. |
-| Evidence-only HEAD | `8564d18b24fa1e886838ab93cc084b8bbde7ed9a` | Records the Issue #43 run at `0d02872`. Not the executed tree. |
+| Evidence-only child of implementation | `707d33b972744b646f88f4b1fe28a14f86fdc6fb` | Records the Issue #44 run at `0d02872`. Not the executed tree. |
+| Earlier Issue #43 evidence | `8564d18b24fa1e886838ab93cc084b8bbde7ed9a` | Records an Issue #43 run at `0d02872`. Not the executed tree. |
+| Evidence-only HEAD | `3ed462109041d2b76fb7dfc0a5363fac332d8674` | Records the Issue #43 playbook run at `0d02872`. Not the executed tree. Descendants of `0d02872` through this HEAD are evidence or this status map, not a new implementation. |
 | Prior implementation | `670e4d2a0457823d2206cdd57a873e383c01ccd9` | Issue #42 inspector visibility bound to edge visibility. Superseded for search scope by `0d02872`. |
 
-Do not treat `8564d18` as the code-under-test.
+Do not treat `3ed4621` or `8564d18` as the code-under-test.
 
 ## Stage 14 position
 
@@ -41,12 +42,12 @@ Implemented, not independently accepted: read-only explorer; kind-qualified cont
 
 Recorded evidence, not re-executed for this status commit:
 
-- `experiments/results/stage14_visual_explorer.md` records pytest, locked Phase H, and Chromium input/change dispatch at `0d02872` (Issue #43 record in commit `8564d18`, Issue #44 record in commit `707d33b`).
+- `experiments/results/stage14_visual_explorer.md` and `experiments/results/stage14_issue43_playbook_0d02872.md` record pytest, locked Phase H, and Chromium input/change dispatch at `0d02872`.
 - Locked Phase H configuration cited by those records: seeds 7, 11, 19; budget 4; policy none; historical trace SHA-256 `5ba3af8f5376cf9586a7389293b5205d204a49b7b1de986c45031dc826bfa40c`.
 - This status commit does not claim a new pytest, Phase H, or browser run.
 
 Issue #44 remains open: the fix commit exists; independent acceptance has not closed it.
-Issue #43 remains open and is the independent Stage 14 acceptance gate. Its body still names older HEAD `b36aabb1823f7e2e197d8eacc3b79261469ee56c`; the current baseline is implementation `0d02872` and evidence HEAD `8564d18`.
+Issue #43 remains open and is the independent Stage 14 acceptance gate. Its body still names older HEAD values; the current baseline is implementation `0d02872` and evidence HEAD `3ed4621`.
 Issues #39–#42 remain open. They are the prior acceptance and defect chain. Open state is not proof the later fix is missing.
 
 Exit condition for Stage 14: an independent acceptance run at implementation SHA `0d02872` (not an evidence-only HEAD) satisfies the Issue #43 checklist, including relation/evidence search, kind-qualified endpoints, inspector/label visibility, read-only `read_graph`, unchanged Phase H digest, and untouched V0.1 / Phase G artifacts. Only that gate may mark PASS. This map does not.
@@ -55,7 +56,7 @@ Exit condition for Stage 14: an independent acceptance run at implementation SHA
 
 Owner: Issue #43.
 
-Action: independently accept or fail Stage 14 at implementation SHA `0d0287207b94288cb10543df223fb90dd561dad6`, using the recorded `0d02872` evidence only as a baseline. Do not open a duplicate Stage 14 implementation issue. Do not start a next product stage from this map.
+Action: independently accept or fail Stage 14 at implementation SHA `0d0287207b94288cb10543df223fb90dd561dad6`, using the recorded `0d02872` evidence only as a baseline. Do not open a duplicate Stage 14 implementation issue. Do not start a next product stage from this map. Do not add another evidence-only rerun solely because evidence HEAD advanced.
 
 ## Numbered stage crosswalk
 
