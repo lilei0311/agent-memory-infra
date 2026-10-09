@@ -1,5 +1,49 @@
 # Stage 14 read-only Visual Memory Explorer evidence
 
+## Issue #40 kind-qualified contradiction endpoints
+
+Executed at implementation HEAD `85b188d02d8ba6a0c7cc30a0a3a28fbaf539563a`. This evidence commit only records that run. It is not the executed HEAD. Do not treat this evidence commit as exact-current-HEAD acceptance. Stage 14 is not marked PASS.
+
+Changed-file scope of the implementation commit:
+
+- `src/memory_infra/explorer.py`
+- `tests/test_stage14_explorer.py`
+- `docs/STAGE14_VISUAL_EXPLORER.md`
+
+Issue #40: contradiction endpoint membership and reveal were keyed by mechanism id alone, and edge geometry used the first id match. The fix binds endpoints by explicit `source_kind`/`target_kind` when present, otherwise by the Stage 13 mechanism creation contract. Same-id state or point nodes are not contradiction endpoints. Stage 13 graph identity, V0.2 transitions, Phase H config, and V0.1 artifacts were not changed.
+
+Commands at `85b188d02d8ba6a0c7cc30a0a3a28fbaf539563a`:
+
+```bash
+git rev-parse HEAD
+PYTHONPATH=src python -m pytest -q tests
+PYTHONPATH=src python experiments/phase_h_dynamics.py
+```
+
+`git rev-parse HEAD` printed `85b188d02d8ba6a0c7cc30a0a3a28fbaf539563a`.
+
+### pytest
+
+Exit code 0.
+
+```
+........................................................................ [ 64%]
+.......................................                                  [100%]
+111 passed in 0.56s
+```
+
+### locked Phase H
+
+Exit code 0. Locked config unchanged: seeds 7, 11, 19; budget 4; policy none. `deterministic_replay.match` true. Historical trace SHA-256 unchanged: `5ba3af8f5376cf9586a7389293b5205d204a49b7b1de986c45031dc826bfa40c`.
+
+No browser/DOM runtime was executed. Filter reveal behavior is covered by HTML/script assertions, not a browser interaction run.
+
+Stage 14 remains not PASS. Issue #39 stays open for independent acceptance.
+
+## Prior evidence
+
+# Stage 14 read-only Visual Memory Explorer evidence
+
 Executed at implementation HEAD `1453da99de93fd20a5e24a9d220735fb1c44db24`. This evidence commit only records that run. It is not the executed HEAD. Do not treat this evidence commit as exact-current-HEAD acceptance. Stage 14 is not marked PASS.
 
 Changed-file scope of the implementation commit:
