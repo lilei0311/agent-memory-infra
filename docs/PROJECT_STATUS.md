@@ -2,7 +2,9 @@
 
 Observation date: 2026-10-09. This file is a coordination map, not an acceptance verdict.
 
-Default-branch HEAD at this commit's parent: `3ed462109041d2b76fb7dfc0a5363fac332d8674` (evidence-only).
+Default-branch implementation HEAD before this evidence commit: `e6b97ffb47b3d33fa5f36d18cf01234052741e5e`.
+
+Supersedes the `0d02872` / `3ed4621` baseline below. That older baseline is historical only.
 
 ## Immutable product goal
 
@@ -26,7 +28,7 @@ Numbered Stages 12–14 are the Skill path in `docs/PRODUCT_ARCHITECTURE.md`: ex
 
 | Role | SHA | What changed |
 | --- | --- | --- |
-| Latest implementation under test | `0d0287207b94288cb10543df223fb90dd561dad6` | Issue #44 search match on relation id, relation type, and evidence text. Files: `src/memory_infra/explorer.py`, `tests/test_stage14_explorer.py`, `docs/STAGE14_VISUAL_EXPLORER.md`. |
+| Latest implementation under test | `e6b97ffb47b3d33fa5f36d18cf01234052741e5e` | Issue #44 relation-corpus hits limited to relation id, relation type, and `data-evidence`. Files: `src/memory_infra/explorer.py`, `tests/test_stage14_explorer.py`. Prior implementation `0d02872` is not the code under test. |
 | Evidence-only child of implementation | `707d33b972744b646f88f4b1fe28a14f86fdc6fb` | Records the Issue #44 run at `0d02872`. Not the executed tree. |
 | Earlier Issue #43 evidence | `8564d18b24fa1e886838ab93cc084b8bbde7ed9a` | Records an Issue #43 run at `0d02872`. Not the executed tree. |
 | Evidence-only HEAD | `3ed462109041d2b76fb7dfc0a5363fac332d8674` | Records the Issue #43 playbook run at `0d02872`. Not the executed tree. Descendants of `0d02872` through this HEAD are evidence or this status map, not a new implementation. |
@@ -44,19 +46,18 @@ Recorded evidence, not re-executed for this status commit:
 
 - `experiments/results/stage14_visual_explorer.md` and `experiments/results/stage14_issue43_playbook_0d02872.md` record pytest, locked Phase H, and Chromium input/change dispatch at `0d02872`.
 - Locked Phase H configuration cited by those records: seeds 7, 11, 19; budget 4; policy none; historical trace SHA-256 `5ba3af8f5376cf9586a7389293b5205d204a49b7b1de986c45031dc826bfa40c`.
-- This status commit does not claim a new pytest, Phase H, or browser run.
+- The new run is recorded in `experiments/results/stage14_issue43_e6b97ff.md` and was executed at `e6b97ff`, not at this evidence commit.
 
-Issue #44 remains open: the fix commit exists; independent acceptance has not closed it.
-Issue #43 remains open and is the independent Stage 14 acceptance gate. Its body still names older HEAD values; the current baseline is implementation `0d02872` and evidence HEAD `3ed4621`.
+Issue #44 checks were executed at `e6b97ff`; close only if that evidence is accepted. Issue #43 remains the Stage 14 gate. Current code-under-test is `e6b97ff`, not `0d02872`.
 Issues #39–#42 remain open. They are the prior acceptance and defect chain. Open state is not proof the later fix is missing.
 
-Exit condition for Stage 14: an independent acceptance run at implementation SHA `0d02872` (not an evidence-only HEAD) satisfies the Issue #43 checklist, including relation/evidence search, kind-qualified endpoints, inspector/label visibility, read-only `read_graph`, unchanged Phase H digest, and untouched V0.1 / Phase G artifacts. Only that gate may mark PASS. This map does not.
+Exit condition for Stage 14: independent acceptance of the Issue #43 checklist at implementation SHA `e6b97ffb47b3d33fa5f36d18cf01234052741e5e`, not at an evidence-only child and not from the older `0d02872` records. Only that gate may mark PASS. This map does not.
 
 ## Single next action
 
 Owner: Issue #43.
 
-Action: independently accept or fail Stage 14 at implementation SHA `0d0287207b94288cb10543df223fb90dd561dad6`, using the recorded `0d02872` evidence only as a baseline. Do not open a duplicate Stage 14 implementation issue. Do not start a next product stage from this map. Do not add another evidence-only rerun solely because evidence HEAD advanced.
+Action: independently accept or fail Stage 14 against `experiments/results/stage14_issue43_e6b97ff.md`, which records pytest, locked Phase H, and Chromium input/change dispatch at `e6b97ff`. Do not reimplement the search fix unless that review reproduces a defect. Do not open a duplicate Stage 14 issue. Do not start a next product stage from this map.
 
 ## Numbered stage crosswalk
 
@@ -67,7 +68,7 @@ Acceptance below is not re-decided here. Open issues are left open.
 | V0.1 policy experiments | FROZEN | A/B/C/D/E. Do not retune or rewrite results. |
 | V0.2 / Phase H dynamics | FROZEN config | Locked seeds 7/11/19, budget 4, policy none. |
 | 2–13 product seams | IMPLEMENTED IN TREE / NOT RE-ACCEPTED HERE | Specs exist under `docs/STAGE2_` through `docs/STAGE13_`. Matching issues remain open. Do not mass-close from this map. |
-| 14 visual explorer | CONDITIONAL | Implementation `0d02872`. Gate: Issue #43. |
+| 14 visual explorer | CONDITIONAL | Implementation `e6b97ff`. Gate: Issue #43. |
 | Hub / Memory Bridge / telemetry | NOT STARTED | Deferred. |
 
 ## Closing rules
@@ -80,3 +81,8 @@ Live Chromium at `0d02872` showed All-view query `e1` kept `rel-con` visible whi
 
 This commit limits relation-corpus hits to relation id, relation type, and `data-evidence`. Endpoint-only search again requires both endpoints. Stage 14 remains CONDITIONAL. Issue #43 stays the acceptance gate. Do not mark PASS from this map.
 
+
+
+## 2026-10-10 exact-SHA check
+
+Executed at `e6b97ffb47b3d33fa5f36d18cf01234052741e5e`, not at this evidence commit. Pytest exit 0, `114 passed in 0.64s`. Phase H exit 0; seeds 7, 11, 19; budget 4; policy none; deterministic replay true; trace SHA-256 `5ba3af8f5376cf9586a7389293b5205d204a49b7b1de986c45031dc826bfa40c`. Chromium input/change probe: All-view `e1` hides `rel-con`; All-view `same-goal` keeps `rel-merge`. Literal record: `experiments/results/stage14_issue43_e6b97ff.md`. Stage 14 remains CONDITIONAL. Do not mark PASS from this map.
