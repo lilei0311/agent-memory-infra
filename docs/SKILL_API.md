@@ -1,6 +1,6 @@
 # Agent Memory Skill public API contract
 
-Revision: `skill-api-2026-10-10.2`. Code baseline: `src/memory_infra/skill.py` and `CallerSession.request` at `fc443b86feea38fa1216c16f9c34d99c6028067a` (unchanged by the contract commits). This document is the caller-facing contract. It does not add a transport, storage adapter, Agent integration, Hub, or Memory Bridge.
+Revision: `skill-api-2026-10-10.3`. Code baseline: `src/memory_infra/skill.py` and `CallerSession.request` at `fc443b86feea38fa1216c16f9c34d99c6028067a` (unchanged by the contract commits). This document is the caller-facing contract. It does not add a transport, storage adapter, Agent integration, Hub, or Memory Bridge.
 
 A harness installs one Skill for one Agent. It calls the in-process entry below. It does not import `memory_infra.store`, allocate mechanism ids, or write graph/lifecycle/thread/relation/trace/attention state.
 
@@ -62,6 +62,8 @@ Isolated to the bound `caller_id`: notes and attributions from `read_caller_cont
 `save` / `load` persist mechanism state only. Caller notes and discovery inventory are not restored.
 
 Rejected payload fields. Scope and ownership errors append the sorted rejected keys:
+
+Ownership is checked before scope. A payload that mixes ownership keys with scope keys, or with `read_graph` write keys, reports only the sorted ownership keys. `read_graph` write keys are reported only when no ownership key is present. Signal fields in the adapter forbidden set (`lifecycle_state`, `candidate_status`, `status`, `member_event_ids`, `accessibility`, `evidence_ref`, `relation_id`, `trace`) are not in the SnapshotError ownership set; they raise `BoundaryError` after the SnapshotError checks pass. `overwrite` and `delete` are in both sets, so a signal payload containing them raises `SnapshotError` first.
 
 - impersonation: payload `caller_id` different from the bound id → `caller cannot impersonate another caller`
 - other-caller scope: `target_caller_id`, `all_caller_contexts`, `caller_contexts`, `impersonate` → `caller cannot address another caller scope: ['<field>', ...]`

@@ -44,7 +44,7 @@ def test_unknown_op_and_read_graph_are_not_writes():
     try:
         api.invoke("agent-a", "read_graph", {"nodes": []})
     except SnapshotError as exc:
-        assert "caller cannot own mechanism fields" in str(exc)
+        assert str(exc) == "caller cannot own mechanism fields: ['nodes']"
     else:
         raise AssertionError("read_graph write payload must fail")
 
@@ -97,7 +97,7 @@ def test_invalid_signal_and_mechanism_owned_signal_field():
     observed = api.invoke("agent-a", "observe", {"content": "fact"})
     with pytest.raises(BoundaryError, match="unsupported signal: not-a-signal"):
         api.invoke("agent-a", "signal", {"name": "not-a-signal"})
-    with pytest.raises(BoundaryError, match="caller cannot set mechanism-owned fields"):
+    with pytest.raises(BoundaryError) as signal_owned:
         api.invoke(
             "agent-a",
             "signal",
@@ -108,16 +108,21 @@ def test_invalid_signal_and_mechanism_owned_signal_field():
                 "lifecycle_state": "stable",
             },
         )
+    assert str(signal_owned.value) == "caller cannot set mechanism-owned fields: ['lifecycle_state']"
+    assert not isinstance(signal_owned.value, SnapshotError)
 
 
 def test_caller_scope_ownership_and_impersonation_are_rejected():
     api = SkillApi.open_memory()
-    with pytest.raises(SnapshotError, match="caller cannot address another caller scope"):
+    with pytest.raises(SnapshotError) as scope:
         api.invoke("agent-a", "read_caller_context", {"target_caller_id": "agent-b"})
-    with pytest.raises(SnapshotError, match="caller cannot own mechanism fields"):
+    assert str(scope.value) == "caller cannot address another caller scope: ['target_caller_id']"
+    with pytest.raises(SnapshotError) as owned:
         api.invoke("agent-a", "observe", {"content": "fact", "assign_ids": True})
-    with pytest.raises(SnapshotError, match="caller cannot impersonate another caller"):
+    assert str(owned.value) == "caller cannot own mechanism fields: ['assign_ids']"
+    with pytest.raises(SnapshotError) as impersonated:
         api.invoke("agent-a", "observe", {"content": "fact", "caller_id": "agent-b"})
+    assert str(impersonated.value) == "caller cannot impersonate another caller"
 
 
 def test_empty_caller_id_errors_match_contract():
@@ -280,3 +285,45 @@ def test_decay_signal_result_keys_match_contract():
     context = api.invoke("agent-a", "read_caller_context")
     assert isinstance(context["result"]["notes"], tuple)
     assert isinstance(context["result"]["attributions"], tuple)
+
+
+def test_rejected_keys_are_sorted_and_signal_ownership_is_distinct():
+    api = SkillApi.open_memory()
+    with pytest.raises(SnapshotError) as scope:
+        api.invoke(
+            "agent-a",
+            "read_caller_context",
+            {"impersonate": "agent-b", "target_caller_id": "agent-c", "all_caller_contexts": True},
+        )
+    assert str(scope.value) == (
+        "caller cannot address another caller scope: "
+        "['all_caller_contexts', 'impersonate', 'target_caller_id']"
+    )
+    with pytest.raises(SnapshotError) as owned:
+        api.invoke(
+            "agent-a",
+            "observe",
+            {"rewrite_threads": True, "content": "fact", "assign_ids": True, "delete": True},
+        )
+    assert str(owned.value) == (
+        "caller cannot own mechanism fields: ['assign_ids', 'delete', 'rewrite_threads']"
+    )
+    with pytest.raises(SnapshotError) as graph:
+        api.invoke("agent-a", "read_graph", {"graph": {}, "edges": [], "nodes": []})
+    assert str(graph.value) == "caller cannot own mechanism fields: ['edges', 'graph', 'nodes']"
+    with pytest.raises(SnapshotError) as mixed:
+        api.invoke("agent-a", "read_graph", {"nodes": [], "assign_ids": True, "edges": []})
+    assert str(mixed.value) == "caller cannot own mechanism fields: ['assign_ids']"
+    with pytest.raises(SnapshotError) as signal_snapshot:
+        api.invoke("agent-a", "signal", {"name": "decay", "target_id": "missing", "overwrite": True, "delete": True})
+    assert str(signal_snapshot.value) == "caller cannot own mechanism fields: ['delete', 'overwrite']"
+    with pytest.raises(BoundaryError) as signal_boundary:
+        api.invoke(
+            "agent-a",
+            "signal",
+            {"name": "decay", "target_id": "missing", "candidate_status": "active", "lifecycle_state": "stable"},
+        )
+    assert type(signal_boundary.value) is BoundaryError
+    assert str(signal_boundary.value) == (
+        "caller cannot set mechanism-owned fields: ['candidate_status', 'lifecycle_state']"
+    )

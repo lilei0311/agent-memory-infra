@@ -26,7 +26,7 @@ The named browser-evidence gap is closed by `experiments/stage14_issue43_chromiu
 
 ## Canonical open work
 - Issue #43 was closed completed by the owner on 2026-10-09. This map does not re-open Stage 14 and does not claim a fresh independent execution in this commit.
-- Issue #46 is the active work unit: public Skill API contract in `docs/SKILL_API.md`. Contract revision `skill-api-2026-10-10.2`. Pinning tests: `tests/test_skill_api_contract.py` (ops, envelopes, missing fields, invalid signal, exact scope/ownership suffixes, unknown target/event, signal result keys). Issue #46 stays open pending independent review.
+- Issue #46 is the active work unit: public Skill API contract in `docs/SKILL_API.md`. Contract revision `skill-api-2026-10-10.3`. Pinning tests: `tests/test_skill_api_contract.py` (ops, envelopes, missing fields, invalid signal, exact multi-key scope/ownership suffixes, read_graph ownership order, signal BoundaryError distinct from SnapshotError ownership). Issue #46 stays open pending independent review.
 - Do not create a duplicate Stage 14 issue or a second API-contract issue.
 
 ## Next-stage boundary
