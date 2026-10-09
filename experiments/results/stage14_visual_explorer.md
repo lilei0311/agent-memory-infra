@@ -502,3 +502,63 @@ Existing Chromium plus the session browser loaded a generated explorer page (not
 ### Concrete defect, not fixed in this run
 
 `GraphMemory.merge` creates `referential.same_thread` between thread ids (`graph.py` `_rel(left_id, right_id, "referential.same_thread", signal)`). Explorer `_ENDPOINT_KIND` maps that type to `("event", "event")` when `source_kind`/`target_kind` are absent. A projection with thread endpoints `th-1`/`th-2` and a same-id event `th-1` rendered the inspector article as `data-source-kind="event"` `data-target-kind="event"`, and the SVG contained no `line` for that relation (`mergeLine` absent). Stage 14 is not marked PASS. Repair is a separate issue. No Stage 13 identity or V0.2 transition change was made.
+
+## Issue #41 same_thread endpoint mapping
+
+Implementation SHA under test: `d669e86e27f75390c12ed5226772992626efee60`.
+
+Parent HEAD before the implementation commit was `199d34103c48b3b52b05efb9ea5a587ce3852728` (evidence-only relative to `85b188d02d8ba6a0c7cc30a0a3a28fbaf539563a`). This section is an evidence record. The evidence commit that adds it is not the executed HEAD. Stage 14 is not marked PASS. Issue #39 remains open.
+
+Changed files in the implementation commit:
+
+```
+docs/STAGE14_VISUAL_EXPLORER.md
+src/memory_infra/explorer.py
+tests/test_stage14_explorer.py
+```
+
+`referential.same_thread` fallback endpoint kinds are now `("thread", "thread")`, matching `GraphMemory.merge` (`_rel(left_id, right_id, "referential.same_thread", signal)`). Stage 13 identity and relation creation were not changed. V0.1 and Phase G artifacts were not edited. Phase H seeds, budget, and policy were not changed.
+
+Commands at `git rev-parse HEAD` = `d669e86e27f75390c12ed5226772992626efee60`:
+
+```bash
+git rev-parse HEAD
+PYTHONPATH=src python -m pytest -q tests
+PYTHONPATH=src python experiments/phase_h_dynamics.py
+```
+
+### pytest
+
+Exit code 0.
+
+```
+........................................................................ [ 64%]
+........................................                                 [100%]
+112 passed in 0.27s
+```
+
+### locked Phase H
+
+Exit code 0. First line:
+
+```
+locked {'seeds': [7, 11, 19], 'budget': 4, 'policy': 'none', 'conditions': ('event_identity', 'thread_lifecycle', 'memory_lifecycle', 'evidence_integrity', 'deterministic_replay')}
+```
+
+Last line:
+
+```
+trace_artifact /tmp/agent-memory-infra/experiments/results/phase_h_trace.json 5ba3af8f5376cf9586a7389293b5205d204a49b7b1de986c45031dc826bfa40c
+```
+
+`deterministic_replay.match` is true. Historical trace SHA-256 remains `5ba3af8f5376cf9586a7389293b5205d204a49b7b1de986c45031dc826bfa40c`. Working tree did not modify `experiments/results/phase_h_trace.json`.
+
+### Browser probe
+
+Existing `/usr/bin/chromium` headless `--no-sandbox --dump-dom` loaded a generated explorer page (no new dependency). Fixture: two thread nodes `th-1`/`th-2`, same-id event nodes `th-1`/`th-2`, one `referential.same_thread` edge `rel-merge`. Dumped line:
+
+```
+class="edge" x1="480" y1="70" x2="480" y2="160" data-relation-id="rel-merge" data-relation-type="referential.same_thread" data-source-id="th-1" data-target-id="th-2" data-source-kind="thread" data-target-kind="thread" data-contradiction="false"
+```
+
+Inspector article `inspect-n-edge_3a_rel-merge` had `data-source-kind="thread"` and `data-target-kind="thread"`. Thread and event anchors `n-thread_3a_th-1` and `n-event_3a_th-1` were both present. Same-id events did not take the edge.
