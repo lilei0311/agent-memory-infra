@@ -391,7 +391,10 @@ def test_relation_and_evidence_search_keeps_edge_visible():
     )
     script = page.split("<script>", 1)[1].split("</script>", 1)[0]
     assert "function relationCorpusHit" in script
+    assert "function relationFieldHit" in script
     assert "endpointsOn||relationCorpusHit(edge,query)" in script
+    assert "relationFieldHit(edge,query)" in script
+    assert "if(hit(edge,query))return true" not in script
     assert "else if(selected==='all'){show=hit(article,query);}" not in script
     merge = page.split('data-relation-id="rel-merge"', 1)[1]
     assert 'data-text="' in page
@@ -400,12 +403,14 @@ def test_relation_and_evidence_search_keeps_edge_visible():
     merge_line = next(part for part in page.split("<line") if 'data-relation-id="rel-merge"' in part)
     merge_line = merge_line.split("/>", 1)[0]
     assert "same-goal" in merge_line
+    assert 'data-evidence="same-goal"' in merge_line
     assert "referential.same_thread" in merge_line
     assert 'data-source-kind="thread"' in merge_line
     assert 'data-target-kind="thread"' in merge_line
     con_line = next(part for part in page.split("<line") if 'data-relation-id="rel-con"' in part)
     con_line = con_line.split("/>", 1)[0]
     assert "both-seen" in con_line
+    assert 'data-evidence="both-seen"' in con_line
     assert "evidential.contradicts" in con_line
     assert 'data-source-kind="event"' in con_line
     assert 'data-target-kind="event"' in con_line

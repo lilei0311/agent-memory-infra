@@ -127,7 +127,9 @@ def _filter_script() -> str:
     current controls, so filter/search transitions do not keep stale visibility.
     A non-empty query that matches relation type, relation id, or evidence text
     keeps that edge, label, and inspector visible even when neither endpoint
-    text matches. View filters still apply. Kind-qualified identity is unchanged.
+    text matches. Endpoint ids in data-text are not relation-corpus hits:
+    an endpoint-only query still requires both endpoints. View filters still
+    apply. Kind-qualified identity is unchanged.
     """
 
     return """
@@ -138,7 +140,8 @@ function text(el){return (el.getAttribute('data-text')||el.textContent||'').toLo
 function hit(el,query){if(!query)return true;var id=(el.getAttribute('data-id')||'').toLowerCase();var relationId=(el.getAttribute('data-relation-id')||'').toLowerCase();var relationType=(el.getAttribute('data-relation-type')||'').toLowerCase();return id.indexOf(query)!==-1||relationId.indexOf(query)!==-1||relationType.indexOf(query)!==-1||text(el).indexOf(query)!==-1;}
 function hide(el,on){el.classList.toggle('is-hidden',on);}
 function articles(){return document.querySelectorAll('aside.inspector article');}
-function relationCorpusHit(edge,query){if(!query)return false;if(hit(edge,query))return true;var relationId=edge.getAttribute('data-relation-id');var matched=false;articles().forEach(function(article){if(article.getAttribute('data-relation-id')===relationId&&hit(article,query))matched=true;});document.querySelectorAll('text.edge-label').forEach(function(label){if(label.getAttribute('data-relation-id')===relationId&&hit(label,query))matched=true;});return matched;}
+function relationFieldHit(el,query){if(!query||!el)return false;var relationId=(el.getAttribute('data-relation-id')||'').toLowerCase();var relationType=(el.getAttribute('data-relation-type')||'').toLowerCase();var evidence=(el.getAttribute('data-evidence')||'').toLowerCase();return relationId.indexOf(query)!==-1||relationType.indexOf(query)!==-1||evidence.indexOf(query)!==-1;}
+function relationCorpusHit(edge,query){if(!query)return false;if(relationFieldHit(edge,query))return true;var relationId=edge.getAttribute('data-relation-id');var matched=false;articles().forEach(function(article){if(article.getAttribute('data-relation-id')===relationId&&relationFieldHit(article,query))matched=true;});document.querySelectorAll('text.edge-label').forEach(function(label){if(label.getAttribute('data-relation-id')===relationId&&relationFieldHit(label,query))matched=true;});return matched;}
 function apply(){
 var selected=view();var query=q();var visible={};var edgeVisible={};
 document.querySelectorAll('a.node').forEach(function(node){
@@ -258,6 +261,7 @@ def _canvas(nodes, edges, positions) -> str:
             f'data-source-kind="{html.escape(source_kind)}" '
             f'data-target-kind="{html.escape(target_kind)}" '
             f'data-contradiction="{contradiction}" '
+            f'data-evidence="{html.escape(str(edge.get("evidence_ref", "")), quote=True)}" '
             f'data-text="{searchable}" />'
         )
         label_x = (source[0] + target[0]) // 2
@@ -267,6 +271,7 @@ def _canvas(nodes, edges, positions) -> str:
             f'data-relation-id="{html.escape(edge["relation_id"])}" '
             f'data-relation-type="{html.escape(relation_type)}" '
             f'data-contradiction="{contradiction}" '
+            f'data-evidence="{html.escape(str(edge.get("evidence_ref", "")), quote=True)}" '
             f'data-text="{searchable}">'
             f'{html.escape(relation_type)}</text>'
         )
@@ -340,6 +345,7 @@ def _inspector(nodes, edges) -> str:
             f'data-source-kind="{html.escape(_endpoint_kinds(edge)[0])}" '
             f'data-target-kind="{html.escape(_endpoint_kinds(edge)[1])}" '
             f'data-contradiction="{contradiction}" '
+            f'data-evidence="{html.escape(str(edge.get("evidence_ref", "")), quote=True)}" '
             f'data-text="{html.escape(_search_text(edge), quote=True)}">'
             f"<h3>{html.escape(edge['relation_type'])}</h3>"
             f"<dl>{fields}</dl></article>"

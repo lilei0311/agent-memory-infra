@@ -73,3 +73,10 @@ Acceptance below is not re-decided here. Open issues are left open.
 ## Closing rules
 
 Close a stage issue only with evidence that its own acceptance checklist passed at a named implementation SHA, and say so in the closing comment. Do not close Issue #43 or mark Stage 14 PASS from this document. Do not close older stage issues solely because later stages exist.
+
+## 2026-10-10 defect fix (this commit)
+
+Live Chromium at `0d02872` showed All-view query `e1` kept `rel-con` visible while endpoint `e2` was hidden, because `relationCorpusHit` used `hit(edge)` and edge `data-text` includes source/target ids. Recorded evidence that claimed the edge was hidden did not match that run.
+
+This commit limits relation-corpus hits to relation id, relation type, and `data-evidence`. Endpoint-only search again requires both endpoints. Stage 14 remains CONDITIONAL. Issue #43 stays the acceptance gate. Do not mark PASS from this map.
+
