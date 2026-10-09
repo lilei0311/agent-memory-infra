@@ -234,3 +234,40 @@ trace_artifact /tmp/agent-memory-infra/experiments/results/phase_h_trace.json 5b
 ```
 
 `deterministic_replay.match` is true for seeds 7, 11, and 19. Historical Phase H trace SHA-256 remains `5ba3af8f5376cf9586a7389293b5205d204a49b7b1de986c45031dc826bfa40c`. Working tree after the commands had no tracked artifact diff. Existing Stage 14 tests still cover kind-qualified same-id anchors, unique fixture HTML ids, contradiction/evidence visibility, and the read-only public boundary. Seeds, budget, and policy were not changed.
+
+## Issue #38 filter/search run at 91ec93f
+
+Code-under-test SHA: `91ec93fa9b1b1c74bce690023c7e9b8f18a2f10f`.
+
+That commit wires client-side display filters and search in `src/memory_infra/explorer.py`, adds `tests/test_stage14_explorer.py` coverage, updates the Stage 14 contract note, and regenerates `experiments/results/stage14_explorer_fixture.html`. It does not change Phase H seeds, budget, or policy. This section records the run executed at that SHA. The commit that adds this section is evidence-only and was not itself executed. Stage 14 is not marked PASS.
+
+```bash
+PYTHONPATH=src python -m pytest -q tests
+PYTHONPATH=src python experiments/phase_h_dynamics.py
+```
+
+### pytest output
+
+```
+........................................................................ [ 65%]
+......................................                                   [100%]
+110 passed in 0.39s
+```
+
+Exit code 0.
+
+### experiment output
+
+Exit code 0. First line:
+
+```
+locked {'seeds': [7, 11, 19], 'budget': 4, 'policy': 'none', 'conditions': ('event_identity', 'thread_lifecycle', 'memory_lifecycle', 'evidence_integrity', 'deterministic_replay')}
+```
+
+Last line:
+
+```
+trace_artifact /tmp/agent-memory-infra/experiments/results/phase_h_trace.json 5ba3af8f5376cf9586a7389293b5205d204a49b7b1de986c45031dc826bfa40c
+```
+
+`deterministic_replay.match` is true for seeds 7, 11, and 19. Historical Phase H trace SHA-256 remains `5ba3af8f5376cf9586a7389293b5205d204a49b7b1de986c45031dc826bfa40c`. Working tree after the commands had no tracked artifact diff. Seeds, budget, and policy were not changed.
