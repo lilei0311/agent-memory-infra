@@ -1,6 +1,6 @@
 # Agent Memory Skill public API contract
 
-Revision: `skill-api-2026-10-10`. Observation baseline: implementation HEAD `fc443b86feea38fa1216c16f9c34d99c6028067a`. This document is the caller-facing contract. It does not add a transport, storage adapter, Agent integration, Hub, or Memory Bridge.
+Revision: `skill-api-2026-10-10.1`. Code baseline: `src/memory_infra/skill.py` and `CallerSession.request` at `fc443b86feea38fa1216c16f9c34d99c6028067a` (unchanged by the contract commits). This document is the caller-facing contract. It does not add a transport, storage adapter, Agent integration, Hub, or Memory Bridge.
 
 A harness installs one Skill for one Agent. It calls the in-process entry below. It does not import `memory_infra.store`, allocate mechanism ids, or write graph/lifecycle/thread/relation/trace/attention state.
 
@@ -38,7 +38,7 @@ Preferred install path:
 5. `handle.invoke(op, payload)`
 6. Optional `handle.import_selected(paths)` only after discovery. It does not rewrite caller files.
 
-`backend` must be `memory` or `file`. File backend requires `path`. Empty `caller_id` raises `ValueError`.
+`backend` must be `memory` or `file`. File backend requires `path`. `SkillEntrypoint.open` rejects an empty `caller_id` with `ValueError`: `caller_id is required`. `SkillApi.invoke` rejects an empty bound `caller_id` with `SnapshotError`: `caller_id must be a non-empty string`.
 
 `invoke` before discovery raises `RuntimeError`: `memory operations require completed discovery`. `enable_memory` before discovery raises `RuntimeError`: `discovery must complete before memory operations`.
 
@@ -76,23 +76,23 @@ Every accepted `invoke` result is a mapping with `ok: true` and `op` equal to th
 
 | op | payload | return | side effect |
 | --- | --- | --- | --- |
-| `observe` | required `content`; optional `source`, `note` | `point_id` assigned by the mechanism, plus `caller_id` | appends a candidate point; does not promote it |
-| `signal` | required `name`; signal fields below | `result.signal`, `result.result` | mechanism transition only; caller does not set lifecycle |
+| `observe` | required `content`; optional `source`, `note` | top-level `point_id` and `caller_id`; no `result` | appends a candidate point; does not promote it |
+| `signal` | required `name`; signal fields below | top-level `caller_id`; `result.signal`, `result.result` | mechanism transition only; caller does not set lifecycle |
 | `retrieve` | required `query` | `result.retrieval_id`, `result.query`, `result.selected`, `result.timestamp` | retrieval event owned by the mechanism |
-| `read_lifecycle` | required `target_id` | lifecycle record in `result` | none |
-| `read_event` | required `event_id` | event record in `result` | none |
-| `read_relations` | none | relation records in `result` | none |
-| `read_graph` | none | projection in `result` | none; no ids, no trace append |
-| `inspect_trace` | none | trace records in `result` | none |
-| `read_caller_context` | none | bound caller notes and attributions in `result` | none |
-| `save` | none | non-empty `integrity` | writes mechanism snapshot |
-| `load` | none | same `integrity` shape | restores mechanism snapshot; no caller context |
+| `read_lifecycle` | required `target_id` | lifecycle mapping in `result` (`target_id`, `lifecycle_state`, `accessibility`, `recency`, histories) | none |
+| `read_event` | required `event_id` | event mapping in `result` (`event_id`, `timestamp`, `source`, `observation`, `evidence_ref`, `thread_id`) | none |
+| `read_relations` | none | tuple of relation records in `result` | none |
+| `read_graph` | none | projection mapping in `result` | none; no ids, no trace append |
+| `inspect_trace` | none | tuple of trace records in `result` | none |
+| `read_caller_context` | none | mapping in `result`: `caller_id`, `notes`, `attributions` | none |
+| `save` | none | top-level non-empty `integrity`; no `result` | writes mechanism snapshot |
+| `load` | none | top-level `integrity` matching the saved snapshot; no `result` | restores mechanism snapshot; no caller context |
 
 Unknown `op` raises `SnapshotError` `unsupported skill operation` before the service.
 
-Missing required fields raise at the boundary (`KeyError` or `SnapshotError`). Callers must not treat that as success.
+Missing required operation fields raise `KeyError` (`content`, `name`, `query`, `target_id`, `event_id`). Empty `content` raises `BoundaryError` `observation content is required`. Missing required signal fields raise `TypeError` from the signal handler. Unknown lifecycle target raises `BoundaryError` `unknown target: ...`. Unknown event raises `BoundaryError` `unknown event: ...`. `load` with no snapshot raises `SnapshotError` `no snapshot to load`. Callers must not treat these as success.
 
-`read_graph` result includes `read_only: true`, `owner: "mechanism"`, `ordering: "kind,id"`, `nodes`, and `edges`. Node order is kind then id. Edge order is relation type then relation id. The projection is not a write API.
+`read_graph` result includes `read_only: true`, `owner: "mechanism"`, `ordering: "kind,id"`, `node_kinds`, `edge_kinds`, `nodes`, and `edges`. Node order is kind then id. Edge order is relation type then relation id. The projection is not a write API.
 
 Allowed `signal` names: `promote`, `open_thread`, `extend`, `split`, `merge`, `reopen`, `link_causal`, `contradict`, `begin_reconsolidation`, `resolve_reconsolidation`, `consolidate`, `decay`, `retrieve`. Any other name raises `BoundaryError` `unsupported signal: ...`.
 
@@ -112,7 +112,7 @@ Minimum signal fields:
 - `decay`: `target_id`
 - `retrieve`: `query`
 
-Signal payloads must not include mechanism-owned fields such as `lifecycle_state` or `candidate_status`.
+Signal payloads must not include mechanism-owned fields such as `lifecycle_state` or `candidate_status`. That rejection is `BoundaryError` `caller cannot set mechanism-owned fields: ...`, not the `SnapshotError` ownership rejection used for `assign_ids` and the other ownership keys above.
 
 ## Missing and unknown feedback
 
