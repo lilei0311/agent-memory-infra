@@ -18,17 +18,17 @@ The research roadmap stages in `docs/ROADMAP.md` are not the numbered implementa
 - Diff from prior implementation `0d02872` to `e6b97ff` includes the Stage 14 source/test fix plus historical evidence/status documents. The recorded run says no V0.1, Phase G, or Phase H configuration/trace artifact changed.
 
 ## Stage 14 verdict
-**CONDITIONAL — not yet accepted.**
+**CONDITIONAL — browser evidence recorded; not self-accepted.**
 
 Source and evidence review supports the search fix, kind-qualified endpoint handling, same-thread thread endpoints, synchronized edge/label/inspector visibility, deterministic rendering, read-only projection boundary, and frozen Phase H result.
 
-One acceptance evidence gap remains: `experiments/results/stage14_issue43_e6b97ff.md` describes the Chromium cases but does not provide the complete reproducible probe-generation/dispatch command or script and an explicit Chromium exit code. Until this is supplied or the exact probe is rerun and recorded, the interactive-browser criterion is not fully auditable. Do not repeat pytest or Phase H solely because documentation HEAD advanced.
+The named browser-evidence gap is closed by `experiments/stage14_issue43_chromium_probe.py` and `experiments/results/stage14_issue43_e6b97ff_chromium.md`. The probe ran at implementation SHA `e6b97ffb47b3d33fa5f36d18cf01234052741e5e`: Chromium exit 0, probe assert exit 0. It covers All/Threads/Events/Contradictions, relation id/type, evidence, endpoint-only, no-match, and edge/label/inspector visibility. Pytest and Phase H were not repeated.
 
 ## Canonical open work
-- Issue #43: Stage 14 acceptance gate. Next action is only to complete the missing reproducible Chromium evidence at implementation SHA `e6b97ffb47b3d33fa5f36d18cf01234052741e5`, or explain precisely why the existing record is sufficient with the actual command/script and exit code.
-- Issue #44: relation/evidence search fix; implementation landed, acceptance remains tied to #43.
-- Issues #39–#42: predecessor defect/acceptance chain; close individually only when #43's evidence is accepted and each issue's own criteria are demonstrably resolved.
-- Do not create a duplicate Stage 14 issue or make another generic status-only commit.
+- Issue #43: acceptance gate. Next action is independent review of the Chromium script, command, and exit code. Do not reimplement search or rerun pytest/Phase H unless that review finds a contradiction.
+- Issue #44: relation/evidence search fix remains `e6b97ff`; keep open until #43 accepts the probe evidence.
+- Issues #39–#42: close individually only after #43 acceptance.
+- Do not create a duplicate Stage 14 issue.
 
 ## Next-stage boundary
 Do not start an undefined Stage 15 or expand into Hub/Memory Bridge/telemetry. After Stage 14 is accepted, define the next bounded Agent Memory Skill work unit from `docs/ROADMAP.md` and `docs/PRODUCT_ARCHITECTURE.md`, with an explicit objective, non-goals, and acceptance criteria before implementation begins.
