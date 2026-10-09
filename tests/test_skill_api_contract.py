@@ -233,3 +233,50 @@ def test_public_operation_envelopes_match_contract():
     loaded = api.invoke("agent-a", "load")
     assert loaded["op"] == "load" and loaded["integrity"] == saved["integrity"]
     assert "result" not in loaded
+
+
+def test_scope_and_ownership_errors_include_sorted_fields():
+    api = SkillApi.open_memory()
+    with pytest.raises(SnapshotError) as scope:
+        api.invoke("agent-a", "read_caller_context", {"target_caller_id": "agent-b"})
+    assert str(scope.value) == "caller cannot address another caller scope: ['target_caller_id']"
+    with pytest.raises(SnapshotError) as owned:
+        api.invoke("agent-a", "observe", {"content": "fact", "assign_ids": True})
+    assert str(owned.value) == "caller cannot own mechanism fields: ['assign_ids']"
+    with pytest.raises(SnapshotError) as graph:
+        api.invoke("agent-a", "read_graph", {"nodes": []})
+    assert str(graph.value) == "caller cannot own mechanism fields: ['nodes']"
+
+
+def test_unknown_target_event_and_empty_note_match_contract():
+    api = SkillApi.open_memory()
+    with pytest.raises(BoundaryError, match="unknown target: missing"):
+        api.invoke("agent-a", "read_lifecycle", {"target_id": "missing"})
+    with pytest.raises(BoundaryError, match="unknown event: missing"):
+        api.invoke("agent-a", "read_event", {"event_id": "missing"})
+    with pytest.raises(SnapshotError, match="caller note must be a non-empty string"):
+        api.invoke("agent-a", "observe", {"content": "fact", "note": ""})
+
+
+def test_enable_memory_requires_discovery():
+    handle = SkillEntrypoint().open("agent-a")
+    with pytest.raises(RuntimeError, match="discovery must complete before memory operations"):
+        handle.enable_memory()
+
+
+def test_decay_signal_result_keys_match_contract():
+    api = SkillApi.open_memory()
+    observed = api.invoke("agent-a", "observe", {"content": "fact"})
+    promoted = api.invoke(
+        "agent-a",
+        "signal",
+        {"name": "promote", "point_id": observed["point_id"], "reason": "explicit"},
+    )
+    event_id = promoted["result"]["result"]["event_id"]
+    decayed = api.invoke("agent-a", "signal", {"name": "decay", "target_id": event_id})
+    assert decayed["result"]["signal"] == "decay"
+    assert set(decayed["result"]["result"]) == {"target_id", "lifecycle_state"}
+    assert decayed["result"]["result"]["target_id"] == event_id
+    context = api.invoke("agent-a", "read_caller_context")
+    assert isinstance(context["result"]["notes"], tuple)
+    assert isinstance(context["result"]["attributions"], tuple)

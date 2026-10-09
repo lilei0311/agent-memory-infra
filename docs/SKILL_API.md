@@ -1,6 +1,6 @@
 # Agent Memory Skill public API contract
 
-Revision: `skill-api-2026-10-10.1`. Code baseline: `src/memory_infra/skill.py` and `CallerSession.request` at `fc443b86feea38fa1216c16f9c34d99c6028067a` (unchanged by the contract commits). This document is the caller-facing contract. It does not add a transport, storage adapter, Agent integration, Hub, or Memory Bridge.
+Revision: `skill-api-2026-10-10.2`. Code baseline: `src/memory_infra/skill.py` and `CallerSession.request` at `fc443b86feea38fa1216c16f9c34d99c6028067a` (unchanged by the contract commits). This document is the caller-facing contract. It does not add a transport, storage adapter, Agent integration, Hub, or Memory Bridge.
 
 A harness installs one Skill for one Agent. It calls the in-process entry below. It does not import `memory_infra.store`, allocate mechanism ids, or write graph/lifecycle/thread/relation/trace/attention state.
 
@@ -61,12 +61,12 @@ Isolated to the bound `caller_id`: notes and attributions from `read_caller_cont
 
 `save` / `load` persist mechanism state only. Caller notes and discovery inventory are not restored.
 
-Rejected payload fields:
+Rejected payload fields. Scope and ownership errors append the sorted rejected keys:
 
 - impersonation: payload `caller_id` different from the bound id → `caller cannot impersonate another caller`
-- other-caller scope: `target_caller_id`, `all_caller_contexts`, `caller_contexts`, `impersonate` → `caller cannot address another caller scope`
-- ownership: `assign_ids`, `rewrite_lifecycle`, `rewrite_threads`, `rewrite_relations`, `caller_lifecycle`, `overwrite`, `delete` → `caller cannot own mechanism fields`
-- `read_graph` also rejects `nodes`, `edges`, `relations`, `relation_id`, `event_id`, `point_id`, `thread_id`, `graph`
+- other-caller scope: `target_caller_id`, `all_caller_contexts`, `caller_contexts`, `impersonate` → `caller cannot address another caller scope: ['<field>', ...]`
+- ownership: `assign_ids`, `rewrite_lifecycle`, `rewrite_threads`, `rewrite_relations`, `caller_lifecycle`, `overwrite`, `delete` → `caller cannot own mechanism fields: ['<field>', ...]`
+- `read_graph` also rejects `nodes`, `edges`, `relations`, `relation_id`, `event_id`, `point_id`, `thread_id`, `graph` with the same ownership error and sorted keys
 
 Empty or non-string `caller_id` → `caller_id must be a non-empty string`. Empty `note` → `caller note must be a non-empty string`.
 
@@ -84,7 +84,7 @@ Every accepted `invoke` result is a mapping with `ok: true` and `op` equal to th
 | `read_relations` | none | tuple of relation records in `result` | none |
 | `read_graph` | none | projection mapping in `result` | none; no ids, no trace append |
 | `inspect_trace` | none | tuple of trace records in `result` | none |
-| `read_caller_context` | none | mapping in `result`: `caller_id`, `notes`, `attributions` | none |
+| `read_caller_context` | none | mapping in `result`: `caller_id`, `notes`, `attributions` (notes and attributions are tuples) | none |
 | `save` | none | top-level non-empty `integrity`; no `result` | writes mechanism snapshot |
 | `load` | none | top-level `integrity` matching the saved snapshot; no `result` | restores mechanism snapshot; no caller context |
 
@@ -96,21 +96,21 @@ Missing required operation fields raise `KeyError` (`content`, `name`, `query`, 
 
 Allowed `signal` names: `promote`, `open_thread`, `extend`, `split`, `merge`, `reopen`, `link_causal`, `contradict`, `begin_reconsolidation`, `resolve_reconsolidation`, `consolidate`, `decay`, `retrieve`. Any other name raises `BoundaryError` `unsupported signal: ...`.
 
-Minimum signal fields:
+Minimum signal fields and `result.result` keys. Optional fields are omitted from the required set. Return keys are the handler mapping, not mechanism ids allocated by the caller:
 
 - `promote`: `point_id`, `reason` → `event_id`, `evidence_ref`
 - `open_thread`: `event_id`, `topic`, optional `goal` → `thread_id`, `status`
-- `extend`: `thread_id`, `event_id`, `signal`
-- `split`: `thread_id`, `event_id`, `new_topic`
-- `merge`: `left_id`, `right_id`, `signal`
-- `reopen`: `thread_id`, `signal`
-- `link_causal`: `source_id`, `target_id`, `kind`, `evidence`, optional `inferred`
-- `contradict`: `left_event`, `right_event`, `evidence`
-- `begin_reconsolidation`: `event_id`, `evidence`
-- `resolve_reconsolidation`: `event_id`, `decision`, `evidence`
-- `consolidate`: `event_id`, `evidence`
-- `decay`: `target_id`
-- `retrieve`: `query`
+- `extend`: `thread_id`, `event_id`, `signal` → `thread_id`, `members`
+- `split`: `thread_id`, `event_id`, `new_topic` → `thread_id`, `parent_thread_id`
+- `merge`: `left_id`, `right_id`, `signal` → `thread_id`, `status`
+- `reopen`: `thread_id`, `signal` → `thread_id`, `status`
+- `link_causal`: `source_id`, `target_id`, `kind`, `evidence`, optional `inferred` → `relation_id`, `relation_type`
+- `contradict`: `left_event`, `right_event`, `evidence` → `relation_id`, `relation_type`
+- `begin_reconsolidation`: `event_id`, `evidence` → `target_id`, `lifecycle_state`
+- `resolve_reconsolidation`: `event_id`, `decision`, `evidence` → `target_id`, `lifecycle_state`
+- `consolidate`: `event_id`, `evidence` → `target_id`, `lifecycle_state`
+- `decay`: `target_id` → `target_id`, `lifecycle_state`
+- `retrieve`: `query` → `retrieval_id`, `selected`
 
 Signal payloads must not include mechanism-owned fields such as `lifecycle_state` or `candidate_status`. That rejection is `BoundaryError` `caller cannot set mechanism-owned fields: ...`, not the `SnapshotError` ownership rejection used for `assign_ids` and the other ownership keys above.
 
