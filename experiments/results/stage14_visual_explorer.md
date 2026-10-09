@@ -1,5 +1,76 @@
 # Stage 14 read-only Visual Memory Explorer evidence
 
+## Issue #42 relation inspector visibility fix at 670e4d2
+
+Executed at implementation SHA `670e4d2a0457823d2206cdd57a873e383c01ccd9`. Repository HEAD before the implementation commit was `bc4e3ff10bfbf6d6d8e0f298a9d396e648afcd50`. This evidence commit only records the run. It is not the executed HEAD. Stage 14 is not marked PASS. Issue #39 and Issue #42 are left open. No next-stage issue was opened.
+
+Implementation commit changed:
+
+```
+docs/STAGE14_VISUAL_EXPLORER.md
+src/memory_infra/explorer.py
+tests/test_stage14_explorer.py
+```
+
+Visibility contract: a relation inspector article is visible if and only if its relation edge is visible. Edge labels use that same edge visibility. `apply()` recomputes from the current view and search controls, so transitions do not keep stale visibility. Stage 13 identity, V0.2 transitions, Phase H seeds/budget/policy, and V0.1 artifacts were not changed.
+
+Commands at `git rev-parse HEAD` = `670e4d2a0457823d2206cdd57a873e383c01ccd9`:
+
+```bash
+git rev-parse HEAD
+PYTHONPATH=src python -m pytest -q tests
+PYTHONPATH=src python experiments/phase_h_dynamics.py
+```
+
+### pytest
+
+Exit code 0.
+
+```
+........................................................................ [ 63%]
+.........................................                                [100%]
+113 passed in 0.65s
+```
+
+### locked Phase H
+
+Exit code 0. Locked config unchanged: seeds 7, 11, 19; budget 4; policy none. `deterministic_replay.match` true for seeds 7, 11, and 19. Historical trace SHA-256 unchanged: `5ba3af8f5376cf9586a7389293b5205d204a49b7b1de986c45031dc826bfa40c`.
+
+First line:
+
+```
+locked {'seeds': [7, 11, 19], 'budget': 4, 'policy': 'none', 'conditions': ('event_identity', 'thread_lifecycle', 'memory_lifecycle', 'evidence_integrity', 'deterministic_replay')}
+```
+
+Last line:
+
+```
+trace_artifact /tmp/agent-memory-infra/experiments/results/phase_h_trace.json 5ba3af8f5376cf9586a7389293b5205d204a49b7b1de986c45031dc826bfa40c
+```
+
+Working tree after the commands had no tracked artifact diff. Seeds, budget, and policy were not changed. V0.1 and Phase G artifacts were not edited.
+
+### Chromium input/change dispatch
+
+Existing `/usr/bin/chromium` headless `--no-sandbox --dump-dom` loaded generated explorer HTML and dispatched `change` on view radios and `input` on the search field. No new dependency. Fixture nodes: threads `th-1`/`th-2`, same-id event `th-1`, events `e1`/`e2`, same-id state and point `e1`, edges `referential.same_thread` (`rel-merge`, evidence `same-goal`) and `evidential.contradicts` (`rel-con`, evidence `both-seen`).
+
+Observed after event dispatch:
+
+- All: nodes `event:e1,event:e2,event:th-1,point:e1,state:e1,thread:th-1,thread:th-2`; edges and labels `rel-con,rel-merge`; relation inspectors `rel-con,rel-merge`.
+- Threads: nodes `thread:th-1,thread:th-2`; edge and label `rel-merge`; relation inspector `rel-merge`. Same-id event `th-1` hidden. Inspector tracks the visible edge.
+- Events: nodes `event:e1,event:e2,event:th-1`; edge and label `rel-con`; relation inspector `rel-con`. Inspector tracks the visible edge.
+- Contradictions: nodes `event:e1,event:e2`; edge, label, and inspector `rel-con`; `rel-merge` hidden. Same-id state and point `e1` hidden.
+- Contradiction search `both-seen` and `e1`: both contradiction endpoints, edge, label, and inspector `rel-con` stayed visible; same-id state/point stayed hidden.
+- All search `thread alpha`: only node `thread:th-1`; edge, label, and relation inspector empty.
+- All search `same-goal`: nodes, edges, labels, and relation inspectors empty. No orphan `rel-merge` inspector.
+- Return to Threads with empty search: nodes `thread:th-1,thread:th-2`; edge, label, and inspector `rel-merge` restored. No stale hidden state.
+
+Stage 14 remains not PASS. Issue #39 remains open.
+
+## Prior evidence
+
+# Stage 14 read-only Visual Memory Explorer evidence
+
 ## Issue #39 click-dispatch check of implementation d669e86
 
 Executed at implementation SHA `d669e86e27f75390c12ed5226772992626efee60`. Repository HEAD before this evidence commit was `34a72925cbdaea277d7a7103fc9ac2d0a33ef356`. This evidence commit only records the independent run. It is not the executed HEAD. Stage 14 is not marked PASS. Issue #39 is left open. No next-stage issue was opened.
