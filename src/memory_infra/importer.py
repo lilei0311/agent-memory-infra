@@ -3,6 +3,7 @@
 Discovery stays read-only. This module parses already-recognized source
 payloads and records caller-selected items through the public Skill API.
 It does not import memory_infra.store and does not rewrite caller files.
+Markdown parsing is delegated to the internal MarkdownSourceAdapter.
 """
 
 from __future__ import annotations
@@ -10,6 +11,8 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+
+from memory_infra.source_adapter import MARKDOWN_ADAPTER
 
 RECOGNIZED_NAMES = frozenset({"MEMORY.md", "memory.md", "memories.json", "memory.json"})
 DUPLICATE_POLICY = "idempotent_by_source_digest"
@@ -35,31 +38,20 @@ def parse_recognized(name: str, payload: bytes) -> tuple[list[dict], str | None]
     """Parse one recognized payload. Returns items or a rejection reason.
 
     Items are caller text plus a content digest. Mechanism ids are not assigned here.
+    Markdown sources are routed through MarkdownSourceAdapter.
     """
 
     if Path(name).name not in RECOGNIZED_NAMES:
         return [], "unknown"
+    if MARKDOWN_ADAPTER.can_handle(name):
+        return MARKDOWN_ADAPTER.parse(payload)
     try:
         text = payload.decode("utf-8")
     except UnicodeDecodeError:
         return [], "unreadable"
     if name.endswith(".json"):
         return _parse_json(text)
-    return _parse_markdown(text), None
-
-
-def _parse_markdown(text: str) -> list[dict]:
-    items: list[dict] = []
-    for raw in text.splitlines():
-        line = raw.strip()
-        if not line or line.startswith("#"):
-            continue
-        if line.startswith(("- ", "* ")):
-            line = line[2:].strip()
-        if not line:
-            continue
-        items.append({"text": line, "digest": _digest(line)})
-    return items
+    return [], "unknown"
 
 
 def _parse_json(text: str) -> tuple[list[dict], str | None]:

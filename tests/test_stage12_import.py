@@ -173,3 +173,26 @@ def test_caller_isolation_on_import_handles():
     assert "secret-b" not in str(agent_a.invoke("read_caller_context", {}))
     assert agent_a.invoke("read_caller_context", {})["result"]["attributions"][0]["point_id"] == imported["created"][0]["point_id"]
     assert "secret-a" not in str(agent_b.invoke("read_caller_context", {}))
+
+
+def test_markdown_source_adapter_is_used_for_md(tmp_path: Path):
+    """Regression: Markdown import path uses the internal adapter seam."""
+    from memory_infra.source_adapter import MARKDOWN_ADAPTER, MarkdownSourceAdapter
+    from memory_infra.importer import parse_recognized
+
+    md = "# title\n- alpha\n\nbeta\n"
+    payload = md.encode("utf-8")
+    assert MARKDOWN_ADAPTER.can_handle("MEMORY.md")
+    assert not MARKDOWN_ADAPTER.can_handle("memory.json")
+    items, err = MARKDOWN_ADAPTER.parse(payload)
+    assert err is None
+    assert [item["text"] for item in items] == ["alpha", "beta"]
+    routed, routed_err = parse_recognized("MEMORY.md", payload)
+    assert routed_err is None
+    assert routed == items
+    # JSON still works and does not use the markdown adapter
+    json_payload = b'{"memories": ["json item"]}'
+    jitems, jerr = parse_recognized("memory.json", json_payload)
+    assert jerr is None
+    assert jitems[0]["text"] == "json item"
+    assert isinstance(MARKDOWN_ADAPTER, MarkdownSourceAdapter)
