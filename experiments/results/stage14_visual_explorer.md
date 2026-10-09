@@ -436,3 +436,69 @@ trace_artifact /tmp/agent-memory-infra/experiments/results/phase_h_trace.json 5b
 `deterministic_replay.match` is true for seeds 7, 11, and 19. Historical Phase H trace SHA-256 remains `5ba3af8f5376cf9586a7389293b5205d204a49b7b1de986c45031dc826bfa40c`. Seeds, budget, and policy were not changed. V0.1 and Phase G artifacts were not edited.
 
 Static inspection at the implementation SHA: fixture HTML `id` attributes are 9 unique values with no duplicates; kind-qualified anchors `n-event_3a_ev-7-2` and `n-state_3a_ev-7-2` are both present. Explorer imports are `html` and `typing` only. No browser/DOM runtime was available, so interactive filter clicks were not browser-verified. Observation left for review: contradiction endpoint marking and contradiction unhide match on `data-id` alone, so same-id state nodes are also marked `data-contradiction-endpoint=true` and can be shown with event endpoints.
+
+
+## Independent check at implementation SHA 85b188d — 2026-10-09
+
+Verdict: **CONDITIONAL / not PASS**. Issue #39 remains open. No next-stage issue opened.
+
+Executed tree: `85b188d02d8ba6a0c7cc30a0a3a28fbaf539563a` after `git checkout --detach` and `git rev-parse HEAD`. This evidence commit is not that tree.
+
+Ancestry:
+
+```
+git diff --name-only 85b188d02d8ba6a0c7cc30a0a3a28fbaf539563a..7139b5850cadf6d14f2b315519be5907dacaca39
+experiments/results/stage14_visual_explorer.md
+
+git diff --name-only 85b188d02d8ba6a0c7cc30a0a3a28fbaf539563a..b7199eb94f295d054b98ea3325455ff9342d0d94
+experiments/results/stage14_visual_explorer.md
+
+git diff --name-only 85b188d02d8ba6a0c7cc30a0a3a28fbaf539563a^..85b188d02d8ba6a0c7cc30a0a3a28fbaf539563a
+docs/STAGE14_VISUAL_EXPLORER.md
+src/memory_infra/explorer.py
+tests/test_stage14_explorer.py
+```
+
+`7139b585` and `b7199eb` are evidence-only relative to implementation SHA `85b188d`.
+
+### pytest
+
+```
+PYTHONPATH=src python -m pytest -q tests
+```
+
+```
+........................................................................ [ 64%]
+.......................................                                  [100%]
+111 passed in 0.60s
+```
+
+Exit code 0.
+
+### locked Phase H
+
+```
+PYTHONPATH=src python experiments/phase_h_dynamics.py
+```
+
+Exit code 0. First line:
+
+```
+locked {'seeds': [7, 11, 19], 'budget': 4, 'policy': 'none', 'conditions': ('event_identity', 'thread_lifecycle', 'memory_lifecycle', 'evidence_integrity', 'deterministic_replay')}
+```
+
+Last line:
+
+```
+trace_artifact /tmp/agent-memory-infra/experiments/results/phase_h_trace.json 5ba3af8f5376cf9586a7389293b5205d204a49b7b1de986c45031dc826bfa40c
+```
+
+`deterministic_replay.match` is true. Historical trace SHA-256 remains `5ba3af8f5376cf9586a7389293b5205d204a49b7b1de986c45031dc826bfa40c`. Seeds, budget, and policy were not changed. Working tree did not modify `experiments/results/phase_h_trace.json`. V0.1 and Phase G artifacts were not edited. Explorer does not import `memory_infra.store`. Fixture HTML has 9 unique `id` attributes. Kind-qualified anchors remain.
+
+### Browser probe
+
+Existing Chromium plus the session browser loaded a generated explorer page (not a new dependency). Contradiction view kept event endpoints `e1`/`e2` and contradiction edge `rel-c` visible, and hid same-id state `e1` and point `e2`. Search `both-observed` and `e1` kept both event endpoints and the contradiction edge visible.
+
+### Concrete defect, not fixed in this run
+
+`GraphMemory.merge` creates `referential.same_thread` between thread ids (`graph.py` `_rel(left_id, right_id, "referential.same_thread", signal)`). Explorer `_ENDPOINT_KIND` maps that type to `("event", "event")` when `source_kind`/`target_kind` are absent. A projection with thread endpoints `th-1`/`th-2` and a same-id event `th-1` rendered the inspector article as `data-source-kind="event"` `data-target-kind="event"`, and the SVG contained no `line` for that relation (`mergeLine` absent). Stage 14 is not marked PASS. Repair is a separate issue. No Stage 13 identity or V0.2 transition change was made.
