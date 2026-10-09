@@ -868,3 +868,8 @@ class="edge" x1="480" y1="70" x2="480" y2="160" data-relation-id="rel-merge" dat
 ```
 
 Inspector article `inspect-n-edge_3a_rel-merge` had `data-source-kind="thread"` and `data-target-kind="thread"`. Thread and event anchors `n-thread_3a_th-1` and `n-event_3a_th-1` were both present. Same-id events did not take the edge.
+
+
+## Issue #43 rerun at 670e4d2
+
+Evidence-only record: `experiments/results/stage14_issue43_rerun_670e4d2.md`. Code-under-test `670e4d2a0457823d2206cdd57a873e383c01ccd9`. Pytest 113 passed, exit 0. Locked Phase H exit 0, seeds 7,11,19, budget 4, policy none, deterministic replay true, trace SHA-256 `5ba3af8f5376cf9586a7389293b5205d204a49b7b1de986c45031dc826bfa40c`. Chromium input/change probe recorded. This section was not the executed HEAD. Stage 14 is not marked PASS.
