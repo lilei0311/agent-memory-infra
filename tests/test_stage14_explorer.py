@@ -167,3 +167,44 @@ def test_same_id_different_kind_nodes_stay_separately_addressable():
     assert event_pos != state_pos
     assert 'x="252"' in page
     assert "680,50" in page
+
+
+def test_view_filters_and_search_are_client_side_and_do_not_mutate():
+    nodes = [
+        {"kind": "event", "id": "ev-7-2", "observation": "left event"},
+        {"kind": "state", "id": "ev-7-2", "contradiction_history": ["rel-7-6"]},
+        {"kind": "thread", "id": "th-7-3", "member_event_ids": ["ev-7-2"]},
+        {"kind": "event", "id": "ev-7-5", "observation": "right event"},
+        {"kind": "point", "id": "pt-7-1", "content": "same text"},
+    ]
+    edges = [
+        {
+            "relation_id": "rel-7-6",
+            "source_id": "ev-7-2",
+            "target_id": "ev-7-5",
+            "relation_type": "evidential.contradicts",
+            "evidence_ref": "both kept",
+        }
+    ]
+    graph = {"read_only": True, "owner": "mechanism", "nodes": nodes, "edges": edges}
+    snapshot = repr(graph)
+    page = render_explorer(graph)
+    assert repr(graph) == snapshot
+    assert 'name="view" value="all"' in page
+    assert 'name="view" value="thread"' in page
+    assert 'name="view" value="event"' in page
+    assert 'name="view" value="contradiction"' in page
+    assert 'name="q"' in page
+    assert "function apply()" in page
+    assert "addEventListener" in page
+    assert "classList.toggle('is-hidden'" in page
+    assert "localStorage" not in page
+    assert "fetch(" not in page
+    assert "XMLHttpRequest" not in page
+    assert page.count('data-contradiction-endpoint="true"') >= 4
+    assert 'data-contradiction="true"' in page
+    assert "both kept" in page
+    assert page.count('data-id="ev-7-2"') >= 2
+    assert page.count('data-id="ev-7-5"') >= 2
+    assert 'data-kind="thread"' in page
+    assert 'data-kind="event"' in page

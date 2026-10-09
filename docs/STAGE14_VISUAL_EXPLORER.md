@@ -9,7 +9,7 @@ Public renderer: `memory_infra.explorer.render_explorer`. Input is the projectio
 Layout:
 
 - status bar states the view is read-only;
-- left navigation filters Threads, Events, and Contradictions without durable state;
+- left navigation filters All, Threads, Events, and Contradictions, and search filters by visible id or text; both are client-side display toggles and do not write durable state;
 - center SVG is the memory graph;
 - right inspector lists kind, mechanism-owned id, relation metadata, and evidence/provenance.
 

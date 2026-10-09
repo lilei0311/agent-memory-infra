@@ -1,30 +1,74 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8"><title>Visual Memory Explorer</title><style>body{display:grid;grid-template-columns:180px 1fr 280px;grid-template-rows:auto 1fr;margin:0;font-family:sans-serif}.status{grid-column:1/-1;padding:8px;border-bottom:1px solid #222}.nav{padding:8px}.canvas{min-height:640px}.node text,.edge-label{font-size:11px}.node[data-shape=circle] circle{fill:none;stroke:#111}.node[data-shape=rectangle] rect{fill:none;stroke:#111}.node[data-shape=rounded-rectangle] rect{fill:none;stroke:#111}.node[data-shape=diamond] polygon{fill:none;stroke:#111}.edge{stroke:#333}.contradiction{stroke-dasharray:4 3;stroke-width:3}.inspector{border-left:1px solid #222;padding:8px}</style></head><body data-read-only="true" data-owner="mechanism">
+<html lang="en"><head><meta charset="utf-8"><title>Visual Memory Explorer</title><style>body{display:grid;grid-template-columns:180px 1fr 280px;grid-template-rows:auto 1fr;margin:0;font-family:sans-serif}.status{grid-column:1/-1;padding:8px;border-bottom:1px solid #222}.nav{padding:8px}.canvas{min-height:640px}.node text,.edge-label{font-size:11px}.node[data-shape=circle] circle{fill:none;stroke:#111}.node[data-shape=rectangle] rect{fill:none;stroke:#111}.node[data-shape=rounded-rectangle] rect{fill:none;stroke:#111}.node[data-shape=diamond] polygon{fill:none;stroke:#111}.edge{stroke:#333}.contradiction{stroke-dasharray:4 3;stroke-width:3}.inspector{border-left:1px solid #222;padding:8px}.is-hidden{display:none}</style></head><body data-read-only="true" data-owner="mechanism">
 <header class="status" role="status">READ-ONLY. This explorer cannot mutate memory.</header>
 <nav class="nav" aria-label="Memory views"><p>What does the Agent remember?</p><label class="filter">All memories<input type="radio" name="view" value="all" checked></label><label class="filter">Threads<input type="radio" name="view" value="thread"></label><label class="filter">Events<input type="radio" name="view" value="event"></label><label class="filter">Contradictions<input type="radio" name="view" value="contradiction"></label><label class="search">Search<input type="search" name="q" placeholder="filter by id or text"></label></nav>
 <main class="canvas" aria-label="Memory graph">
 <svg viewBox="0 0 860 640" role="img" aria-label="Memory graph">
-<line class="edge contradiction" x1="280" y1="70" x2="280" y2="160" data-relation-id="rel-7-6" data-relation-type="evidential.contradicts" data-source-id="ev-7-2" data-target-id="ev-7-5" data-source-kind="event" data-target-kind="event" />
-<text class="edge-label" x="280" y="115">evidential.contradicts</text>
-<a class="node" data-kind="event" data-shape="rectangle" data-id="ev-7-2" data-anchor="n-event_3a_ev-7-2" href="#inspect-n-event_3a_ev-7-2"><rect x="252" y="54" width="56" height="32" /><text x="280" y="106">event ev-7-2</text></a>
-<a class="node" data-kind="event" data-shape="rectangle" data-id="ev-7-5" data-anchor="n-event_3a_ev-7-5" href="#inspect-n-event_3a_ev-7-5"><rect x="252" y="144" width="56" height="32" /><text x="280" y="196">event ev-7-5</text></a>
-<a class="node" data-kind="point" data-shape="circle" data-id="pt-7-1" data-anchor="n-point_3a_pt-7-1" href="#inspect-n-point_3a_pt-7-1"><circle cx="80" cy="70" r="22" /><text x="80" y="106">point pt-7-1</text></a>
-<a class="node" data-kind="point" data-shape="circle" data-id="pt-7-4" data-anchor="n-point_3a_pt-7-4" href="#inspect-n-point_3a_pt-7-4"><circle cx="80" cy="160" r="22" /><text x="80" y="196">point pt-7-4</text></a>
-<a class="node" data-kind="state" data-shape="diamond" data-id="ev-7-2" data-anchor="n-state_3a_ev-7-2" href="#inspect-n-state_3a_ev-7-2"><polygon points="680,50 704,70 680,90 656,70" /><text x="680" y="106">state ev-7-2</text></a>
-<a class="node" data-kind="state" data-shape="diamond" data-id="ev-7-5" data-anchor="n-state_3a_ev-7-5" href="#inspect-n-state_3a_ev-7-5"><polygon points="680,140 704,160 680,180 656,160" /><text x="680" y="196">state ev-7-5</text></a>
-<a class="node" data-kind="state" data-shape="diamond" data-id="th-7-3" data-anchor="n-state_3a_th-7-3" href="#inspect-n-state_3a_th-7-3"><polygon points="680,230 704,250 680,270 656,250" /><text x="680" y="286">state th-7-3</text></a>
-<a class="node" data-kind="thread" data-shape="rounded-rectangle" data-id="th-7-3" data-anchor="n-thread_3a_th-7-3" href="#inspect-n-thread_3a_th-7-3"><rect x="448" y="54" width="64" height="32" rx="12" /><text x="480" y="106">thread th-7-3</text></a>
+<line class="edge contradiction" x1="280" y1="70" x2="280" y2="160" data-relation-id="rel-7-6" data-relation-type="evidential.contradicts" data-source-id="ev-7-2" data-target-id="ev-7-5" data-source-kind="event" data-target-kind="event" data-contradiction="true" />
+<text class="edge-label" x="280" y="115" data-relation-id="rel-7-6" data-relation-type="evidential.contradicts" data-contradiction="true">evidential.contradicts</text>
+<a class="node" data-kind="event" data-shape="rectangle" data-id="ev-7-2" data-anchor="n-event_3a_ev-7-2" data-contradiction-endpoint="true" data-text="kind event id ev-7-2 observation same text evidence_ref src-a" href="#inspect-n-event_3a_ev-7-2"><rect x="252" y="54" width="56" height="32" /><text x="280" y="106">event ev-7-2</text></a>
+<a class="node" data-kind="event" data-shape="rectangle" data-id="ev-7-5" data-anchor="n-event_3a_ev-7-5" data-contradiction-endpoint="true" data-text="kind event id ev-7-5 observation same text evidence_ref src-b" href="#inspect-n-event_3a_ev-7-5"><rect x="252" y="144" width="56" height="32" /><text x="280" y="196">event ev-7-5</text></a>
+<a class="node" data-kind="point" data-shape="circle" data-id="pt-7-1" data-anchor="n-point_3a_pt-7-1" data-contradiction-endpoint="false" data-text="kind point id pt-7-1 content same text evidence_ref src-a" href="#inspect-n-point_3a_pt-7-1"><circle cx="80" cy="70" r="22" /><text x="80" y="106">point pt-7-1</text></a>
+<a class="node" data-kind="point" data-shape="circle" data-id="pt-7-4" data-anchor="n-point_3a_pt-7-4" data-contradiction-endpoint="false" data-text="kind point id pt-7-4 content same text evidence_ref src-b" href="#inspect-n-point_3a_pt-7-4"><circle cx="80" cy="160" r="22" /><text x="80" y="196">point pt-7-4</text></a>
+<a class="node" data-kind="state" data-shape="diamond" data-id="ev-7-2" data-anchor="n-state_3a_ev-7-2" data-contradiction-endpoint="true" data-text="kind state id ev-7-2 contradiction_history rel-7-6" href="#inspect-n-state_3a_ev-7-2"><polygon points="680,50 704,70 680,90 656,70" /><text x="680" y="106">state ev-7-2</text></a>
+<a class="node" data-kind="state" data-shape="diamond" data-id="ev-7-5" data-anchor="n-state_3a_ev-7-5" data-contradiction-endpoint="true" data-text="kind state id ev-7-5 contradiction_history rel-7-6" href="#inspect-n-state_3a_ev-7-5"><polygon points="680,140 704,160 680,180 656,160" /><text x="680" y="196">state ev-7-5</text></a>
+<a class="node" data-kind="state" data-shape="diamond" data-id="th-7-3" data-anchor="n-state_3a_th-7-3" data-contradiction-endpoint="false" data-text="kind state id th-7-3 contradiction_history " href="#inspect-n-state_3a_th-7-3"><polygon points="680,230 704,250 680,270 656,250" /><text x="680" y="286">state th-7-3</text></a>
+<a class="node" data-kind="thread" data-shape="rounded-rectangle" data-id="th-7-3" data-anchor="n-thread_3a_th-7-3" data-contradiction-endpoint="false" data-text="kind thread id th-7-3 member_event_ids ev-7-2, ev-7-5" href="#inspect-n-thread_3a_th-7-3"><rect x="448" y="54" width="64" height="32" rx="12" /><text x="480" y="106">thread th-7-3</text></a>
 </svg></main>
 <aside class="inspector" aria-label="Evidence inspector">
 <h2>Why is this memory here?</h2>
-<article id="inspect-n-event_3a_ev-7-2" data-anchor="n-event_3a_ev-7-2" data-kind="event" data-id="ev-7-2"><h3>event ev-7-2</h3><dl><dt>kind</dt><dd>event</dd><dt>id</dt><dd>ev-7-2</dd><dt>observation</dt><dd>same text</dd><dt>evidence_ref</dt><dd>src-a</dd></dl></article>
-<article id="inspect-n-event_3a_ev-7-5" data-anchor="n-event_3a_ev-7-5" data-kind="event" data-id="ev-7-5"><h3>event ev-7-5</h3><dl><dt>kind</dt><dd>event</dd><dt>id</dt><dd>ev-7-5</dd><dt>observation</dt><dd>same text</dd><dt>evidence_ref</dt><dd>src-b</dd></dl></article>
-<article id="inspect-n-point_3a_pt-7-1" data-anchor="n-point_3a_pt-7-1" data-kind="point" data-id="pt-7-1"><h3>point pt-7-1</h3><dl><dt>kind</dt><dd>point</dd><dt>id</dt><dd>pt-7-1</dd><dt>content</dt><dd>same text</dd><dt>evidence_ref</dt><dd>src-a</dd></dl></article>
-<article id="inspect-n-point_3a_pt-7-4" data-anchor="n-point_3a_pt-7-4" data-kind="point" data-id="pt-7-4"><h3>point pt-7-4</h3><dl><dt>kind</dt><dd>point</dd><dt>id</dt><dd>pt-7-4</dd><dt>content</dt><dd>same text</dd><dt>evidence_ref</dt><dd>src-b</dd></dl></article>
-<article id="inspect-n-state_3a_ev-7-2" data-anchor="n-state_3a_ev-7-2" data-kind="state" data-id="ev-7-2"><h3>state ev-7-2</h3><dl><dt>kind</dt><dd>state</dd><dt>id</dt><dd>ev-7-2</dd><dt>contradiction_history</dt><dd>rel-7-6</dd></dl></article>
-<article id="inspect-n-state_3a_ev-7-5" data-anchor="n-state_3a_ev-7-5" data-kind="state" data-id="ev-7-5"><h3>state ev-7-5</h3><dl><dt>kind</dt><dd>state</dd><dt>id</dt><dd>ev-7-5</dd><dt>contradiction_history</dt><dd>rel-7-6</dd></dl></article>
-<article id="inspect-n-state_3a_th-7-3" data-anchor="n-state_3a_th-7-3" data-kind="state" data-id="th-7-3"><h3>state th-7-3</h3><dl><dt>kind</dt><dd>state</dd><dt>id</dt><dd>th-7-3</dd><dt>contradiction_history</dt><dd></dd></dl></article>
-<article id="inspect-n-thread_3a_th-7-3" data-anchor="n-thread_3a_th-7-3" data-kind="thread" data-id="th-7-3"><h3>thread th-7-3</h3><dl><dt>kind</dt><dd>thread</dd><dt>id</dt><dd>th-7-3</dd><dt>member_event_ids</dt><dd>ev-7-2, ev-7-5</dd></dl></article>
-<article id="inspect-n-edge_3a_rel-7-6" data-anchor="n-edge_3a_rel-7-6" data-relation-type="evidential.contradicts" data-relation-id="rel-7-6"><h3>evidential.contradicts</h3><dl><dt>relation_id</dt><dd>rel-7-6</dd><dt>source_id</dt><dd>ev-7-2</dd><dt>target_id</dt><dd>ev-7-5</dd><dt>relation_type</dt><dd>evidential.contradicts</dd><dt>evidence_ref</dt><dd>both kept</dd></dl></article>
+<article id="inspect-n-event_3a_ev-7-2" data-anchor="n-event_3a_ev-7-2" data-kind="event" data-id="ev-7-2" data-contradiction-endpoint="true" data-text="kind event id ev-7-2 observation same text evidence_ref src-a"><h3>event ev-7-2</h3><dl><dt>kind</dt><dd>event</dd><dt>id</dt><dd>ev-7-2</dd><dt>observation</dt><dd>same text</dd><dt>evidence_ref</dt><dd>src-a</dd></dl></article>
+<article id="inspect-n-event_3a_ev-7-5" data-anchor="n-event_3a_ev-7-5" data-kind="event" data-id="ev-7-5" data-contradiction-endpoint="true" data-text="kind event id ev-7-5 observation same text evidence_ref src-b"><h3>event ev-7-5</h3><dl><dt>kind</dt><dd>event</dd><dt>id</dt><dd>ev-7-5</dd><dt>observation</dt><dd>same text</dd><dt>evidence_ref</dt><dd>src-b</dd></dl></article>
+<article id="inspect-n-point_3a_pt-7-1" data-anchor="n-point_3a_pt-7-1" data-kind="point" data-id="pt-7-1" data-contradiction-endpoint="false" data-text="kind point id pt-7-1 content same text evidence_ref src-a"><h3>point pt-7-1</h3><dl><dt>kind</dt><dd>point</dd><dt>id</dt><dd>pt-7-1</dd><dt>content</dt><dd>same text</dd><dt>evidence_ref</dt><dd>src-a</dd></dl></article>
+<article id="inspect-n-point_3a_pt-7-4" data-anchor="n-point_3a_pt-7-4" data-kind="point" data-id="pt-7-4" data-contradiction-endpoint="false" data-text="kind point id pt-7-4 content same text evidence_ref src-b"><h3>point pt-7-4</h3><dl><dt>kind</dt><dd>point</dd><dt>id</dt><dd>pt-7-4</dd><dt>content</dt><dd>same text</dd><dt>evidence_ref</dt><dd>src-b</dd></dl></article>
+<article id="inspect-n-state_3a_ev-7-2" data-anchor="n-state_3a_ev-7-2" data-kind="state" data-id="ev-7-2" data-contradiction-endpoint="true" data-text="kind state id ev-7-2 contradiction_history rel-7-6"><h3>state ev-7-2</h3><dl><dt>kind</dt><dd>state</dd><dt>id</dt><dd>ev-7-2</dd><dt>contradiction_history</dt><dd>rel-7-6</dd></dl></article>
+<article id="inspect-n-state_3a_ev-7-5" data-anchor="n-state_3a_ev-7-5" data-kind="state" data-id="ev-7-5" data-contradiction-endpoint="true" data-text="kind state id ev-7-5 contradiction_history rel-7-6"><h3>state ev-7-5</h3><dl><dt>kind</dt><dd>state</dd><dt>id</dt><dd>ev-7-5</dd><dt>contradiction_history</dt><dd>rel-7-6</dd></dl></article>
+<article id="inspect-n-state_3a_th-7-3" data-anchor="n-state_3a_th-7-3" data-kind="state" data-id="th-7-3" data-contradiction-endpoint="false" data-text="kind state id th-7-3 contradiction_history "><h3>state th-7-3</h3><dl><dt>kind</dt><dd>state</dd><dt>id</dt><dd>th-7-3</dd><dt>contradiction_history</dt><dd></dd></dl></article>
+<article id="inspect-n-thread_3a_th-7-3" data-anchor="n-thread_3a_th-7-3" data-kind="thread" data-id="th-7-3" data-contradiction-endpoint="false" data-text="kind thread id th-7-3 member_event_ids ev-7-2, ev-7-5"><h3>thread th-7-3</h3><dl><dt>kind</dt><dd>thread</dd><dt>id</dt><dd>th-7-3</dd><dt>member_event_ids</dt><dd>ev-7-2, ev-7-5</dd></dl></article>
+<article id="inspect-n-edge_3a_rel-7-6" data-anchor="n-edge_3a_rel-7-6" data-relation-type="evidential.contradicts" data-relation-id="rel-7-6" data-source-id="ev-7-2" data-target-id="ev-7-5" data-contradiction="true" data-text="relation_id rel-7-6 source_id ev-7-2 target_id ev-7-5 relation_type evidential.contradicts evidence_ref both kept"><h3>evidential.contradicts</h3><dl><dt>relation_id</dt><dd>rel-7-6</dd><dt>source_id</dt><dd>ev-7-2</dd><dt>target_id</dt><dd>ev-7-5</dd><dt>relation_type</dt><dd>evidential.contradicts</dd><dt>evidence_ref</dt><dd>both kept</dd></dl></article>
 </aside>
+<script>(function(){
+function q(){var el=document.querySelector('input[name=q]');return ((el&&el.value)||'').trim().toLowerCase();}
+function view(){var el=document.querySelector('input[name=view]:checked');return el?el.value:'all';}
+function text(el){return (el.getAttribute('data-text')||el.textContent||'').toLowerCase();}
+function hit(el,query){if(!query)return true;var id=(el.getAttribute('data-id')||'').toLowerCase();return id.indexOf(query)!==-1||text(el).indexOf(query)!==-1;}
+function hide(el,on){el.classList.toggle('is-hidden',on);}
+function articles(){return document.querySelectorAll('aside.inspector article');}
+function apply(){
+var selected=view();var query=q();var visible={};
+document.querySelectorAll('a.node').forEach(function(node){
+var kind=node.getAttribute('data-kind');var id=node.getAttribute('data-id');
+var inView=selected==='all'||(selected==='thread'&&kind==='thread')||(selected==='event'&&kind==='event')||(selected==='contradiction'&&node.getAttribute('data-contradiction-endpoint')==='true');
+var show=inView&&hit(node,query);visible[kind+':'+id]=show;hide(node,!show);});
+if(selected==='contradiction'){
+document.querySelectorAll('line.edge[data-contradiction=true]').forEach(function(edge){
+var source=edge.getAttribute('data-source-id');var target=edge.getAttribute('data-target-id');var related=hit(edge,query);
+articles().forEach(function(article){if(article.getAttribute('data-relation-id')===edge.getAttribute('data-relation-id'))related=related||hit(article,query);});
+document.querySelectorAll('a.node[data-contradiction-endpoint=true]').forEach(function(node){if(node.getAttribute('data-id')===source||node.getAttribute('data-id')===target)related=related||hit(node,query);});
+if(related){document.querySelectorAll('a.node').forEach(function(node){if(node.getAttribute('data-id')===source||node.getAttribute('data-id')===target){hide(node,false);visible[node.getAttribute('data-kind')+':'+node.getAttribute('data-id')]=true;}});}});
+}
+document.querySelectorAll('line.edge').forEach(function(edge){
+var sourceKind=edge.getAttribute('data-source-kind');var targetKind=edge.getAttribute('data-target-kind');
+var source=edge.getAttribute('data-source-id');var target=edge.getAttribute('data-target-id');
+var contradiction=edge.getAttribute('data-contradiction')==='true';
+var inView=selected==='all'||(selected==='contradiction'&&contradiction)||(selected==='event'&&sourceKind==='event'&&targetKind==='event')||(selected==='thread'&&sourceKind==='thread'&&targetKind==='thread');
+var show=inView&&visible[sourceKind+':'+source]&&visible[targetKind+':'+target];
+hide(edge,!show);
+document.querySelectorAll('text.edge-label').forEach(function(label){if(label.getAttribute('data-relation-id')===edge.getAttribute('data-relation-id'))hide(label,!show);});
+});
+articles().forEach(function(article){
+var kind=article.getAttribute('data-kind');var id=article.getAttribute('data-id');
+var contradiction=article.getAttribute('data-contradiction')==='true';
+var show=false;
+if(kind){show=!!visible[kind+':'+id];}
+else if(contradiction&&selected==='contradiction'){
+var source=article.getAttribute('data-source-id');var target=article.getAttribute('data-target-id');
+show=Object.keys(visible).some(function(key){return visible[key]&&(key.slice(key.indexOf(':')+1)===source||key.slice(key.indexOf(':')+1)===target);});
+}else if(selected==='all'){show=hit(article,query);}
+hide(article,!show);
+});
+}
+document.querySelectorAll('input[name=view],input[name=q]').forEach(function(el){el.addEventListener('change',apply);el.addEventListener('input',apply);});
+apply();
+})();</script>
 </body></html>
