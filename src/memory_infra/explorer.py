@@ -120,7 +120,12 @@ def _search_text(row: dict) -> str:
 
 
 def _filter_script() -> str:
-    """Display-only filter. Does not write memory, storage, or network."""
+    """Display-only filter. Does not write memory, storage, or network.
+
+    Relation inspector articles are visible iff the matching edge is visible.
+    Labels follow that same edge visibility. Each apply() recomputes from the
+    current controls, so filter/search transitions do not keep stale visibility.
+    """
 
     return """
 (function(){
@@ -131,7 +136,7 @@ function hit(el,query){if(!query)return true;var id=(el.getAttribute('data-id')|
 function hide(el,on){el.classList.toggle('is-hidden',on);}
 function articles(){return document.querySelectorAll('aside.inspector article');}
 function apply(){
-var selected=view();var query=q();var visible={};
+var selected=view();var query=q();var visible={};var edgeVisible={};
 document.querySelectorAll('a.node').forEach(function(node){
 var kind=node.getAttribute('data-kind');var id=node.getAttribute('data-id');
 var inView=selected==='all'||(selected==='thread'&&kind==='thread')||(selected==='event'&&kind==='event')||(selected==='contradiction'&&node.getAttribute('data-contradiction-endpoint')==='true');
@@ -150,19 +155,17 @@ var source=edge.getAttribute('data-source-id');var target=edge.getAttribute('dat
 var contradiction=edge.getAttribute('data-contradiction')==='true';
 var inView=selected==='all'||(selected==='contradiction'&&contradiction)||(selected==='event'&&sourceKind==='event'&&targetKind==='event')||(selected==='thread'&&sourceKind==='thread'&&targetKind==='thread');
 var show=inView&&visible[sourceKind+':'+source]&&visible[targetKind+':'+target];
+var relationId=edge.getAttribute('data-relation-id');
+edgeVisible[relationId]=show;
 hide(edge,!show);
-document.querySelectorAll('text.edge-label').forEach(function(label){if(label.getAttribute('data-relation-id')===edge.getAttribute('data-relation-id'))hide(label,!show);});
+document.querySelectorAll('text.edge-label').forEach(function(label){if(label.getAttribute('data-relation-id')===relationId)hide(label,!show);});
 });
 articles().forEach(function(article){
 var kind=article.getAttribute('data-kind');var id=article.getAttribute('data-id');
-var contradiction=article.getAttribute('data-contradiction')==='true';
+var relationId=article.getAttribute('data-relation-id');
 var show=false;
 if(kind){show=!!visible[kind+':'+id];}
-else if(contradiction&&selected==='contradiction'){
-var source=article.getAttribute('data-source-id');var target=article.getAttribute('data-target-id');
-var sourceKind=article.getAttribute('data-source-kind');var targetKind=article.getAttribute('data-target-kind');
-show=!!visible[sourceKind+':'+source]||!!visible[targetKind+':'+target];
-}else if(selected==='all'){show=hit(article,query);}
+else if(relationId){show=!!edgeVisible[relationId];}
 hide(article,!show);
 });
 }

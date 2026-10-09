@@ -310,3 +310,49 @@ def test_same_thread_relation_binds_thread_endpoints_not_same_id_events():
     assert 'href="#inspect-n-thread_3a_th-1"' in page
     assert 'href="#inspect-n-thread_3a_th-2"' in page
 
+
+
+def test_relation_inspector_visibility_tracks_edge_visibility():
+    """Issue #42: inspector visible iff its edge is visible."""
+
+    nodes = [
+        {"kind": "thread", "id": "th-1", "label": "thread alpha"},
+        {"kind": "thread", "id": "th-2", "label": "thread beta"},
+        {"kind": "event", "id": "th-1", "observation": "same-id event"},
+        {"kind": "event", "id": "e1", "observation": "left claim"},
+        {"kind": "event", "id": "e2", "observation": "right claim"},
+        {"kind": "state", "id": "e1", "contradiction_history": ["rel-con"]},
+        {"kind": "point", "id": "e1", "content": "not an endpoint"},
+    ]
+    edges = [
+        {
+            "relation_id": "rel-merge",
+            "source_id": "th-1",
+            "target_id": "th-2",
+            "relation_type": "referential.same_thread",
+            "evidence_ref": "same-goal",
+        },
+        {
+            "relation_id": "rel-con",
+            "source_id": "e1",
+            "target_id": "e2",
+            "relation_type": "evidential.contradicts",
+            "evidence_ref": "both-seen",
+        },
+    ]
+    page = render_explorer(
+        {"read_only": True, "owner": "mechanism", "nodes": nodes, "edges": edges}
+    )
+    script = page.split("<script>", 1)[1].split("</script>", 1)[0]
+    assert "var edgeVisible={}" in script
+    assert "edgeVisible[relationId]=show" in script
+    assert "else if(relationId){show=!!edgeVisible[relationId];}" in script
+    assert "else if(selected==='all'){show=hit(article,query);}" not in script
+    assert "addEventListener('change',apply)" in script
+    assert "addEventListener('input',apply)" in script
+    assert page.count('data-relation-id="rel-merge"') >= 3
+    assert page.count('data-relation-id="rel-con"') >= 3
+    assert 'data-relation-type="referential.same_thread"' in page
+    assert 'data-relation-type="evidential.contradicts"' in page
+    assert "same-goal" in page
+    assert "both-seen" in page
