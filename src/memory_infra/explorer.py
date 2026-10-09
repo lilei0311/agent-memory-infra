@@ -72,9 +72,10 @@ def presentation_key(kind: str, mechanism_id: str) -> str:
 # Stage 13 edges identify endpoints by mechanism id only. Presentation does
 # not invent a second graph identity. When source_kind/target_kind are absent,
 # the narrow rule is the mechanism creation contract in graph.py, not first-id
-# match: contradiction/causal/temporal/same_thread bind events; changed_context
-# binds threads; revisits binds a thread to an event, or to the thread itself
-# when the target id has no event node.
+# match: contradiction/causal/temporal bind events; same_thread and
+# changed_context bind threads (GraphMemory.merge relates thread ids);
+# revisits binds a thread to an event, or to the thread itself when the
+# target id has no event node.
 _ENDPOINT_KIND = {
     "evidential.contradicts": ("event", "event"),
     "temporal.before": ("event", "event"),
@@ -82,7 +83,7 @@ _ENDPOINT_KIND = {
     "causal.caused_by": ("event", "event"),
     "causal.enabled": ("event", "event"),
     "causal.prevented": ("event", "event"),
-    "referential.same_thread": ("event", "event"),
+    "referential.same_thread": ("thread", "thread"),
     "contextual.changed_context": ("thread", "thread"),
     "referential.revisits": ("thread", "event"),
 }

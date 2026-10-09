@@ -253,3 +253,60 @@ def test_contradiction_endpoints_are_kind_qualified_not_id_only():
     assert "data-source-kind===sourceKind" not in page
     assert "kind===sourceKind&&id===source" in page
     assert "kind===targetKind&&id===target" in page
+
+def test_same_thread_relation_binds_thread_endpoints_not_same_id_events():
+    """Issue #41: merge same_thread must not be stolen by same-id events."""
+
+    nodes = [
+        {"kind": "thread", "id": "th-1", "topic": "alpha"},
+        {"kind": "thread", "id": "th-2", "topic": "beta"},
+        {"kind": "event", "id": "th-1", "observation": "same id event must not steal source"},
+        {"kind": "event", "id": "th-2", "observation": "same id event must not steal target"},
+    ]
+    edges = [
+        {
+            "relation_id": "rel-merge",
+            "source_id": "th-1",
+            "target_id": "th-2",
+            "relation_type": "referential.same_thread",
+            "evidence_ref": "merge signal",
+        }
+    ]
+    page = render_explorer(
+        {"read_only": True, "owner": "mechanism", "nodes": nodes, "edges": edges}
+    )
+    assert page.count("<line ") == 1
+    line = page.split("<line ", 1)[1].split(">", 1)[0]
+    assert 'data-relation-type="referential.same_thread"' in line
+    assert 'data-relation-id="rel-merge"' in line
+    assert 'data-source-kind="thread"' in line
+    assert 'data-target-kind="thread"' in line
+    assert 'data-source-id="th-1"' in line
+    assert 'data-target-id="th-2"' in line
+    assert 'x1="480"' in line
+    assert 'y1="70"' in line
+    assert 'x2="480"' in line
+    assert 'y2="160"' in line
+    assert 'x1="280"' not in line
+    marker = 'data-relation-id="rel-merge"'
+    article = ""
+    start = 0
+    while True:
+        at = page.find("<article", start)
+        assert at != -1
+        block = page[at:page.find("</article>", at)]
+        if marker in block and 'data-relation-type="referential.same_thread"' in block:
+            article = block
+            break
+        start = at + 1
+    assert 'data-source-kind="thread"' in article
+    assert 'data-target-kind="thread"' in article
+    assert 'data-source-kind="event"' not in article
+    assert 'data-target-kind="event"' not in article
+    assert 'data-anchor="n-thread_3a_th-1"' in page
+    assert 'data-anchor="n-thread_3a_th-2"' in page
+    assert 'data-anchor="n-event_3a_th-1"' in page
+    assert 'data-anchor="n-event_3a_th-2"' in page
+    assert 'href="#inspect-n-thread_3a_th-1"' in page
+    assert 'href="#inspect-n-thread_3a_th-2"' in page
+
