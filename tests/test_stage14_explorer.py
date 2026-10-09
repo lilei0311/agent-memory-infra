@@ -208,3 +208,48 @@ def test_view_filters_and_search_are_client_side_and_do_not_mutate():
     assert page.count('data-id="ev-7-5"') >= 2
     assert 'data-kind="thread"' in page
     assert 'data-kind="event"' in page
+
+
+def test_contradiction_endpoints_are_kind_qualified_not_id_only():
+    nodes = [
+        {"kind": "event", "id": "e1", "observation": "left claim"},
+        {"kind": "state", "id": "e1", "contradiction_history": ["rel-c"]},
+        {"kind": "event", "id": "e2", "observation": "right claim"},
+        {"kind": "point", "id": "e2", "content": "not an endpoint"},
+    ]
+    edges = [
+        {
+            "relation_id": "rel-c",
+            "source_id": "e1",
+            "target_id": "e2",
+            "relation_type": "evidential.contradicts",
+            "evidence_ref": "both kept",
+        }
+    ]
+    page = render_explorer(
+        {"read_only": True, "owner": "mechanism", "nodes": nodes, "edges": edges}
+    )
+    def node_tag(kind, mechanism_id):
+        needle = f'data-kind="{kind}"'
+        start = 0
+        while True:
+            at = page.find(needle, start)
+            assert at != -1, (kind, mechanism_id)
+            tag = page[at:page.find(">", at)]
+            if f'data-id="{mechanism_id}"' in tag and "data-relation" not in tag:
+                return tag
+            start = at + len(needle)
+    assert 'data-contradiction-endpoint="true"' in node_tag("event", "e1")
+    assert 'data-contradiction-endpoint="true"' in node_tag("event", "e2")
+    assert 'data-contradiction-endpoint="false"' in node_tag("state", "e1")
+    assert 'data-contradiction-endpoint="false"' in node_tag("point", "e2")
+    line = page.split("<line ", 1)[1].split(">", 1)[0]
+    assert 'data-source-kind="event"' in line
+    assert 'data-target-kind="event"' in line
+    assert 'x1="280"' in line
+    assert 'x2="280"' in line
+    assert 'data-relation-type="evidential.contradicts"' in line
+    assert "both kept" in page
+    assert "data-source-kind===sourceKind" not in page
+    assert "kind===sourceKind&&id===source" in page
+    assert "kind===targetKind&&id===target" in page

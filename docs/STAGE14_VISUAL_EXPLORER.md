@@ -19,6 +19,8 @@ Ordering follows Stage 13: nodes by kind then id, edges by relation type then re
 
 Presentation identity is kind-qualified. DOM anchors and positions use `(kind, id)`. Displayed `data-id` remains the mechanism-owned id. Same-id event and state nodes stay separately positioned and inspectable. Stage 13 graph identity is unchanged.
 
+Edge geometry and contradiction membership use the same kind-qualified identity. Stage 13 edges carry mechanism ids only, so the projection schema does not name endpoint kinds. The explorer does not guess by first id match. Absent explicit `source_kind`/`target_kind`, it applies the mechanism creation contract: `evidential.contradicts`, causal, `temporal.before`, and `referential.same_thread` bind event nodes; `contextual.changed_context` binds thread nodes; `referential.revisits` binds a thread to an event, or to that thread when no event node has the target id. Contradiction marking and reveal use `(kind, id)`. A state or point that only shares an endpoint id is not marked or revealed.
+
 ## Non-claims
 
 This is not a production UI, Hub, Memory Policy, or graph store. Stage 14 is not marked PASS by this document.

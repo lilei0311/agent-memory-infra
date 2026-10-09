@@ -69,18 +69,43 @@ def presentation_key(kind: str, mechanism_id: str) -> str:
 
 
 
+# Stage 13 edges identify endpoints by mechanism id only. Presentation does
+# not invent a second graph identity. When source_kind/target_kind are absent,
+# the narrow rule is the mechanism creation contract in graph.py, not first-id
+# match: contradiction/causal/temporal/same_thread bind events; changed_context
+# binds threads; revisits binds a thread to an event, or to the thread itself
+# when the target id has no event node.
+_ENDPOINT_KIND = {
+    "evidential.contradicts": ("event", "event"),
+    "temporal.before": ("event", "event"),
+    "causal.caused": ("event", "event"),
+    "causal.caused_by": ("event", "event"),
+    "causal.enabled": ("event", "event"),
+    "causal.prevented": ("event", "event"),
+    "referential.same_thread": ("event", "event"),
+    "contextual.changed_context": ("thread", "thread"),
+    "referential.revisits": ("thread", "event"),
+}
+
+
+def _endpoint_kinds(edge: dict) -> tuple[str, str]:
+    explicit_source = edge.get("source_kind")
+    explicit_target = edge.get("target_kind")
+    if explicit_source and explicit_target:
+        return explicit_source, explicit_target
+    return _ENDPOINT_KIND.get(edge["relation_type"], ("", ""))
+
+
 def _mark_contradiction_endpoints(nodes: list[dict], edges: list[dict]) -> None:
-    endpoint_ids = {
-        edge["source_id"]
-        for edge in edges
-        if edge["relation_type"] == "evidential.contradicts"
-    } | {
-        edge["target_id"]
-        for edge in edges
-        if edge["relation_type"] == "evidential.contradicts"
-    }
+    pairs = set()
+    for edge in edges:
+        if edge["relation_type"] != "evidential.contradicts":
+            continue
+        source_kind, target_kind = _endpoint_kinds(edge)
+        pairs.add((source_kind, edge["source_id"]))
+        pairs.add((target_kind, edge["target_id"]))
     for row in nodes:
-        row["_contradiction_endpoint"] = row["id"] in endpoint_ids
+        row["_contradiction_endpoint"] = (row["kind"], row["id"]) in pairs
 
 
 def _search_text(row: dict) -> str:
@@ -114,8 +139,9 @@ if(selected==='contradiction'){
 document.querySelectorAll('line.edge[data-contradiction=true]').forEach(function(edge){
 var source=edge.getAttribute('data-source-id');var target=edge.getAttribute('data-target-id');var related=hit(edge,query);
 articles().forEach(function(article){if(article.getAttribute('data-relation-id')===edge.getAttribute('data-relation-id'))related=related||hit(article,query);});
-document.querySelectorAll('a.node[data-contradiction-endpoint=true]').forEach(function(node){if(node.getAttribute('data-id')===source||node.getAttribute('data-id')===target)related=related||hit(node,query);});
-if(related){document.querySelectorAll('a.node').forEach(function(node){if(node.getAttribute('data-id')===source||node.getAttribute('data-id')===target){hide(node,false);visible[node.getAttribute('data-kind')+':'+node.getAttribute('data-id')]=true;}});}});
+var sourceKind=edge.getAttribute('data-source-kind');var targetKind=edge.getAttribute('data-target-kind');
+document.querySelectorAll('a.node[data-contradiction-endpoint=true]').forEach(function(node){var kind=node.getAttribute('data-kind');var id=node.getAttribute('data-id');if((kind===sourceKind&&id===source)||(kind===targetKind&&id===target))related=related||hit(node,query);});
+if(related){document.querySelectorAll('a.node').forEach(function(node){var kind=node.getAttribute('data-kind');var id=node.getAttribute('data-id');if((kind===sourceKind&&id===source)||(kind===targetKind&&id===target)){hide(node,false);visible[kind+':'+id]=true;}});}});
 }
 document.querySelectorAll('line.edge').forEach(function(edge){
 var sourceKind=edge.getAttribute('data-source-kind');var targetKind=edge.getAttribute('data-target-kind');
@@ -133,7 +159,8 @@ var show=false;
 if(kind){show=!!visible[kind+':'+id];}
 else if(contradiction&&selected==='contradiction'){
 var source=article.getAttribute('data-source-id');var target=article.getAttribute('data-target-id');
-show=Object.keys(visible).some(function(key){return visible[key]&&(key.slice(key.indexOf(':')+1)===source||key.slice(key.indexOf(':')+1)===target);});
+var sourceKind=article.getAttribute('data-source-kind');var targetKind=article.getAttribute('data-target-kind');
+show=!!visible[sourceKind+':'+source]||!!visible[targetKind+':'+target];
 }else if(selected==='all'){show=hit(article,query);}
 hide(article,!show);
 });
@@ -155,13 +182,18 @@ def _positions(nodes: list[dict]) -> dict[tuple[str, str], tuple[int, int]]:
     return placed
 
 
-def _endpoint(positions: dict[tuple[str, str], tuple[int, int]], mechanism_id: str):
-    matches = [
-        (kind, pos)
-        for (kind, mid), pos in positions.items()
-        if mid == mechanism_id
-    ]
-    return matches
+def _resolve_endpoint(positions, edge: dict, side: str):
+    """Bind one edge end to the kind-qualified node, never the first id hit."""
+
+    mechanism_id = edge["source_id"] if side == "source" else edge["target_id"]
+    source_kind, target_kind = _endpoint_kinds(edge)
+    preferred = source_kind if side == "source" else target_kind
+    if preferred and (preferred, mechanism_id) in positions:
+        return preferred, positions[(preferred, mechanism_id)]
+    if edge.get("relation_type") == "referential.revisits" and side == "target":
+        if ("thread", mechanism_id) in positions:
+            return "thread", positions[("thread", mechanism_id)]
+    return "", None
 
 
 def _status() -> str:
@@ -200,13 +232,10 @@ def _canvas(nodes, edges, positions) -> str:
     parts = ['<main class="canvas" aria-label="Memory graph">']
     parts.append('<svg viewBox="0 0 860 640" role="img" aria-label="Memory graph">')
     for edge in edges:
-        sources = _endpoint(positions, edge["source_id"])
-        targets = _endpoint(positions, edge["target_id"])
-        if not sources or not targets:
+        source_kind, source = _resolve_endpoint(positions, edge, "source")
+        target_kind, target = _resolve_endpoint(positions, edge, "target")
+        if source is None or target is None:
             continue
-        # Geometry only. Shared mechanism ids stay separate nodes.
-        source_kind, source = sources[0]
-        target_kind, target = targets[0]
         relation_type = edge["relation_type"]
         contradiction = "true" if relation_type == "evidential.contradicts" else "false"
         css = "edge contradiction" if contradiction == "true" else "edge"
@@ -297,6 +326,8 @@ def _inspector(nodes, edges) -> str:
             f'data-relation-id="{html.escape(edge["relation_id"])}" '
             f'data-source-id="{html.escape(edge["source_id"])}" '
             f'data-target-id="{html.escape(edge["target_id"])}" '
+            f'data-source-kind="{html.escape(_endpoint_kinds(edge)[0])}" '
+            f'data-target-kind="{html.escape(_endpoint_kinds(edge)[1])}" '
             f'data-contradiction="{contradiction}" '
             f'data-text="{html.escape(_search_text(edge), quote=True)}">'
             f"<h3>{html.escape(edge['relation_type'])}</h3>"
