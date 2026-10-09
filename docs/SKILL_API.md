@@ -1,6 +1,6 @@
 # Agent Memory Skill public API contract
 
-Revision: `skill-api-2026-10-10.5`. Code baseline: `src/memory_infra/skill.py` and `CallerSession.request` at `fc443b86feea38fa1216c16f9c34d99c6028067a` (unchanged by the contract commits). This document is the caller-facing contract. It does not add a transport, storage adapter, Agent integration, Hub, or Memory Bridge.
+Revision: `skill-api-2026-10-10.6`. Code baseline: `src/memory_infra/skill.py`, `CallerSession.request`, and `SkillHandle.import_selected` at `fc443b86feea38fa1216c16f9c34d99c6028067a` (unchanged by the contract commits). This document is the caller-facing contract. It does not add a transport, storage adapter, Agent integration, Hub, or Memory Bridge.
 
 A harness installs one Skill for one Agent. It calls the in-process entry below. It does not import `memory_infra.store`, allocate mechanism ids, or write graph/lifecycle/thread/relation/trace/attention state.
 
@@ -78,7 +78,7 @@ Rejection order, from `CallerSession.request` then `MemoryService.request`, is e
 
 Empty, whitespace-only, or non-string bound `caller_id` → `caller_id must be a non-empty string` (`SkillApi.invoke` / `CallerSession`). `SkillEntrypoint.open` uses `ValueError`: `caller_id is required` for the same empty or whitespace-only case. A payload `caller_id` equal to the bound id is not impersonation and is accepted.
 
-`note` is processed before operation dispatch on every op, not only `observe`. A present `note` must be a non-empty string or the call raises `SnapshotError`: `caller note must be a non-empty string`. A valid `note` is appended to that caller's notes and is visible from `read_caller_context`. It is not restored by `load`.
+`note` is processed before operation dispatch on every op, not only `observe`. A present `note` must be a non-empty string or the call raises `SnapshotError`: `caller note must be a non-empty string`. Note validation runs after impersonation, ownership, and scope checks, and before dispatch, including the `read_graph` write-key check. An ownership or scope rejection does not append the note. A valid note is appended before dispatch and is not rolled back if dispatch then fails. That includes `read_graph` write-key `SnapshotError`, missing-field `KeyError`, and later `BoundaryError`. The note is visible from `read_caller_context` even though the op failed. It is not restored by `load`.
 
 ## Operations
 
@@ -130,7 +130,7 @@ Signal payloads must not include mechanism-owned fields such as `lifecycle_state
 
 Aligned with `docs/PROTOCOLS.md`: a missing signal is unknown, not guessed. `user_feedback`, `task_success`, and `used` stay absent or `None` unless the caller supplied that signal through an explicit future feedback operation. This contract does not add that operation. `observe` and `signal` must not invent `user_feedback` or `task_success`.
 
-Unknown discovery sources stay `unknown` or `unreadable` in inventory. `import_selected` before discovery raises `RuntimeError`: `explicit import requires completed discovery`. A path absent from that handle's discovery is rejected with `reason` `not_in_discovery` and is not ingested. A recognized-but-not-readable source is rejected with that source status. Import does not migrate or rewrite caller files. A second handle cannot read another handle's discovery inventory.
+Unknown discovery sources stay `unknown` or `unreadable` in inventory. `import_selected` before discovery raises `RuntimeError`: `explicit import requires completed discovery`. After discovery, `import_selected` calls `enable_memory` before it checks paths. A fully rejected import still enables memory and appends `import` to `sequence`. `mechanism_memory_created` is true only when records were created, so a rejected report can show `mechanism_memory_created: false` while a later `invoke` succeeds without a separate `enable_memory` call. A path absent from that handle's discovery is rejected with `reason` `not_in_discovery` and is not ingested. A recognized-but-not-readable source is rejected with that source status. Import does not migrate or rewrite caller files. A second handle cannot read another handle's discovery inventory.
 
 ## Compatibility
 

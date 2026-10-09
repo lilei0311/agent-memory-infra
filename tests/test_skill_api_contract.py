@@ -446,3 +446,26 @@ def test_exact_read_shapes_note_scope_and_import_rejection():
     other = SkillEntrypoint().open("agent-b")
     assert other.inventory() is None
     assert early.inventory() is not None
+
+
+def test_failed_dispatch_keeps_note_and_rejected_import_enables_memory():
+    api = SkillApi.open_memory()
+    with pytest.raises(SnapshotError) as owned:
+        api.invoke("agent-a", "observe", {"content": "fact", "note": "owned-note", "assign_ids": True})
+    assert str(owned.value) == "caller cannot own mechanism fields: ['assign_ids']"
+    assert api.invoke("agent-a", "read_caller_context")["result"]["notes"] == ()
+    with pytest.raises(SnapshotError) as graph:
+        api.invoke("agent-a", "read_graph", {"note": "kept", "nodes": []})
+    assert str(graph.value) == "caller cannot own mechanism fields: ['nodes']"
+    with pytest.raises(KeyError):
+        api.invoke("agent-a", "observe", {"note": "missing-content"})
+    assert api.invoke("agent-a", "read_caller_context")["result"]["notes"] == ("kept", "missing-content")
+    handle = SkillEntrypoint().open("agent-a")
+    handle.start(artifacts={})
+    report = handle.import_selected(["missing.md"])
+    assert report["phase"] == "import_reported"
+    assert report["mechanism_memory_created"] is False
+    assert report["imported"] is False
+    assert report["sequence"] == ["discovery", "memory", "import"]
+    observed = handle.invoke("observe", {"content": "after rejected import"})
+    assert observed["ok"] is True and observed["point_id"]
