@@ -1,5 +1,81 @@
 # Stage 14 read-only Visual Memory Explorer evidence
 
+## Issue #39 click-dispatch check of implementation d669e86
+
+Executed at implementation SHA `d669e86e27f75390c12ed5226772992626efee60`. Repository HEAD before this evidence commit was `34a72925cbdaea277d7a7103fc9ac2d0a33ef356`. This evidence commit only records the independent run. It is not the executed HEAD. Stage 14 is not marked PASS. Issue #39 is left open. No next-stage issue was opened.
+
+Ancestry at the evidence HEAD before this commit:
+
+```
+git diff --name-only d669e86e27f75390c12ed5226772992626efee60..34a72925cbdaea277d7a7103fc9ac2d0a33ef356
+experiments/results/stage14_visual_explorer.md
+
+git diff --name-only d669e86e27f75390c12ed5226772992626efee60^..d669e86e27f75390c12ed5226772992626efee60
+docs/STAGE14_VISUAL_EXPLORER.md
+src/memory_infra/explorer.py
+tests/test_stage14_explorer.py
+```
+
+`34a72925cbdaea277d7a7103fc9ac2d0a33ef356` is evidence-only relative to implementation SHA `d669e86e27f75390c12ed5226772992626efee60`.
+
+Commands after `git checkout d669e86e27f75390c12ed5226772992626efee60` and `git rev-parse HEAD` equaled that SHA:
+
+```bash
+git rev-parse HEAD
+PYTHONPATH=src python -m pytest -q tests
+PYTHONPATH=src python experiments/phase_h_dynamics.py
+```
+
+`git rev-parse HEAD` printed `d669e86e27f75390c12ed5226772992626efee60`.
+
+### pytest
+
+Exit code 0.
+
+```
+........................................................................ [ 64%]
+........................................                                 [100%]
+112 passed in 0.59s
+```
+
+### locked Phase H
+
+Exit code 0. Locked config unchanged: seeds 7, 11, 19; budget 4; policy none. `deterministic_replay.match` true for seeds 7, 11, and 19. Historical trace SHA-256 unchanged: `5ba3af8f5376cf9586a7389293b5205d204a49b7b1de986c45031dc826bfa40c`.
+
+First line:
+
+```
+locked {'seeds': [7, 11, 19], 'budget': 4, 'policy': 'none', 'conditions': ('event_identity', 'thread_lifecycle', 'memory_lifecycle', 'evidence_integrity', 'deterministic_replay')}
+```
+
+Last line:
+
+```
+trace_artifact /tmp/agent-memory-infra/experiments/results/phase_h_trace.json 5ba3af8f5376cf9586a7389293b5205d204a49b7b1de986c45031dc826bfa40c
+```
+
+Working tree after the commands had no tracked artifact diff. Seeds, budget, and policy were not changed. V0.1 and Phase G artifacts were not edited. `src/memory_infra/explorer.py` does not import `memory_infra.store`.
+
+### Chromium input/change dispatch
+
+Existing `/usr/bin/chromium` headless loaded generated explorer HTML and dispatched `change` on view radios and `input` on the search field. No new dependency. This was not a dump-dom-only probe. Fixture nodes: threads `th-1`/`th-2`, same-id event `th-1`, events `e1`/`e2`, same-id state and point `e1`, edges `referential.same_thread` (`rel-merge`, evidence `same-goal`) and `evidential.contradicts` (`rel-con`, evidence `both-seen`).
+
+Observed after event dispatch:
+
+- All: every node, both edges, both labels, and both inspector articles visible. `rel-merge` source/target kinds were thread/thread.
+- Threads: only thread nodes visible. `rel-merge` edge and label visible. Same-id event `th-1` hidden. Inspector article `rel-merge` hidden while its edge stayed visible.
+- Events: event nodes visible, including same-id event `th-1`; state/point/thread nodes hidden. `rel-con` edge and label visible. Inspector article `rel-con` hidden while its edge stayed visible.
+- Contradictions: event endpoints `e1`/`e2` visible; same-id state and point `e1` hidden; `rel-con` edge, label, and inspector visible; `rel-merge` hidden.
+- Contradiction search `both-seen` and `e1`: both contradiction endpoints, the contradiction edge, label, and inspector stayed visible; same-id state/point stayed hidden.
+- All search `thread alpha`: only thread `th-1` visible; its `rel-merge` edge hidden because `th-2` did not match.
+- All search `same-goal`: both endpoints and the `rel-merge` edge/label hidden, while inspector article `rel-merge` stayed visible.
+
+Concrete display defect: relation inspector visibility does not track edge visibility. Thread/event views hide the matching relation inspector while the edge remains visible. All-view evidence search can show the relation inspector while hiding both endpoints and the edge. Not fixed in this run. Stage 14 remains not PASS.
+
+## Prior evidence
+
+# Stage 14 read-only Visual Memory Explorer evidence
+
 ## Issue #39 independent check of implementation d669e86
 
 Executed at implementation SHA `d669e86e27f75390c12ed5226772992626efee60`. Repository HEAD before this evidence commit was `0437fa22df91b9d78d6b17724ee52fb121a9ecd5`. This evidence commit only records the independent run. It is not the executed HEAD. Stage 14 is not marked PASS. Issue #39 is left open. No next-stage issue was opened.
