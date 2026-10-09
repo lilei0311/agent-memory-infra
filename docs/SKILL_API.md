@@ -1,6 +1,6 @@
 # Agent Memory Skill public API contract
 
-Revision: `skill-api-2026-10-10.3`. Code baseline: `src/memory_infra/skill.py` and `CallerSession.request` at `fc443b86feea38fa1216c16f9c34d99c6028067a` (unchanged by the contract commits). This document is the caller-facing contract. It does not add a transport, storage adapter, Agent integration, Hub, or Memory Bridge.
+Revision: `skill-api-2026-10-10.4`. Code baseline: `src/memory_infra/skill.py` and `CallerSession.request` at `fc443b86feea38fa1216c16f9c34d99c6028067a` (unchanged by the contract commits). This document is the caller-facing contract. It does not add a transport, storage adapter, Agent integration, Hub, or Memory Bridge.
 
 A harness installs one Skill for one Agent. It calls the in-process entry below. It does not import `memory_infra.store`, allocate mechanism ids, or write graph/lifecycle/thread/relation/trace/attention state.
 
@@ -38,7 +38,7 @@ Preferred install path:
 5. `handle.invoke(op, payload)`
 6. Optional `handle.import_selected(paths)` only after discovery. It does not rewrite caller files.
 
-`backend` must be `memory` or `file`. File backend requires `path`. `SkillEntrypoint.open` rejects an empty `caller_id` with `ValueError`: `caller_id is required`. `SkillApi.invoke` rejects an empty bound `caller_id` with `SnapshotError`: `caller_id must be a non-empty string`.
+`backend` must be `memory` or `file`. Any other backend raises `ValueError`: `backend must be memory or file`. A file backend without `path` raises `ValueError`: `file backend requires a path`. `SkillEntrypoint.open` rejects an empty `caller_id` with `ValueError`: `caller_id is required`. `SkillApi.invoke` rejects an empty bound `caller_id` with `SnapshotError`: `caller_id must be a non-empty string`.
 
 `invoke` before discovery raises `RuntimeError`: `memory operations require completed discovery`. `enable_memory` before discovery raises `RuntimeError`: `discovery must complete before memory operations`.
 
@@ -63,7 +63,13 @@ Isolated to the bound `caller_id`: notes and attributions from `read_caller_cont
 
 Rejected payload fields. Scope and ownership errors append the sorted rejected keys:
 
-Ownership is checked before scope. A payload that mixes ownership keys with scope keys, or with `read_graph` write keys, reports only the sorted ownership keys. `read_graph` write keys are reported only when no ownership key is present. Signal fields in the adapter forbidden set (`lifecycle_state`, `candidate_status`, `status`, `member_event_ids`, `accessibility`, `evidence_ref`, `relation_id`, `trace`) are not in the SnapshotError ownership set; they raise `BoundaryError` after the SnapshotError checks pass. `overwrite` and `delete` are in both sets, so a signal payload containing them raises `SnapshotError` first.
+Rejection order, from `CallerSession.request` then `MemoryService.request`, is exact:
+
+1. A payload `caller_id` different from the bound id raises `SnapshotError`: `caller cannot impersonate another caller`. This runs before ownership and scope. Mixed impersonation plus ownership or scope keys reports only impersonation.
+2. Ownership keys are checked before scope keys. Mixed ownership plus scope, or ownership plus `read_graph` write keys, reports only the sorted ownership keys.
+3. Scope keys are checked before the `read_graph` write-key check. Mixed scope plus `read_graph` write keys, with no ownership key, reports only the sorted scope keys.
+4. `read_graph` write keys (`nodes`, `edges`, `relations`, `relation_id`, `event_id`, `point_id`, `thread_id`, `graph`) are reported only when no ownership key and no scope key is present, using the same ownership error and sorted keys.
+5. Signal fields in the adapter forbidden set (`lifecycle_state`, `candidate_status`, `status`, `member_event_ids`, `accessibility`, `evidence_ref`, `relation_id`, `trace`) are not in the SnapshotError ownership set. They raise `BoundaryError` after the SnapshotError checks pass. `overwrite` and `delete` are in both sets, so a signal payload containing them raises `SnapshotError` first. `relation_id` on `signal` is `BoundaryError`; the same key on `read_graph` is `SnapshotError`.
 
 - impersonation: payload `caller_id` different from the bound id → `caller cannot impersonate another caller`
 - other-caller scope: `target_caller_id`, `all_caller_contexts`, `caller_contexts`, `impersonate` → `caller cannot address another caller scope: ['<field>', ...]`

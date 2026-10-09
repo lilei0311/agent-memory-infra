@@ -126,11 +126,22 @@ def test_caller_scope_ownership_and_impersonation_are_rejected():
 
 
 def test_empty_caller_id_errors_match_contract():
-    with pytest.raises(ValueError, match="caller_id is required"):
+    with pytest.raises(ValueError) as empty:
         SkillEntrypoint().open("")
+    assert str(empty.value) == "caller_id is required"
     api = SkillApi.open_memory()
-    with pytest.raises(SnapshotError, match="caller_id must be a non-empty string"):
+    with pytest.raises(SnapshotError) as blank:
         api.invoke("  ", "inspect_trace")
+    assert str(blank.value) == "caller_id must be a non-empty string"
+
+
+def test_entrypoint_backend_errors_match_contract():
+    with pytest.raises(ValueError) as backend:
+        SkillEntrypoint(backend="sqlite")
+    assert str(backend.value) == "backend must be memory or file"
+    with pytest.raises(ValueError) as missing:
+        SkillEntrypoint(backend="file")
+    assert str(missing.value) == "file backend requires a path"
 
 
 def test_load_without_snapshot_is_snapshot_error():
@@ -327,3 +338,36 @@ def test_rejected_keys_are_sorted_and_signal_ownership_is_distinct():
     assert str(signal_boundary.value) == (
         "caller cannot set mechanism-owned fields: ['candidate_status', 'lifecycle_state']"
     )
+
+def test_rejection_order_and_read_graph_write_keys_match_contract():
+    api = SkillApi.open_memory()
+    with pytest.raises(SnapshotError) as impersonated:
+        api.invoke(
+            "agent-a",
+            "observe",
+            {"content": "fact", "caller_id": "agent-b", "assign_ids": True, "target_caller_id": "agent-c"},
+        )
+    assert str(impersonated.value) == "caller cannot impersonate another caller"
+    with pytest.raises(SnapshotError) as scope_before_graph:
+        api.invoke(
+            "agent-a",
+            "read_graph",
+            {"nodes": [], "impersonate": "agent-b", "graph": {}, "caller_contexts": True},
+        )
+    assert str(scope_before_graph.value) == (
+        "caller cannot address another caller scope: ['caller_contexts', 'impersonate']"
+    )
+    with pytest.raises(SnapshotError) as graph_ids:
+        api.invoke(
+            "agent-a",
+            "read_graph",
+            {"thread_id": "t", "point_id": "p", "event_id": "e", "relation_id": "r"},
+        )
+    assert str(graph_ids.value) == (
+        "caller cannot own mechanism fields: ['event_id', 'point_id', 'relation_id', 'thread_id']"
+    )
+    with pytest.raises(BoundaryError) as signal_relation:
+        api.invoke("agent-a", "signal", {"name": "decay", "target_id": "missing", "relation_id": "r"})
+    assert type(signal_relation.value) is BoundaryError
+    assert str(signal_relation.value) == "caller cannot set mechanism-owned fields: ['relation_id']"
+
