@@ -1,6 +1,6 @@
 # Agent Memory Skill public API contract
 
-Revision: `skill-api-2026-10-10.4`. Code baseline: `src/memory_infra/skill.py` and `CallerSession.request` at `fc443b86feea38fa1216c16f9c34d99c6028067a` (unchanged by the contract commits). This document is the caller-facing contract. It does not add a transport, storage adapter, Agent integration, Hub, or Memory Bridge.
+Revision: `skill-api-2026-10-10.5`. Code baseline: `src/memory_infra/skill.py` and `CallerSession.request` at `fc443b86feea38fa1216c16f9c34d99c6028067a` (unchanged by the contract commits). This document is the caller-facing contract. It does not add a transport, storage adapter, Agent integration, Hub, or Memory Bridge.
 
 A harness installs one Skill for one Agent. It calls the in-process entry below. It does not import `memory_infra.store`, allocate mechanism ids, or write graph/lifecycle/thread/relation/trace/attention state.
 
@@ -76,20 +76,24 @@ Rejection order, from `CallerSession.request` then `MemoryService.request`, is e
 - ownership: `assign_ids`, `rewrite_lifecycle`, `rewrite_threads`, `rewrite_relations`, `caller_lifecycle`, `overwrite`, `delete` → `caller cannot own mechanism fields: ['<field>', ...]`
 - `read_graph` also rejects `nodes`, `edges`, `relations`, `relation_id`, `event_id`, `point_id`, `thread_id`, `graph` with the same ownership error and sorted keys
 
-Empty or non-string `caller_id` → `caller_id must be a non-empty string`. Empty `note` → `caller note must be a non-empty string`.
+Empty, whitespace-only, or non-string bound `caller_id` → `caller_id must be a non-empty string` (`SkillApi.invoke` / `CallerSession`). `SkillEntrypoint.open` uses `ValueError`: `caller_id is required` for the same empty or whitespace-only case. A payload `caller_id` equal to the bound id is not impersonation and is accepted.
+
+`note` is processed before operation dispatch on every op, not only `observe`. A present `note` must be a non-empty string or the call raises `SnapshotError`: `caller note must be a non-empty string`. A valid `note` is appended to that caller's notes and is visible from `read_caller_context`. It is not restored by `load`.
 
 ## Operations
 
 Every accepted `invoke` result is a mapping with `ok: true` and `op` equal to the requested name. Errors are exceptions, not `ok: false`.
 
+Read results are frozen. Lists inside `result` are tuples, including `selected`, history fields, `node_kinds`, `edge_kinds`, `nodes`, `edges`, and relation records. Callers must not mutate them.
+
 | op | payload | return | side effect |
 | --- | --- | --- | --- |
-| `observe` | required `content`; optional `source`, `note` | top-level `point_id` and `caller_id`; no `result` | appends a candidate point; does not promote it |
+| `observe` | required `content`; optional `source` (default: bound `caller_id`), optional `note` | top-level `point_id` and `caller_id`; no `result` | appends a candidate point; does not promote it |
 | `signal` | required `name`; signal fields below | top-level `caller_id`; `result.signal`, `result.result` | mechanism transition only; caller does not set lifecycle |
 | `retrieve` | required `query` | `result.retrieval_id`, `result.query`, `result.selected`, `result.timestamp` | retrieval event owned by the mechanism |
-| `read_lifecycle` | required `target_id` | lifecycle mapping in `result` (`target_id`, `lifecycle_state`, `accessibility`, `recency`, histories) | none |
+| `read_lifecycle` | required `target_id` | exact `result` keys: `target_id`, `lifecycle_state`, `accessibility`, `recency`, `retrieval_history`, `contradiction_history` | none |
 | `read_event` | required `event_id` | event mapping in `result` (`event_id`, `timestamp`, `source`, `observation`, `evidence_ref`, `thread_id`) | none |
-| `read_relations` | none | tuple of relation records in `result` | none |
+| `read_relations` | none | tuple of relation records in `result`; each record keys: `relation_id`, `source_id`, `target_id`, `relation_type`, `evidence_ref`, `inferred` | none |
 | `read_graph` | none | projection mapping in `result` | none; no ids, no trace append |
 | `inspect_trace` | none | tuple of trace records in `result` | none |
 | `read_caller_context` | none | mapping in `result`: `caller_id`, `notes`, `attributions` (notes and attributions are tuples) | none |
@@ -100,7 +104,7 @@ Unknown `op` raises `SnapshotError` `unsupported skill operation` before the ser
 
 Missing required operation fields raise `KeyError` (`content`, `name`, `query`, `target_id`, `event_id`). Empty `content` raises `BoundaryError` `observation content is required`. Missing required signal fields raise `TypeError` from the signal handler. Unknown lifecycle target raises `BoundaryError` `unknown target: ...`. Unknown event raises `BoundaryError` `unknown event: ...`. `load` with no snapshot raises `SnapshotError` `no snapshot to load`. Callers must not treat these as success.
 
-`read_graph` result includes `read_only: true`, `owner: "mechanism"`, `ordering: "kind,id"`, `node_kinds`, `edge_kinds`, `nodes`, and `edges`. Node order is kind then id. Edge order is relation type then relation id. The projection is not a write API.
+`read_graph` result keys are exactly `read_only`, `owner`, `ordering`, `node_kinds`, `edge_kinds`, `nodes`, and `edges`. `read_only` is `true`, `owner` is `"mechanism"`, `ordering` is `"kind,id"`. `node_kinds` is the tuple `event`, `point`, `state`, `thread`. `edge_kinds` is the tuple `contextual.changed_context`, `causal.caused`, `causal.caused_by`, `causal.enabled`, `causal.prevented`, `evidential.contradicts`, `referential.revisits`, `referential.same_thread`, `temporal.before`. Node order is kind then id. Edge order is relation type then relation id. The projection is not a write API. `reinforcement_history` and `usefulness_history` are not in `read_lifecycle`.
 
 Allowed `signal` names: `promote`, `open_thread`, `extend`, `split`, `merge`, `reopen`, `link_causal`, `contradict`, `begin_reconsolidation`, `resolve_reconsolidation`, `consolidate`, `decay`, `retrieve`. Any other name raises `BoundaryError` `unsupported signal: ...`.
 
@@ -126,7 +130,7 @@ Signal payloads must not include mechanism-owned fields such as `lifecycle_state
 
 Aligned with `docs/PROTOCOLS.md`: a missing signal is unknown, not guessed. `user_feedback`, `task_success`, and `used` stay absent or `None` unless the caller supplied that signal through an explicit future feedback operation. This contract does not add that operation. `observe` and `signal` must not invent `user_feedback` or `task_success`.
 
-Unknown discovery sources stay `unknown` or `unreadable` in inventory. `import_selected` rejects paths that were not recognized in that handle's discovery (`not_in_discovery` or the source status). It does not migrate or rewrite caller files.
+Unknown discovery sources stay `unknown` or `unreadable` in inventory. `import_selected` before discovery raises `RuntimeError`: `explicit import requires completed discovery`. A path absent from that handle's discovery is rejected with `reason` `not_in_discovery` and is not ingested. A recognized-but-not-readable source is rejected with that source status. Import does not migrate or rewrite caller files. A second handle cannot read another handle's discovery inventory.
 
 ## Compatibility
 
