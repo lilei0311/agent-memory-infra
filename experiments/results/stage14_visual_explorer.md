@@ -1,5 +1,71 @@
 # Stage 14 read-only Visual Memory Explorer evidence
 
+## Issue #39 independent check of repaired implementation 85b188d
+
+Executed at implementation SHA `85b188d02d8ba6a0c7cc30a0a3a28fbaf539563a`. Current repository HEAD before this evidence commit was `7139b5850cadf6d14f2b315519be5907dacaca39`. This evidence commit only records the independent run. It is not the executed HEAD. Stage 14 is not marked PASS. Issue #39 is left open. No next-stage issue was opened.
+
+Ancestry:
+
+```
+git diff --name-only 85b188d02d8ba6a0c7cc30a0a3a28fbaf539563a..7139b5850cadf6d14f2b315519be5907dacaca39
+experiments/results/stage14_visual_explorer.md
+
+git diff --name-only 85b188d02d8ba6a0c7cc30a0a3a28fbaf539563a^..85b188d02d8ba6a0c7cc30a0a3a28fbaf539563a
+docs/STAGE14_VISUAL_EXPLORER.md
+src/memory_infra/explorer.py
+tests/test_stage14_explorer.py
+```
+
+`7139b5850cadf6d14f2b315519be5907dacaca39` is evidence-only relative to implementation SHA `85b188d02d8ba6a0c7cc30a0a3a28fbaf539563a`. Parent of the implementation commit is `fec8f8a405d2b83d29e875be46cadc17be5811c2`.
+
+Commands after `git checkout 85b188d02d8ba6a0c7cc30a0a3a28fbaf539563a` and `git rev-parse HEAD` equaled that SHA:
+
+```bash
+git rev-parse HEAD
+PYTHONPATH=src python -m pytest -q tests
+PYTHONPATH=src python experiments/phase_h_dynamics.py
+```
+
+`git rev-parse HEAD` printed `85b188d02d8ba6a0c7cc30a0a3a28fbaf539563a`.
+
+### pytest
+
+Exit code 0.
+
+```
+........................................................................ [ 64%]
+.......................................                                  [100%]
+111 passed in 0.59s
+```
+
+### locked Phase H
+
+Exit code 0. Locked config unchanged: seeds 7, 11, 19; budget 4; policy none. `deterministic_replay.match` true for seeds 7, 11, and 19. Historical trace SHA-256 unchanged: `5ba3af8f5376cf9586a7389293b5205d204a49b7b1de986c45031dc826bfa40c`.
+
+First line:
+
+```
+locked {'seeds': [7, 11, 19], 'budget': 4, 'policy': 'none', 'conditions': ('event_identity', 'thread_lifecycle', 'memory_lifecycle', 'evidence_integrity', 'deterministic_replay')}
+```
+
+Last line:
+
+```
+trace_artifact /tmp/agent-memory-infra/experiments/results/phase_h_trace.json 5ba3af8f5376cf9586a7389293b5205d204a49b7b1de986c45031dc826bfa40c
+```
+
+Working tree after the commands had no tracked artifact diff. Seeds, budget, and policy were not changed. V0.1 and Phase G artifacts were not edited.
+
+Static checks at the implementation SHA: fixture `experiments/results/stage14_explorer_fixture.html` has 9 unique HTML ids and no duplicates; anchors `n-event_3a_ev-7-2` and `n-state_3a_ev-7-2` are both present. `src/memory_infra/explorer.py` imports only `html` and `typing`; it does not import `memory_infra.store`. Fallback endpoint kinds match Stage 13 creation relations in `graph.py`: contradiction/causal/temporal/same_thread bind events; `contextual.changed_context` binds threads; `referential.revisits` binds thread to event. No unmapped Stage 13 relation type was found. Same-id state/point nodes are not marked contradiction endpoints.
+
+Chromium headless (`/usr/bin/chromium`, already installed; no new dependency) loaded generated explorer HTML and dispatched view/search events. Contradiction view kept event endpoints visible, hid same-id state and point nodes, kept the contradiction edge and label visible, and hid non-contradiction edges. Search `both-seen` and `e1` kept both contradiction endpoints, the contradiction relation, and its inspector article visible, and kept the same-id state node hidden. Thread view showed the thread node and thread edge only. Event view showed event nodes and event-event edges only. All-view search `thread alpha` showed only the thread node. This was a headless DOM probe, not a manual browser session.
+
+No concrete defect was found in this run. This execution record does not mark Stage 14 PASS.
+
+## Prior evidence
+
+# Stage 14 read-only Visual Memory Explorer evidence
+
 ## Issue #40 kind-qualified contradiction endpoints
 
 Executed at implementation HEAD `85b188d02d8ba6a0c7cc30a0a3a28fbaf539563a`. This evidence commit only records that run. It is not the executed HEAD. Do not treat this evidence commit as exact-current-HEAD acceptance. Stage 14 is not marked PASS.
