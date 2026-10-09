@@ -125,6 +125,9 @@ def _filter_script() -> str:
     Relation inspector articles are visible iff the matching edge is visible.
     Labels follow that same edge visibility. Each apply() recomputes from the
     current controls, so filter/search transitions do not keep stale visibility.
+    A non-empty query that matches relation type, relation id, or evidence text
+    keeps that edge, label, and inspector visible even when neither endpoint
+    text matches. View filters still apply. Kind-qualified identity is unchanged.
     """
 
     return """
@@ -132,9 +135,10 @@ def _filter_script() -> str:
 function q(){var el=document.querySelector('input[name=q]');return ((el&&el.value)||'').trim().toLowerCase();}
 function view(){var el=document.querySelector('input[name=view]:checked');return el?el.value:'all';}
 function text(el){return (el.getAttribute('data-text')||el.textContent||'').toLowerCase();}
-function hit(el,query){if(!query)return true;var id=(el.getAttribute('data-id')||'').toLowerCase();return id.indexOf(query)!==-1||text(el).indexOf(query)!==-1;}
+function hit(el,query){if(!query)return true;var id=(el.getAttribute('data-id')||'').toLowerCase();var relationId=(el.getAttribute('data-relation-id')||'').toLowerCase();var relationType=(el.getAttribute('data-relation-type')||'').toLowerCase();return id.indexOf(query)!==-1||relationId.indexOf(query)!==-1||relationType.indexOf(query)!==-1||text(el).indexOf(query)!==-1;}
 function hide(el,on){el.classList.toggle('is-hidden',on);}
 function articles(){return document.querySelectorAll('aside.inspector article');}
+function relationCorpusHit(edge,query){if(!query)return false;if(hit(edge,query))return true;var relationId=edge.getAttribute('data-relation-id');var matched=false;articles().forEach(function(article){if(article.getAttribute('data-relation-id')===relationId&&hit(article,query))matched=true;});document.querySelectorAll('text.edge-label').forEach(function(label){if(label.getAttribute('data-relation-id')===relationId&&hit(label,query))matched=true;});return matched;}
 function apply(){
 var selected=view();var query=q();var visible={};var edgeVisible={};
 document.querySelectorAll('a.node').forEach(function(node){
@@ -154,7 +158,7 @@ var sourceKind=edge.getAttribute('data-source-kind');var targetKind=edge.getAttr
 var source=edge.getAttribute('data-source-id');var target=edge.getAttribute('data-target-id');
 var contradiction=edge.getAttribute('data-contradiction')==='true';
 var inView=selected==='all'||(selected==='contradiction'&&contradiction)||(selected==='event'&&sourceKind==='event'&&targetKind==='event')||(selected==='thread'&&sourceKind==='thread'&&targetKind==='thread');
-var show=inView&&visible[sourceKind+':'+source]&&visible[targetKind+':'+target];
+var endpointsOn=!!visible[sourceKind+':'+source]&&!!visible[targetKind+':'+target];var show=inView&&(endpointsOn||relationCorpusHit(edge,query));
 var relationId=edge.getAttribute('data-relation-id');
 edgeVisible[relationId]=show;
 hide(edge,!show);
@@ -243,6 +247,7 @@ def _canvas(nodes, edges, positions) -> str:
         relation_type = edge["relation_type"]
         contradiction = "true" if relation_type == "evidential.contradicts" else "false"
         css = "edge contradiction" if contradiction == "true" else "edge"
+        searchable = html.escape(_search_text(edge), quote=True)
         parts.append(
             f'<line class="{css}" x1="{source[0]}" y1="{source[1]}" '
             f'x2="{target[0]}" y2="{target[1]}" '
@@ -252,7 +257,8 @@ def _canvas(nodes, edges, positions) -> str:
             f'data-target-id="{html.escape(edge["target_id"])}" '
             f'data-source-kind="{html.escape(source_kind)}" '
             f'data-target-kind="{html.escape(target_kind)}" '
-            f'data-contradiction="{contradiction}" />'
+            f'data-contradiction="{contradiction}" '
+            f'data-text="{searchable}" />'
         )
         label_x = (source[0] + target[0]) // 2
         label_y = (source[1] + target[1]) // 2
@@ -260,7 +266,8 @@ def _canvas(nodes, edges, positions) -> str:
             f'<text class="edge-label" x="{label_x}" y="{label_y}" '
             f'data-relation-id="{html.escape(edge["relation_id"])}" '
             f'data-relation-type="{html.escape(relation_type)}" '
-            f'data-contradiction="{contradiction}">'
+            f'data-contradiction="{contradiction}" '
+            f'data-text="{searchable}">'
             f'{html.escape(relation_type)}</text>'
         )
     for row in nodes:

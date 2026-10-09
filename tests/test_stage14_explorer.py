@@ -356,3 +356,63 @@ def test_relation_inspector_visibility_tracks_edge_visibility():
     assert 'data-relation-type="evidential.contradicts"' in page
     assert "same-goal" in page
     assert "both-seen" in page
+
+
+def test_relation_and_evidence_search_keeps_edge_visible():
+    """Issue #44: relation type/name and evidence match keep edge, label, inspector."""
+
+    nodes = [
+        {"kind": "thread", "id": "th-1", "label": "thread alpha"},
+        {"kind": "thread", "id": "th-2", "label": "thread beta"},
+        {"kind": "event", "id": "th-1", "observation": "same-id event"},
+        {"kind": "event", "id": "e1", "observation": "left claim"},
+        {"kind": "event", "id": "e2", "observation": "right claim"},
+        {"kind": "state", "id": "e1", "contradiction_history": ["rel-con"]},
+        {"kind": "point", "id": "e1", "content": "not an endpoint"},
+    ]
+    edges = [
+        {
+            "relation_id": "rel-merge",
+            "source_id": "th-1",
+            "target_id": "th-2",
+            "relation_type": "referential.same_thread",
+            "evidence_ref": "same-goal",
+        },
+        {
+            "relation_id": "rel-con",
+            "source_id": "e1",
+            "target_id": "e2",
+            "relation_type": "evidential.contradicts",
+            "evidence_ref": "both-seen",
+        },
+    ]
+    page = render_explorer(
+        {"read_only": True, "owner": "mechanism", "nodes": nodes, "edges": edges}
+    )
+    script = page.split("<script>", 1)[1].split("</script>", 1)[0]
+    assert "function relationCorpusHit" in script
+    assert "endpointsOn||relationCorpusHit(edge,query)" in script
+    assert "else if(selected==='all'){show=hit(article,query);}" not in script
+    merge = page.split('data-relation-id="rel-merge"', 1)[1]
+    assert 'data-text="' in page
+    assert "same-goal" in page
+    assert "referential.same_thread" in page
+    merge_line = next(part for part in page.split("<line") if 'data-relation-id="rel-merge"' in part)
+    merge_line = merge_line.split("/>", 1)[0]
+    assert "same-goal" in merge_line
+    assert "referential.same_thread" in merge_line
+    assert 'data-source-kind="thread"' in merge_line
+    assert 'data-target-kind="thread"' in merge_line
+    con_line = next(part for part in page.split("<line") if 'data-relation-id="rel-con"' in part)
+    con_line = con_line.split("/>", 1)[0]
+    assert "both-seen" in con_line
+    assert "evidential.contradicts" in con_line
+    assert 'data-source-kind="event"' in con_line
+    assert 'data-target-kind="event"' in con_line
+    # same-id state/point are not contradiction endpoints
+    state = page.split('data-kind="state"', 1)[1].split(">", 1)[0]
+    point = page.split('data-kind="point"', 1)[1].split(">", 1)[0]
+    assert 'data-contradiction-endpoint="false"' in state
+    assert 'data-contradiction-endpoint="false"' in point
+    assert 'data-id="e1"' in state
+    assert merge  # relation id present
