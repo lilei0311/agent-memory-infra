@@ -271,3 +271,58 @@ trace_artifact /tmp/agent-memory-infra/experiments/results/phase_h_trace.json 5b
 ```
 
 `deterministic_replay.match` is true for seeds 7, 11, and 19. Historical Phase H trace SHA-256 remains `5ba3af8f5376cf9586a7389293b5205d204a49b7b1de986c45031dc826bfa40c`. Working tree after the commands had no tracked artifact diff. Seeds, budget, and policy were not changed.
+
+
+## Issue #39 independent verification of 91ec93f
+
+Ancestry at default HEAD `015cb95d964c423f4670d8f4e096be16e1fdd7d8`:
+
+```
+git diff --name-only 91ec93fa9b1b1c74bce690023c7e9b8f18a2f10f..015cb95d964c423f4670d8f4e096be16e1fdd7d8
+experiments/results/stage14_visual_explorer.md
+```
+
+`015cb95d964c423f4670d8f4e096be16e1fdd7d8` is evidence-only relative to implementation SHA `91ec93fa9b1b1c74bce690023c7e9b8f18a2f10f`. Implementation parent diff:
+
+```
+git diff --name-only 5e7949c65ffc9206f92119a5a2a6a71e91366dac..91ec93fa9b1b1c74bce690023c7e9b8f18a2f10f
+docs/STAGE14_VISUAL_EXPLORER.md
+experiments/results/stage14_explorer_fixture.html
+src/memory_infra/explorer.py
+tests/test_stage14_explorer.py
+```
+
+Commands were executed after `git checkout 91ec93fa9b1b1c74bce690023c7e9b8f18a2f10f` and `git rev-parse HEAD` equaled that SHA. This section records that run. The commit that adds this section is evidence-only and was not itself executed. Stage 14 is not marked PASS.
+
+```bash
+PYTHONPATH=src python -m pytest -q tests
+PYTHONPATH=src python experiments/phase_h_dynamics.py
+```
+
+### pytest output
+
+```
+........................................................................ [ 65%]
+......................................                                   [100%]
+110 passed in 0.64s
+```
+
+Exit code 0.
+
+### experiment output
+
+Exit code 0. First line:
+
+```
+locked {'seeds': [7, 11, 19], 'budget': 4, 'policy': 'none', 'conditions': ('event_identity', 'thread_lifecycle', 'memory_lifecycle', 'evidence_integrity', 'deterministic_replay')}
+```
+
+Last line:
+
+```
+trace_artifact /tmp/agent-memory-infra/experiments/results/phase_h_trace.json 5ba3af8f5376cf9586a7389293b5205d204a49b7b1de986c45031dc826bfa40c
+```
+
+`deterministic_replay.match` is true for seeds 7, 11, and 19. Historical Phase H trace SHA-256 remains `5ba3af8f5376cf9586a7389293b5205d204a49b7b1de986c45031dc826bfa40c`. Seeds, budget, and policy were not changed. V0.1 and Phase G artifacts were not edited.
+
+Static inspection at the implementation SHA: fixture HTML `id` attributes are 9 unique values with no duplicates; kind-qualified anchors `n-event_3a_ev-7-2` and `n-state_3a_ev-7-2` are both present. Explorer imports are `html` and `typing` only. No browser/DOM runtime was available, so interactive filter clicks were not browser-verified. Observation left for review: contradiction endpoint marking and contradiction unhide match on `data-id` alone, so same-id state nodes are also marked `data-contradiction-endpoint=true` and can be shown with event endpoints.
