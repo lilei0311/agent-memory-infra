@@ -1,5 +1,85 @@
 # Stage 14 read-only Visual Memory Explorer evidence
 
+## Issue #39 independent check of implementation d669e86
+
+Executed at implementation SHA `d669e86e27f75390c12ed5226772992626efee60`. Repository HEAD before this evidence commit was `0437fa22df91b9d78d6b17724ee52fb121a9ecd5`. This evidence commit only records the independent run. It is not the executed HEAD. Stage 14 is not marked PASS. Issue #39 is left open. No next-stage issue was opened.
+
+Ancestry:
+
+```
+git rev-parse HEAD
+0437fa22df91b9d78d6b17724ee52fb121a9ecd5
+
+git diff --name-only d669e86e27f75390c12ed5226772992626efee60..0437fa22df91b9d78d6b17724ee52fb121a9ecd5
+experiments/results/stage14_visual_explorer.md
+
+git diff --name-only d669e86e27f75390c12ed5226772992626efee60^..d669e86e27f75390c12ed5226772992626efee60
+docs/STAGE14_VISUAL_EXPLORER.md
+src/memory_infra/explorer.py
+tests/test_stage14_explorer.py
+
+git diff --name-only 199d34103c48b3b52b05efb9ea5a587ce3852728..d669e86e27f75390c12ed5226772992626efee60
+docs/STAGE14_VISUAL_EXPLORER.md
+src/memory_infra/explorer.py
+tests/test_stage14_explorer.py
+```
+
+`0437fa22df91b9d78d6b17724ee52fb121a9ecd5` is evidence-only relative to implementation SHA `d669e86e27f75390c12ed5226772992626efee60`.
+
+Commands after `git checkout d669e86e27f75390c12ed5226772992626efee60` and `git rev-parse HEAD` equaled that SHA:
+
+```bash
+git rev-parse HEAD
+PYTHONPATH=src python -m pytest -q tests
+PYTHONPATH=src python experiments/phase_h_dynamics.py
+```
+
+`git rev-parse HEAD` printed `d669e86e27f75390c12ed5226772992626efee60`.
+
+### pytest
+
+Exit code 0.
+
+```
+........................................................................ [ 64%]
+........................................                                 [100%]
+112 passed in 0.48s
+```
+
+### locked Phase H
+
+Exit code 0. Locked config unchanged: seeds 7, 11, 19; budget 4; policy none. `deterministic_replay.match` true for seeds 7, 11, and 19. Historical trace SHA-256 unchanged: `5ba3af8f5376cf9586a7389293b5205d204a49b7b1de986c45031dc826bfa40c`.
+
+First line:
+
+```
+locked {'seeds': [7, 11, 19], 'budget': 4, 'policy': 'none', 'conditions': ('event_identity', 'thread_lifecycle', 'memory_lifecycle', 'evidence_integrity', 'deterministic_replay')}
+```
+
+Last line:
+
+```
+trace_artifact /tmp/agent-memory-infra/experiments/results/phase_h_trace.json 5ba3af8f5376cf9586a7389293b5205d204a49b7b1de986c45031dc826bfa40c
+```
+
+Working tree after the commands had no tracked artifact diff. Seeds, budget, and policy were not changed. V0.1 and Phase G artifacts were not edited. Implementation diff vs `199d341` is limited to the explorer, its tests, and Stage 14 docs.
+
+Static checks at the implementation SHA: `src/memory_infra/explorer.py` imports only `html` and `typing`; it does not import `memory_infra.store`. Fallback `referential.same_thread` is `("thread", "thread")`, matching `GraphMemory.merge`. Fixture `experiments/results/stage14_explorer_fixture.html` has 9 unique HTML ids; anchors `n-event_3a_ev-7-2` and `n-state_3a_ev-7-2` are both present. Filter script is present in rendered HTML.
+
+Chromium headless (`/usr/bin/chromium`, already installed; no new dependency) `--dump-dom` loaded generated explorer HTML with two thread nodes `th-1`/`th-2`, same-id event nodes, and one `referential.same_thread` edge `rel-merge`. Dumped line:
+
+```
+<line class="edge" x1="480" y1="70" x2="480" y2="160" data-relation-id="rel-merge" data-relation-type="referential.same_thread" data-source-id="th-1" data-target-id="th-2" data-source-kind="thread" data-target-kind="thread" data-contradiction="false"></line>
+```
+
+Inspector article `inspect-n-edge_3a_rel-merge` had `data-source-kind="thread"` and `data-target-kind="thread"`. Anchors `n-thread_3a_th-1` and `n-event_3a_th-1` were both present. This was a headless DOM dump, not a click-dispatch session.
+
+No concrete defect was found in this run. This execution record does not mark Stage 14 PASS.
+
+## Prior evidence
+
+# Stage 14 read-only Visual Memory Explorer evidence
+
 ## Issue #39 independent check of repaired implementation 85b188d
 
 Executed at implementation SHA `85b188d02d8ba6a0c7cc30a0a3a28fbaf539563a`. Current repository HEAD before this evidence commit was `7139b5850cadf6d14f2b315519be5907dacaca39`. This evidence commit only records the independent run. It is not the executed HEAD. Stage 14 is not marked PASS. Issue #39 is left open. No next-stage issue was opened.
