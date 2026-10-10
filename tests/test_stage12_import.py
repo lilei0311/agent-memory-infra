@@ -196,3 +196,50 @@ def test_markdown_source_adapter_is_used_for_md(tmp_path: Path):
     assert jerr is None
     assert jitems[0]["text"] == "json item"
     assert isinstance(MARKDOWN_ADAPTER, MarkdownSourceAdapter)
+
+
+def test_json_source_adapter_is_used_for_json():
+    """JSON import path uses the internal adapter seam and preserves shapes."""
+    from memory_infra.source_adapter import JSON_ADAPTER, JsonSourceAdapter
+    from memory_infra.importer import parse_recognized
+
+    assert JSON_ADAPTER.can_handle("memories.json")
+    assert JSON_ADAPTER.can_handle("memory.json")
+    assert not JSON_ADAPTER.can_handle("MEMORY.md")
+    assert isinstance(JSON_ADAPTER, JsonSourceAdapter)
+
+    # Representative valid shapes
+    cases = [
+        (b'["alpha", "beta"]', ["alpha", "beta"]),
+        (b'"solo"', ["solo"]),
+        (b'{"memories": ["m1", "m2"]}', ["m1", "m2"]),
+        (b'{"items": ["i1"]}', ["i1"]),
+        (b'{"text": "t"}', ["t"]),
+        (b'{"content": "c"}', ["c"]),
+        (b'{"memories": [{"text": "ot"}, {"content": "oc"}]}', ["ot", "oc"]),
+    ]
+    for payload, expected in cases:
+        items, err = JSON_ADAPTER.parse(payload)
+        assert err is None
+        assert [i["text"] for i in items] == expected
+        routed, rerr = parse_recognized("memory.json", payload)
+        assert rerr is None
+        assert routed == items
+
+    # Invalid cases rejected as unreadable
+    invalids = [
+        b"{",
+        b"not json",
+        b'{"other": [1]}',
+        b'{"memories": [1]}',
+        b'{"memories": [{"bad": true}]}',
+        b'{"memories": ["", "ok"]}',
+        b'\xff',  # invalid utf-8
+    ]
+    for payload in invalids:
+        items, err = JSON_ADAPTER.parse(payload)
+        assert items == []
+        assert err == "unreadable"
+        routed, rerr = parse_recognized("memories.json", payload)
+        assert routed == []
+        assert rerr == "unreadable"
