@@ -43,10 +43,24 @@ def test_cross_adapter_explicit_import_conformance(tmp_path: Path):
     assert report["explicit_import"] == "invoked"
     assert report["duplicate_policy"] == "idempotent_by_source_digest"
     assert report["mechanism_memory_created"] is True
+    # Public result-shape compatibility (minimal key set consistent across formats)
+    required_report_keys = {
+        "ok", "phase", "caller_id", "explicit_import", "duplicate_policy",
+        "imported", "mechanism_memory_created", "created", "reused", "rejected", "sequence"
+    }
+    assert required_report_keys.issubset(report.keys())
+    assert report["ok"] is True
+    assert report["phase"] == "imported"
     created_paths = [item["path"] for item in report["created"]]
     assert "MEMORY.md" in created_paths
     assert "memory.json" in created_paths
+    required_item_keys = {
+        "path", "status", "source_digest", "occurrence", "source_ref",
+        "point_id", "event_id", "evidence_ref"
+    }
     for item in report["created"]:
+        assert required_item_keys.issubset(item.keys())
+        assert item["status"] == "imported"
         assert item["source_ref"].startswith("import:")
         assert "source_digest" in item
         assert item["point_id"] != item["event_id"]
