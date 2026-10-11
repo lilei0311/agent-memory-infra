@@ -62,6 +62,7 @@ class EnvelopeAgent:
         self.handle = entry.open(caller_id)
         self.caller_id = caller_id
         self.sent: list[dict] = []
+        self.forwarded: list[dict] = []
 
     def start(self, **kwargs):
         return self.handle.start(**kwargs)
@@ -75,6 +76,7 @@ class EnvelopeAgent:
         payload = dict(envelope.get("payload") or {})
         payload.pop("client_meta", None)
         self.sent.append({"op": envelope["op"], "client_meta": envelope.get("client_meta")})
+        self.forwarded.append(dict(payload))
         return self.handle.invoke(str(envelope["op"]), payload)
 
 
@@ -153,7 +155,11 @@ def test_envelope_agent_file_backend_persistence(tmp_path: Path):
     }
     obs = agent.submit(env)
     assert agent.sent[-1]["client_meta"]["trace_id"] == "abc-123"
-    # meta not in payload that crossed boundary (note is present because we put it in payload)
+    # prove the payload that crossed the boundary excludes client_meta and retains legitimate fields
+    forwarded = agent.forwarded[-1]
+    assert "client_meta" not in forwarded
+    assert forwarded.get("content") == "file fact"
+    assert forwarded.get("note") == "envelope-note"
     prom = agent.submit(
         {
             "op": "signal",
@@ -166,17 +172,39 @@ def test_envelope_agent_file_backend_persistence(tmp_path: Path):
     snapshot = json.loads(path.read_text(encoding="utf-8"))
     assert isinstance(snapshot, dict)
     assert "authenticity" in snapshot  # mechanism seal present
+    # Persistence across packaging handoff is verified in the separately
+    # labelled SkillApi packaging-seam test below. SkillEntrypoint does not
+    # expose a public reopen; this scenario covers the public entrypoint boundary.
 
-    # packaging handoff: reopen supplies seal out of band and restores
-    # (public SkillApi surface; entrypoint holds the api after enable)
-    restored_api = agent.handle._api.reopen()  # noqa: SLF001 — verification of packaging handoff
-    restored = restored_api.invoke("envelope-agent", "load")
-    assert restored["ok"] is True
-    event = restored_api.invoke("envelope-agent", "read_event", {"event_id": event_id})
-    assert event["result"]["observation"] == "file fact"
-    ctx = restored_api.invoke("envelope-agent", "read_caller_context")
-    # notes are request metadata, not durable across restart
+
+def test_skillapi_packaging_seam_file_backend_reopen_persistence(tmp_path: Path):
+    """Public SkillApi packaging seam: file backend persistence via reopen.
+
+    Separately labelled from the SkillEntrypoint scenario. Demonstrates that
+    mechanism state survives the documented SkillApi.reopen handoff while
+    caller notes do not. Uses only the public SkillApi surface.
+    """
+    from memory_infra.skill import SkillApi
+
+    path = tmp_path / "snap.json"
+    api = SkillApi.open_file(path)
+    caller = "packaging-caller"
+    obs = api.invoke(caller, "observe", {"content": "packaging fact", "note": "temp-note"})
+    prom = api.invoke(
+        caller,
+        "signal",
+        {"name": "promote", "point_id": obs["point_id"], "reason": "useful"},
+    )
+    event_id = prom["result"]["result"]["event_id"]
+    api.invoke(caller, "save")
+    assert path.exists()
+
+    restored_api = api.reopen()
+    loaded = restored_api.invoke(caller, "load")
+    assert loaded["ok"] is True
+    event = restored_api.invoke(caller, "read_event", {"event_id": event_id})
+    assert event["result"]["observation"] == "packaging fact"
+    ctx = restored_api.invoke(caller, "read_caller_context")
     assert ctx["result"]["notes"] == ()
-    # mechanism state restored
-    ret = restored_api.invoke("envelope-agent", "retrieve", {"query": "file"})
+    ret = restored_api.invoke(caller, "retrieve", {"query": "packaging"})
     assert event_id in ret["result"]["selected"]
