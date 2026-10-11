@@ -21,7 +21,7 @@ Agent
 ```
 We propose an adaptive approach:
 ```text
-                         ┌───────────────┐
+                         ┌──────────────┐
                          │ Historical    │
                          │ Experience    │
                          └───────┬───────┘
@@ -72,6 +72,18 @@ See [Product Architecture](docs/PRODUCT_ARCHITECTURE.md) for the detailed bounda
                          ▼
                Common Memory Contract
 ```
+
+────────
+
+## First-run journey
+
+A minimal, framework-neutral demonstration of the complete single-Agent Skill path is in `examples/first_run_journey.py`.
+
+```bash
+PYTHONPATH=src python examples/first_run_journey.py
+```
+
+Expected high-level output includes discovery without auto-import, explicit selection, read-only graph rendering, and retrieval. Source files remain unchanged. See the script and `tests/test_first_run_journey.py` for the exact flow.
 
 ────────
 
@@ -148,7 +160,7 @@ The goal is to measure whether the memory helped.
 
 The long-term goal is to learn four related policies:
 
-                 ┌──────────────┐
+                 ┌─────────────┐
                  │ Memory Policy│
                  └──────┬───────┘
                         │
@@ -156,7 +168,7 @@ The long-term goal is to learn four related policies:
           ↓             ↓             ↓
        Write        Retrieve       Retain
           │             │             │
-          └─────────────┼────────────┘
+          └────────────┼────────────┘
                         ↓
                      Forget
 
@@ -300,7 +312,7 @@ Different Agents can therefore use different memory stores while sharing the sam
 
               Memory Policy Skill
                        │
-        ┌──────────────┼──────────────┐
+        ┌─────────────┼─────────────┐
         ↓              ↓              ↓
      Agent A         Agent B        Agent C
         │              │              │
@@ -406,16 +418,16 @@ It is to build a learning layer for Agent memory.
                          │ Agents  │
                          └────┬────┘
                               ↓
-                     ┌─────────────────┐
+                     ┌────────────────┐
                      │ Memory Policy  │
                      │     Layer      │
                      └───────┬─────────┘
                              ↓
-                  ┌─────────────────────┐
+                  ┌────────────────────┐
                   │ Memory Adapter API │
-                  └─────────┬──────────┘
+                  └─────────┬───────────┘
                             ↓
-              ┌─────────────┼─────────────┐
+              ┌────────────┼─────────────┐
               ↓             ↓             ↓
           Markdown        Vector         SQL
           Memory          Store         Store
