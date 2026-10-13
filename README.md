@@ -60,7 +60,7 @@ See [Product Architecture](docs/PRODUCT_ARCHITECTURE.md) for the detailed bounda
 ```text
                  Agent Memory Ecosystem
                          │
-             ┌───────────┤───────────┐
+             ┌───────────┤           ├───────────┐
              │                       │
              ▼                       ▼
       Agent Memory Skill       Agent Memory Hub
@@ -80,10 +80,10 @@ See [Product Architecture](docs/PRODUCT_ARCHITECTURE.md) for the detailed bounda
 A minimal, framework-neutral demonstration of the complete single-Agent Skill path is in `examples/first_run_journey.py`.
 
 ```bash
-PYTHONPATH=src python examples/first_run_journey.py [--consent]
+PYTHONPATH=src python examples/first_run_journey.py [--consent] [--select PATH ...]
 ```
 
-Expected high-level output includes discovery without auto-import, explicit `--consent` required for import (default is decline), read-only graph rendering, and retrieval only after consent. Decline leaves source and memory unchanged. See the script and `tests/test_first_run_journey.py` for the exact flow.
+Expected high-level output includes discovery without auto-import, explicit `--consent` (default decline) and optional `--select` for subset of recognized sources; all-recognized on consent alone, read-only graph rendering, and cross-session retrieval via file backend packaging handoff after explicit save/load. Decline leaves source and memory unchanged. See the script and `tests/test_first_run_journey.py` for the exact flow.
 
 ────────
 
@@ -162,13 +162,13 @@ The long-term goal is to learn four related policies:
 
                  ┌─────────────┐
                  │ Memory Policy│
-                 └──────┬───────┘
+                 └──────┬──────┘
                         │
-          ┌─────────────┼─────────────┐
+          ┌────────────┤───────────┐
           ↓             ↓             ↓
        Write        Retrieve       Retain
           │             │             │
-          └───────────┼────────────┘
+          └───────────┤───────────┘
                         ↓
                      Forget
 
@@ -312,7 +312,7 @@ Different Agents can therefore use different memory stores while sharing the sam
 
               Memory Policy Skill
                        │
-        ┌─────────────┼─────────────┐
+        ┌────────────┤────────────┐
         ↓              ↓              ↓
      Agent A         Agent B        Agent C
         │              │              │
@@ -418,16 +418,16 @@ It is to build a learning layer for Agent memory.
                          │ Agents  │
                          └────┬────┘
                               ↓
-                     ┌────────────────┐
+                     ┌───────────────┐
                      │ Memory Policy  │
                      │     Layer      │
                      └───────┬────────┘
                              ↓
-                  ┌─────────────────────┐
+                  ┌────────────────────┐
                   │ Memory Adapter API │
-                  └─────────┬───────────┘
+                  └─────────┬──────────┘
                             ↓
-              ┌─────────────┼─────────────┐
+              ┌────────────┤───────────┐
               ↓             ↓             ↓
           Markdown        Vector         SQL
           Memory          Store         Store
