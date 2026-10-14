@@ -87,7 +87,7 @@ def test_consent_select_subset_and_cross_session(tmp_path: Path):
 
     # Cross-session via packaging handoff
     handle1.invoke("save", {})
-    api = handle1._api
+    api = handle1.packaging_seam()
     api2 = api.reopen()
     api2.invoke("demo-agent", "load", {})
     retrieved = api2.invoke("demo-agent", "retrieve", {"query": "explicit confirmation"})["result"]

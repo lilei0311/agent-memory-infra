@@ -76,7 +76,7 @@ def run_journey(consent: bool = False, select: list[str] | None = None) -> None:
         if to_import:
             # Explicit save for file persistence
             handle1.invoke("save", {})
-            api = handle1._api  # packaging handoff access for demo
+            api = handle1.packaging_seam()  # public packaging handoff
             api2 = api.reopen()
             api2.invoke("demo-agent", "load", {})
             retrieved = api2.invoke("demo-agent", "retrieve", {"query": "explicit confirmation"})["result"]
