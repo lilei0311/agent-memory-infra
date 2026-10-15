@@ -14,7 +14,10 @@ Two retrieval paths:
   retrieval event and is not a similarity feature.
 
 Local aggregates (``--local-root``) write counts only, and only outside
-this repository. See ``docs/LOCAL_EVAL.md``.
+this repository. See ``docs/LOCAL_EVAL.md``. ``--extra-markdown-names`` adds
+exact basenames. ``--recognize-dated-markdown`` also recognizes
+``YYYY-MM-DD.md``. Both stay off unless passed, and both feed discovery and
+tier classification for that run.
 """
 
 from __future__ import annotations
@@ -33,7 +36,11 @@ from memory_infra.entrypoint import SkillEntrypoint  # noqa: E402
 from memory_infra.memory import MemoryItem, MemoryStore  # noqa: E402
 from memory_infra.policy import LearnedPolicy  # noqa: E402
 from memory_infra.retrieval import retrieve  # noqa: E402
-from memory_infra.source_adapter import SourceConfig  # noqa: E402
+from memory_infra.source_adapter import (  # noqa: E402
+    DATED_MARKDOWN_TOKEN,
+    SourceConfig,
+    matches_recognized_name,
+)
 
 FIXTURES = ROOT / "tests" / "fixtures" / "synthetic"
 DEFAULT_RESULTS = ROOT / "experiments" / "results" / "usable_c_synthetic_eval.md"
@@ -503,13 +510,59 @@ def _repo_contains(path: Path) -> bool:
     return resolved == repo or repo in resolved.parents
 
 
-def _tier_names() -> frozenset[str]:
-    config = SourceConfig.extended()
+def parse_extra_markdown_names(values: list[str] | None) -> frozenset[str]:
+    """Split repeatable, comma-separated CLI values into exact basenames."""
+
+    collected: list[str] = []
+    for raw in values or []:
+        if not isinstance(raw, str):
+            raise LocalEvalError("extra markdown names must be exact basenames")
+        collected.extend(part.strip() for part in raw.split(",") if part.strip())
+    return _validate_extra_markdown_names(collected)
+
+
+def _validate_extra_markdown_names(names: list[str] | frozenset[str] | set[str]) -> frozenset[str]:
+    cleaned: set[str] = set()
+    for name in names:
+        if not isinstance(name, str) or not name or name != name.strip():
+            raise LocalEvalError("extra markdown names must be exact basenames")
+        if "/" in name or "\\" in name or name != Path(name).name or name in {".", ".."}:
+            raise LocalEvalError("extra markdown names must be exact basenames")
+        if any(char in name for char in "*?\x00"):
+            raise LocalEvalError("extra markdown names must be exact basenames")
+        cleaned.add(name)
+    return frozenset(cleaned)
+
+
+def local_source_config(
+    extra_markdown_names: frozenset[str] | set[str] | list[str] | None = None,
+    *,
+    recognize_dated_markdown: bool = False,
+) -> SourceConfig:
+    """Extended sources for one local run, including optional extras and dated names."""
+
+    extras = _validate_extra_markdown_names(list(extra_markdown_names or ()))
+    return SourceConfig.extended(extras, recognize_dated_markdown=recognize_dated_markdown)
+
+
+def _tier_names(sources: SourceConfig | None = None) -> frozenset[str]:
+    config = sources if sources is not None else SourceConfig.extended()
     return config.markdown_names | config.json_names
 
 
-def classify_local_path(path: str, *, include_stores: bool) -> str:
-    """Return tier_a, store, or an excluded_* reason. Never returns file text."""
+def classify_local_path(
+    path: str,
+    *,
+    include_stores: bool,
+    tier_names: frozenset[str] | set[str] | None = None,
+) -> str:
+    """Return tier_a, store, or an excluded_* reason. Never returns file text.
+
+    ``tier_names`` is the Markdown and JSON name set for this run. It must be
+    the same set discovery used, including extras and ``YYYY-MM-DD.md`` when
+    that pattern is enabled. The default is ``SourceConfig.extended()`` with
+    no extras and no dated pattern.
+    """
 
     parts = [part.lower() for part in path.split("/")]
     if any(marker in part for part in parts for marker in _TRAJECTORY_MARKERS):
@@ -520,7 +573,8 @@ def classify_local_path(path: str, *, include_stores: bool) -> str:
     lower = name.lower()
     if lower.endswith((".sqlite", ".sqlite3", ".jsonl")):
         return "store" if include_stores else "excluded_store"
-    if name in _tier_names():
+    names = frozenset(tier_names) if tier_names is not None else _tier_names()
+    if matches_recognized_name(name, names):
         return "tier_a"
     return "excluded_unlisted"
 
@@ -553,11 +607,16 @@ def run_local_aggregate(
     hits: str = "",
     scan_limit: int = 128,
     max_depth: int = 4,
+    extra_markdown_names: frozenset[str] | set[str] | list[str] | None = None,
+    recognize_dated_markdown: bool = False,
 ) -> dict:
     """Import a local root in memory and write counts. No observation text.
 
     ``output`` must resolve outside the git repository. The default query
-    list is task labels, not memory quotes.
+    list is task labels, not memory quotes. ``extra_markdown_names`` are
+    exact basenames passed to ``SourceConfig.extended``. When
+    ``recognize_dated_markdown`` is true, ``YYYY-MM-DD.md`` basenames are
+    recognized too. Classification uses that same name set.
     """
 
     if _repo_contains(output):
@@ -568,7 +627,10 @@ def run_local_aggregate(
     judgments = _parse_hits(hits)
     root = root.resolve()
     output = output.resolve()
-    sources = SourceConfig.extended()
+    sources = local_source_config(
+        extra_markdown_names, recognize_dated_markdown=recognize_dated_markdown
+    )
+    tier_names = _tier_names(sources)
     item_dedup = ItemDedupPolicy("skip", near=True) if dedup else None
     entry = SkillEntrypoint(
         seed=SKILL_SEED,
@@ -584,7 +646,9 @@ def run_local_aggregate(
     recognized = [item["path"] for item in discovered["sources"] if item.get("status") == "recognized"]
     grouped: dict[str, list[str]] = {}
     for path in recognized:
-        grouped.setdefault(classify_local_path(path, include_stores=include_stores), []).append(path)
+        grouped.setdefault(
+            classify_local_path(path, include_stores=include_stores, tier_names=tier_names), []
+        ).append(path)
     selected = grouped.get("tier_a", []) + (grouped.get("store", []) if include_stores else [])
     preview = handle.preview_import(selected) if selected else None
     imported = None
@@ -618,6 +682,8 @@ def run_local_aggregate(
         "preview_only": preview_only,
         "include_stores": include_stores,
         "dedup": dedup,
+        "recognize_dated_markdown": recognize_dated_markdown or DATED_MARKDOWN_TOKEN in sources.markdown_names,
+        "extra_markdown_name_count": len(sources.markdown_names - _tier_names() - {DATED_MARKDOWN_TOKEN}),
         "selected_counts": selected_counts,
         "hits": [{"task": label, "hit": value} for label, value in judgments],
     }
@@ -651,6 +717,8 @@ def _render_local(summary: dict) -> str:
         f"- preview_only: {str(summary['preview_only']).lower()}",
         f"- include_stores: {str(summary['include_stores']).lower()}",
         f"- dedup: {str(summary['dedup']).lower()}",
+        f"- recognize_dated_markdown: {str(summary['recognize_dated_markdown']).lower()}",
+        f"- extra_markdown_name_count: {summary['extra_markdown_name_count']}",
         "",
         "## Selected counts",
         "",
@@ -683,8 +751,28 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--hits", default="", help="Optional hand scores, for example preference=1,prior-decision=0")
     parser.add_argument("--scan-limit", type=int, default=128)
     parser.add_argument("--max-depth", type=int, default=4)
+    parser.add_argument(
+        "--extra-markdown-names",
+        action="append",
+        default=None,
+        metavar="NAME",
+        help=(
+            "Exact Markdown basename to recognize, besides the extended set. "
+            "Repeat the flag or separate names with commas. Requires --local-root."
+        ),
+    )
+    parser.add_argument(
+        "--recognize-dated-markdown",
+        action="store_true",
+        help="Also recognize Markdown basenames that are exactly YYYY-MM-DD.md. Requires --local-root.",
+    )
     args = parser.parse_args(argv)
     try:
+        extras = parse_extra_markdown_names(args.extra_markdown_names)
+        if args.local_root is None and (extras or args.recognize_dated_markdown):
+            raise LocalEvalError(
+                "--extra-markdown-names and --recognize-dated-markdown require --local-root"
+            )
         if args.local_root is not None:
             if args.output is None:
                 raise LocalEvalError("--local-root requires --output outside the repository")
@@ -698,6 +786,8 @@ def main(argv: list[str] | None = None) -> int:
                 hits=args.hits,
                 scan_limit=args.scan_limit,
                 max_depth=args.max_depth,
+                extra_markdown_names=extras,
+                recognize_dated_markdown=args.recognize_dated_markdown,
             )
             return 0
         write_synthetic(args.output)

@@ -8,10 +8,12 @@ from memory_infra.entrypoint import SkillEntrypoint
 from memory_infra.importer import parse_recognized
 from memory_infra.redaction import RedactionPolicy
 from memory_infra.source_adapter import (
+    DATED_MARKDOWN_TOKEN,
     MARKDOWN_ADAPTER,
     EXTENDED_MARKDOWN_NAMES,
     MarkdownV2SourceAdapter,
     SourceConfig,
+    is_dated_markdown_basename,
     split_frontmatter,
 )
 
@@ -107,6 +109,28 @@ def test_config_names_and_routing():
     custom = SourceConfig(markdown_names=frozenset({"my.md"}), markdown_v2=True)
     assert parse_recognized("my.md", b"# A\n- t", custom)[0][0]["section"] == "A"
     assert parse_recognized("MEMORY.md", b"- t", custom)[1] == "unknown"
+
+
+def test_dated_markdown_basename_is_opt_in():
+    assert is_dated_markdown_basename("nested/2026-04-02.md")
+    assert not is_dated_markdown_basename("2026-04-02.MD")
+    assert not is_dated_markdown_basename("2026-4-02.md")
+    assert not is_dated_markdown_basename("notes-2026-04-02.md")
+    assert not is_dated_markdown_basename("2026-13-01.md")
+    assert not is_dated_markdown_basename("2026-04-32.md")
+    assert not is_dated_markdown_basename(DATED_MARKDOWN_TOKEN)
+
+    plain = SourceConfig.extended({"NOTES.md"})
+    assert DATED_MARKDOWN_TOKEN not in plain.recognized_names
+    assert parse_recognized("2026-04-02.md", b"- dated fact\n", plain)[1] == "unknown"
+
+    dated = SourceConfig.extended(recognize_dated_markdown=True)
+    assert DATED_MARKDOWN_TOKEN in dated.markdown_names
+    items, err = parse_recognized("memory/2026-04-02.md", b"- dated fact\n", dated)
+    assert err is None and items[0]["text"] == "dated fact"
+    assert parse_recognized("2026-13-01.md", b"- no\n", dated)[1] == "unknown"
+    assert MarkdownV2SourceAdapter(dated.markdown_names).can_handle("2026-04-02.md")
+    assert not MarkdownV2SourceAdapter(plain.markdown_names).can_handle("2026-04-02.md")
 
 
 def test_discovery_uses_configured_names(tmp_path: Path):

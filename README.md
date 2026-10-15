@@ -143,7 +143,7 @@ After the quick-start install, scan a directory outside this repo with:
 python3 examples/local_source_import.py --root /path/to/local/copy --consent --select agent/openclaw-agent.sqlite
 ```
 
-The default root is `tests/fixtures/synthetic/`. See [Local sources](docs/LOCAL_SOURCES.md). A private dry-run checklist (snapshot, `sqlite3 .backup`, redaction left off, aggregates only) is [Local evaluation](docs/LOCAL_EVAL.md).
+The default root is `tests/fixtures/synthetic/`. See [Local sources](docs/LOCAL_SOURCES.md). A private dry-run checklist (snapshot, `sqlite3 .backup`, redaction left off, aggregates only) is [Local evaluation](docs/LOCAL_EVAL.md). The local eval command accepts `--extra-markdown-names` and `--recognize-dated-markdown`; both stay off unless you pass them.
 
 ────────
 

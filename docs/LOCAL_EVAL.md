@@ -43,6 +43,19 @@ python3 experiments/synthetic_usecase_eval.py \
 
 `--preview-only` stops after discovery and `preview_import`. `--dedup` turns on near-duplicate `skip` for that process. The process keeps mechanism state in memory; it does not write a Skill store file. A persistent store, if you want one, belongs under `$EVAL_PARENT` as well.
 
+Exact extra basenames and dated daily notes stay **off** unless you opt in. `--extra-markdown-names` is repeatable and accepts commas. Each value is an exact basename (`side-notes.md`), not a path and not a glob. `--recognize-dated-markdown` also recognizes basenames that are exactly `YYYY-MM-DD.md` (month 01–12, day 01–31, lowercase `.md`). A date inside a longer name does not match. Passing the token `YYYY-MM-DD.md` as an extra name is the same switch as the flag. Both options are forwarded to `SourceConfig.extended` and to the name set that classifies tier A, so a file discovery accepts is not then counted as `excluded_unlisted`.
+
+```bash
+python3 experiments/synthetic_usecase_eval.py \
+  --local-root "$DEST" \
+  --output "$EVAL_PARENT/aggregates.md" \
+  --extra-markdown-names side-notes.md \
+  --extra-markdown-names "Custom.md,Other.md" \
+  --recognize-dated-markdown
+```
+
+Without those flags the recognized set is unchanged: the extended persona names plus `memories.json` and `memory.json`. The aggregate records `recognize_dated_markdown` and `extra_markdown_name_count` (a count, not the names).
+
 ## Checklist
 
 - [ ] Synthetic pytest and `experiments/synthetic_usecase_eval.py` exit 0.
@@ -58,7 +71,7 @@ python3 experiments/synthetic_usecase_eval.py \
 
 Live state is the `~/.openclaw` home. It is a hybrid tree: small config stays on the internal disk; `agents` and `workspace` may be symlinks into a larger migrated copy (on the order of 21G). `~/.openclaw/memory/` may hold small SQLite backups on the internal disk. There is no separate frozen eval copy until you make one. The migrated tree is live data. Read it only to build the snapshot below, and do not write to it.
 
-**Tier A — start here.** Curated workspace Markdown: persona files (`MEMORY.md`, `AGENTS.md`, `SOUL.md`, `USER.md`, `IDENTITY.md`, `HEARTBEAT.md`, `TOOLS.md`) at the workspace root and under per-agent folders. About 17 of those files are real curated notes, about 120 KB, once `node_modules` templates are excluded. `workspace/memory/*.md` is about 4 dated notes, about 384 KB (one may be empty). An optional extra folder of dated daily notes can sit outside `~/.openclaw` (about 50 files, ~197 KB, of which a dated subset is about 21 files, ~128 KB). Those filenames are not in the default recognized set. Copy or rename them into `$DEST`, or pass extra names through `SourceConfig.extended`, only on the local snapshot.
+**Tier A — start here.** Curated workspace Markdown: persona files (`MEMORY.md`, `AGENTS.md`, `SOUL.md`, `USER.md`, `IDENTITY.md`, `HEARTBEAT.md`, `TOOLS.md`) at the workspace root and under per-agent folders. About 17 of those files are real curated notes, about 120 KB, once `node_modules` templates are excluded. `workspace/memory/*.md` is about 4 dated notes, about 384 KB (one may be empty). An optional extra folder of dated daily notes can sit outside `~/.openclaw` (about 50 files, ~197 KB, of which a dated subset is about 21 files, ~128 KB). Those filenames are not in the default recognized set. On the local snapshot, pass exact basenames with `--extra-markdown-names`, or pass `--recognize-dated-markdown` for `YYYY-MM-DD.md` files. Both stay off unless you set them.
 
 **Exclude.** Trajectory / telemetry under the agent tree is about 23,441 files and about 6.6G. Session transcript tables (on the order of 19k rows) are telemetry. The local command skips paths that contain `trajectory` or `archive-tier`, and it skips `node_modules`. It does not import `*.sqlite`, `*.sqlite3`, or `*.jsonl` unless you pass `--include-stores`.
 
@@ -83,6 +96,8 @@ mkdir -p "$DEST"
 # Skip node_modules, trajectories, sqlite, jsonl, and bak files.
 # Recognized names are MEMORY.md, AGENTS.md, SOUL.md, USER.md,
 # IDENTITY.md, HEARTBEAT.md, TOOLS.md, CLAUDE.md, memories.json, memory.json.
+# Add exact basenames with --extra-markdown-names.
+# Add YYYY-MM-DD.md files with --recognize-dated-markdown.
 echo "Copy at $DEST — keep off GitHub"
 ```
 

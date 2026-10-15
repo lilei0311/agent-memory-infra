@@ -24,11 +24,34 @@ def _digest(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
+# Basename token, not a literal file. Present in a name set only when dated
+# Markdown recognition is on. Matches ``2026-04-02.md``, not ``notes-2026-04-02.md``.
+DATED_MARKDOWN_TOKEN = "YYYY-MM-DD.md"
+_DATED_MARKDOWN_NAME = re.compile(r"^(\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])\.md$")
+
+
+def is_dated_markdown_basename(filename: str) -> bool:
+    """True when the basename is exactly ``YYYY-MM-DD.md`` with a calendar-shaped date.
+
+    Month is 01–12 and day is 01–31. The suffix is lowercase ``.md``. A date
+    inside a longer name does not match.
+    """
+
+    return _DATED_MARKDOWN_NAME.match(Path(filename).name) is not None
+
+
 def matches_recognized_name(filename: str, names: frozenset[str]) -> bool:
-    """True when ``filename`` is an exact recognized name or a ``*.ext`` token."""
+    """True when ``filename`` is an exact recognized name or a ``*.ext`` token.
+
+    If ``names`` contains ``DATED_MARKDOWN_TOKEN``, basenames that pass
+    ``is_dated_markdown_basename`` match as well. The token itself is not
+    a dated basename.
+    """
 
     base = Path(filename).name
     if base in names:
+        return True
+    if DATED_MARKDOWN_TOKEN in names and is_dated_markdown_basename(base):
         return True
     lower = base.lower()
     for token in names:
@@ -215,7 +238,7 @@ class MarkdownV2SourceAdapter:
         self.names = frozenset(names) if names is not None else DEFAULT_MARKDOWN_NAMES | EXTENDED_MARKDOWN_NAMES
 
     def can_handle(self, path: str) -> bool:
-        return Path(path).name in self.names
+        return matches_recognized_name(path, self.names)
 
     def parse(self, payload: bytes) -> tuple[list[dict], str | None]:
         items, _meta, error = self.parse_document(payload)
@@ -543,7 +566,9 @@ class SourceConfig:
     ``recognize_sqlite=False`` or ``recognize_jsonl=False`` to opt out of
     those suffixes. ``SourceConfig.extended()`` enables the v2 Markdown
     adapter and the persona/memory names. It leaves the SQLite and JSONL
-    suffixes on.
+    suffixes on. ``recognize_dated_markdown=True`` also recognizes basenames
+    that are exactly ``YYYY-MM-DD.md`` by adding ``DATED_MARKDOWN_TOKEN``
+    to the Markdown name set. That token is off unless requested.
     """
 
     markdown_names: frozenset[str] = DEFAULT_MARKDOWN_NAMES
@@ -562,11 +587,16 @@ class SourceConfig:
         return frozenset(names)
 
     @classmethod
-    def extended(cls, extra_markdown_names: frozenset[str] | set[str] = frozenset()) -> "SourceConfig":
-        return cls(
-            markdown_names=DEFAULT_MARKDOWN_NAMES | EXTENDED_MARKDOWN_NAMES | frozenset(extra_markdown_names),
-            markdown_v2=True,
-        )
+    def extended(
+        cls,
+        extra_markdown_names: frozenset[str] | set[str] = frozenset(),
+        *,
+        recognize_dated_markdown: bool = False,
+    ) -> "SourceConfig":
+        names = set(DEFAULT_MARKDOWN_NAMES) | set(EXTENDED_MARKDOWN_NAMES) | set(extra_markdown_names)
+        if recognize_dated_markdown:
+            names.add(DATED_MARKDOWN_TOKEN)
+        return cls(markdown_names=frozenset(names), markdown_v2=True)
 
     def markdown_adapter(self) -> SourceAdapter:
         if self.markdown_v2:
