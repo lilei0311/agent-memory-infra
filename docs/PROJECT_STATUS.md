@@ -59,3 +59,9 @@ Issue #46 is design/contract only. Do not implement adapters, packaging, Hub, Me
 - `experiments/synthetic_usecase_eval.py` scores hit@k on synthetic tasks (preference recall, prior decision, duplicate suppression, stale/contradiction) for cosine baseline vs adaptive utility, and records what Skill API `retrieve` returns (`policy="none"` vs `automatic`).
 - Results: `experiments/results/usable_c_synthetic_eval.md` (synthetic labels only). Adaptive is not required to beat baseline.
 - Local dry-run playbook: `docs/LOCAL_EVAL.md`. Real memory stays outside the repo. Redaction remains off by default.
+
+## Agent Skill packaging (2026-10-15)
+- In-process tools: `memory_infra.agent_tools.AgentMemoryTools` maps discover, preview, import, retrieve, and record_outcome onto `start`, `preview_import`, `import_selected`, `invoke("retrieve")`, and `invoke("signal")`. No MCP server.
+- Instruction file: `src/memory_infra/SKILL.md`. Personal Mac install (editable install, copy or link into `~/.cursor/skills/agent-memory/SKILL.md`, store at `~/.agent-memory-infra/store`) is `docs/AGENT_INSTALL.md`.
+- Scripted session: `examples/agent_session.py` and `tests/test_agent_session.py` import a synthetic `MEMORY.md`, retrieve, and optionally signal. Import runs only when consent is exactly true. Redaction stays off unless requested.
+- This slice does not reopen the synthetic eval above and does not add a marketplace package or an MCP/HTTP service.

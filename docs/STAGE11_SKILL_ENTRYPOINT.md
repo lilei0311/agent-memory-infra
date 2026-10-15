@@ -23,3 +23,5 @@ Unknown and unreadable sources are recorded and do not abort startup. Repeated `
 ## Non-claims
 
 This entrypoint does not claim compatibility with external harness products beyond the tested in-process sequence. Stage 11 is not marked PASS by this document.
+
+Personal agent packaging sits on this entry: `src/memory_infra/SKILL.md`, `memory_infra.agent_tools`, and `docs/AGENT_INSTALL.md`. That path is still in-process. It does not add MCP.

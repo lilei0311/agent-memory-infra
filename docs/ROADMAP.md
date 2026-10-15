@@ -58,4 +58,4 @@ External usage data begins here, not before.
 - [x] opt-in memory-item dedup (`skip` / `merge` / `keep_latest`) and synthetic fixtures (`docs/DEDUP.md`, `tests/fixtures/synthetic/`)
 - [x] Read-only SQLite and JSONL source adapters (`docs/LOCAL_SOURCES.md`, `tests/fixtures/synthetic/`)
 - [ ] evaluation-signal expansion beyond the recorded contract (follow-up)
-- [ ] drop-in Skill package for an external agent host (in-process `SkillEntrypoint` is the supported path; see the README quick start)
+- [x] in-process Skill packaging for a personal Mac agent (`src/memory_infra/SKILL.md`, `memory_infra.agent_tools`, `docs/AGENT_INSTALL.md`). Marketplace, MCP, and an external host SDK stay deferred
