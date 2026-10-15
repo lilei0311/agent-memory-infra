@@ -229,7 +229,19 @@ def test_default_redact_is_false_and_opt_in_dedups_placeholders(tmp_path: Path):
 
 
 def test_fixtures_have_no_secret_shaped_tokens():
-    blob = "\n".join(path.read_text(encoding="utf-8") for path in FIXTURES.iterdir() if path.is_file())
+    from memory_infra.source_adapter import SQLITE_ADAPTER
+
+    parts: list[str] = []
+    for path in FIXTURES.iterdir():
+        if not path.is_file():
+            continue
+        if path.suffix.lower() in {".sqlite", ".sqlite3"}:
+            items, err = SQLITE_ADAPTER.parse(path.read_bytes())
+            assert err is None
+            parts.extend(item["text"] for item in items)
+            continue
+        parts.append(path.read_text(encoding="utf-8"))
+    blob = "\n".join(parts)
     for marker in ("sk-", "AKIA", "ghp_", "xoxb-", "BEGIN ", "password", "@", "/Users/", "/home/"):
         assert marker not in blob
 

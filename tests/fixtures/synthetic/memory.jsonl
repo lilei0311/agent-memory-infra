@@ -1,0 +1,4 @@
+{"text":"Plain memory line: fixtures are invented and contain no secrets."}
+{"content":"Content field: confirm before import."}
+{"memory":"Memory field: the source file stays on disk."}
+{"memories":["List field: one string item."]}

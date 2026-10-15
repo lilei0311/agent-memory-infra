@@ -3,7 +3,10 @@
 Discovery stays read-only. This module parses already-recognized source
 payloads and records caller-selected items through the public Skill API.
 It does not import memory_infra.store and does not rewrite caller files.
-Markdown and JSON parsing are delegated to internal SourceAdapters.
+Markdown, JSON, JSONL, and SQLite parsing are delegated to internal
+SourceAdapters. SQLite and JSONL are recognized when ``SourceConfig`` includes
+their suffixes (the default). With no config, only the original four names
+are accepted.
 
 Item dedup is not applied here. ``SkillEntrypoint(item_dedup=...)`` plans
 it on the text that will be stored, after redaction only when redaction is
@@ -16,7 +19,14 @@ import hashlib
 from pathlib import Path
 
 from memory_infra.redaction import RedactionPolicy, RedactionReport, redact_items
-from memory_infra.source_adapter import JSON_ADAPTER, MARKDOWN_ADAPTER, SourceConfig
+from memory_infra.source_adapter import (
+    JSON_ADAPTER,
+    JSONL_ADAPTER,
+    MARKDOWN_ADAPTER,
+    SQLITE_ADAPTER,
+    SourceConfig,
+    kind_for_filename,
+)
 
 RECOGNIZED_NAMES = frozenset({"MEMORY.md", "memory.md", "memories.json", "memory.json"})
 DUPLICATE_POLICY = "idempotent_by_source_digest"
@@ -47,8 +57,10 @@ def parse_recognized(
     """Parse one recognized payload. Returns items or a rejection reason.
 
     Items are caller text plus a content digest. Mechanism ids are not assigned here.
-    Markdown and JSON sources are routed through their SourceAdapters. With no
-    ``config`` the original four names and the v1 Markdown adapter are used.
+    Markdown, JSON, JSONL, and SQLite sources are routed through their
+    SourceAdapters. With no ``config`` the original four names and the v1
+    Markdown adapter are used. A ``SourceConfig`` also routes ``*.sqlite``,
+    ``*.sqlite3``, and ``*.jsonl`` unless those suffixes are turned off.
     """
 
     base = Path(name).name
@@ -60,9 +72,14 @@ def parse_recognized(
         if JSON_ADAPTER.can_handle(name):
             return JSON_ADAPTER.parse(payload)
         return [], "unknown"
-    if base in config.json_names:
+    kind = kind_for_filename(base, config.recognized_names)
+    if kind == "jsonl_memory":
+        return JSONL_ADAPTER.parse(payload)
+    if kind == "sqlite_memory":
+        return SQLITE_ADAPTER.parse(payload)
+    if kind == "json_memory":
         return JSON_ADAPTER.parse(payload)
-    if base in config.markdown_names:
+    if kind == "markdown_memory":
         return config.markdown_adapter().parse(payload)
     return [], "unknown"
 

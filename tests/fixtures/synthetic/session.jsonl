@@ -1,0 +1,7 @@
+{"type":"session","id":"synthetic-session","timestamp":"2026-01-15T00:00:00Z","cwd":"/tmp/synthetic"}
+{"type":"message","id":"m1","parentId":"synthetic-session","timestamp":"2026-01-15T00:01:00Z","message":{"role":"user","content":[{"type":"text","text":"The workspace prefers explicit confirmation before import."},{"type":"thinking","text":"not an observation"}]}}
+{"type":"message","id":"m2","parentId":"m1","timestamp":"2026-01-15T00:02:00Z","message":{"role":"assistant","content":[{"type":"thinking","text":"hidden reasoning"},{"type":"text","text":"JSONL fixture: one object per line, imported only after selection."}]}}
+{"type":"message","id":"m3","parentId":"m2","timestamp":"2026-01-15T00:03:00Z","message":{"role":"toolResult","content":[{"type":"text","text":"   "}]}}
+{"type":"compaction","id":"c1","parentId":"m2","summary":"Compaction summary: confirm before import."}
+this is not json
+{"type":"custom","id":"state-1","data":{"ignored":true}}

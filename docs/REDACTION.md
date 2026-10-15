@@ -1,6 +1,6 @@
 # Redaction at import
 
-Redaction is **off by default**. For local personal memory, leave it off and import text as written. Turn it on before sharing or exporting, or when writing into a less-trusted store.
+Redaction is **off by default**. For local personal memory, leave it off and import text as written. Turn it on before sharing or exporting, or when writing into a less-trusted store. SQLite and JSONL imports use the same switch.
 
 Opt in with `SkillEntrypoint(redact=True)`, `handle.import_selected(paths, redact=True)`, or `handle.preview_import(paths, redact=True)`. The first-run example accepts the same choice as `--redact`. Narrow categories with `SkillEntrypoint(redaction=RedactionPolicy.only("email", ...))`. `RedactionPolicy.disabled()` is the import default; `redact=False` on a single call forces that call off.
 
