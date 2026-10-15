@@ -8,7 +8,7 @@ Discovery remains read-only. `handle.start` never imports. `handle.import_select
 
 Public entry: `SkillEntrypoint` / `SkillHandle.import_selected`.
 
-Recognized names stay `MEMORY.md`, `memory.md`, `memories.json`, and `memory.json`. Markdown imports non-empty, non-heading lines. JSON imports a string, a list of strings, or `memories` / `items` / `text` / `content` fields. Other shapes are rejected.
+Recognized names stay `MEMORY.md`, `memory.md`, `memories.json`, and `memory.json`. The default `SourceConfig` also recognizes `*.sqlite`, `*.sqlite3`, and `*.jsonl`. Markdown imports non-empty, non-heading lines. JSON imports a string, a list of strings, or `memories` / `items` / `text` / `content` fields. SQLite imports `memory_index_chunks.text` from an OpenClaw-shaped snapshot. JSONL imports one recognized JSON object per line. Other shapes are rejected. See [LOCAL_SOURCES.md](LOCAL_SOURCES.md).
 
 Each accepted line becomes a mechanism observation and promotion through the public Skill API. Mechanism code assigns point, event, and evidence ids. The observation source is `import:<path>`.
 

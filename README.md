@@ -87,6 +87,18 @@ Expected high-level output includes discovery without auto-import, explicit `--c
 
 ────────
 
+## Local SQLite and JSONL sources
+
+Discovery also recognizes `*.sqlite`, `*.sqlite3`, and `*.jsonl`. Import is still explicit, does not rewrite the file, and leaves redaction and item dedup off unless you opt in.
+
+```bash
+PYTHONPATH=src python examples/local_source_import.py --root /path/to/local/copy --consent --select agent/openclaw-agent.sqlite
+```
+
+The default root is the synthetic fixture directory. Point `--root` at a directory outside this repo when you want to read a local OpenClaw agent database or session log. See [Local sources](docs/LOCAL_SOURCES.md).
+
+────────
+
 ## Design Principles
 
 1. Storage-Agnostic

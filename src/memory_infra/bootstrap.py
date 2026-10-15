@@ -3,6 +3,9 @@
 Installation inspects a caller-supplied environment and returns a bounded
 inventory. It does not import, rewrite, or ingest caller memory into
 mechanism-owned state. Discovery metadata stays on this seam.
+
+The default recognized set matches ``SourceConfig``: markdown and JSON file
+names, plus ``*.sqlite``, ``*.sqlite3``, and ``*.jsonl``.
 """
 
 from __future__ import annotations
@@ -11,9 +14,11 @@ import os
 from pathlib import Path
 from typing import Mapping
 
+from memory_infra.source_adapter import SourceConfig, kind_for_filename
+
 DEFAULT_SCAN_LIMIT = 32
 DEFAULT_MAX_DEPTH = 2
-RECOGNIZED_NAMES = frozenset({"MEMORY.md", "memory.md", "memories.json", "memory.json"})
+RECOGNIZED_NAMES = SourceConfig().recognized_names
 
 __all__ = [
     "DEFAULT_MAX_DEPTH",
@@ -26,11 +31,7 @@ __all__ = [
 
 
 def _kind_for(name: str, names: frozenset[str] = RECOGNIZED_NAMES) -> str:
-    if name in names:
-        if name.endswith(".json"):
-            return "json_memory"
-        return "markdown_memory"
-    return "unknown"
+    return kind_for_filename(name, names)
 
 
 def _entry(rel: str, kind: str, status: str, size: int | None, detail: str) -> dict:

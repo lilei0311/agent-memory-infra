@@ -418,7 +418,10 @@ class SkillEntrypoint:
     Import redaction is off by default so local personal memory keeps text as
     written. Pass ``redact=True`` to enable every category, or ``redaction=``
     for a narrower ``RedactionPolicy``, before sharing or writing to a
-    less-trusted store.
+    less-trusted store. Item dedup is off unless ``item_dedup`` is set.
+    ``sources`` defaults to markdown, JSON, ``*.sqlite`` / ``*.sqlite3``, and
+    ``*.jsonl``. Discovery lists those paths. Only ``import_selected`` reads
+    them into mechanism memory, and it does not rewrite the files.
     """
 
     def __init__(

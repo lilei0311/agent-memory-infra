@@ -4,7 +4,7 @@ Stage 12 still treats a repeated import of the same path and the same snapshot b
 
 Item dedup is a separate, opt-in policy on `SkillEntrypoint(item_dedup=ItemDedupPolicy(...))` and on `MemoryStore.add_deduped`. The default import path leaves it off, so existing imports keep one observation per parsed line. `MemoryStore.add` is also unchanged: the same text under two ids stays two items. Experiments use `add`.
 
-Synthetic files in `tests/fixtures/synthetic/` (`MEMORY.md`, `memories.json`, `store_items.json`) exercise the policy. They are invented notes, not a person's memory, and they contain no secrets. `examples/dedup_import.py` imports the markdown and JSON fixtures with `skip`.
+Synthetic files in `tests/fixtures/synthetic/` (`MEMORY.md`, `memories.json`, `store_items.json`, `openclaw-agent.sqlite`, `session.jsonl`, `memory.jsonl`) exercise the policy. They are invented notes, not a person's memory, and they contain no secrets. `examples/dedup_import.py` imports the markdown and JSON fixtures with `skip`. SQLite and JSONL use the same opt-in switch; see [LOCAL_SOURCES.md](LOCAL_SOURCES.md).
 
 ## Equality
 

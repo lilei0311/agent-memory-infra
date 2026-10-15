@@ -43,3 +43,8 @@ Issue #46 is design/contract only. Do not implement adapters, packaging, Hub, Me
 - Synthetic fixtures live in `tests/fixtures/synthetic/`. They are invented notes and contain no secrets.
 - Import redaction is off by default (`redact=False`), matching main after #54. Opt in with `redact=True` or `--redact`. Item dedup stays opt-in.
 - SQLite/JSONL adapters and further evaluation work are not in this slice.
+
+## Local source adapters (2026-10-15)
+- Read-only SQLite (`memory_index_chunks` / `memory_index_sources`) and JSONL adapters are wired through `SourceConfig` and `SkillEntrypoint` discovery plus `import_selected`. `backend="sqlite"` is still rejected.
+- Synthetic fixtures: `tests/fixtures/synthetic/openclaw-agent.sqlite`, `session.jsonl`, `memory.jsonl`. No real agent database is in the repo.
+- How to point `root` at a local copy, including a quiescent SQLite backup, is `docs/LOCAL_SOURCES.md`. Redaction and item dedup stay opt-in.
