@@ -93,3 +93,5 @@ Not imported: a `session` header, `thinking` blocks, tool-call blocks, and exten
 Import stores the parsed text as written. Pass `redact=True` on the entrypoint or on `import_selected` / `preview_import` before sharing or writing to a less-trusted store. See [REDACTION.md](REDACTION.md).
 
 Repeated lines stay separate observations until `item_dedup` is set. See [DEDUP.md](DEDUP.md). A repeated import of the same path and the same snapshot bytes still returns the previous records and does not parse them again.
+
+A private dry-run (Markdown snapshot first, trajectory excluded, `sqlite3 .backup` before any live database, redaction left off, aggregate counts only) is [LOCAL_EVAL.md](LOCAL_EVAL.md). Do not commit that output.
