@@ -4,6 +4,9 @@ Discovery stays read-only. This module parses already-recognized source
 payloads and records caller-selected items through the public Skill API.
 It does not import memory_infra.store and does not rewrite caller files.
 Markdown and JSON parsing are delegated to internal SourceAdapters.
+
+Item dedup is not applied here. ``SkillEntrypoint(item_dedup=...)`` plans
+it after redaction. See docs/DEDUP.md.
 """
 
 from __future__ import annotations

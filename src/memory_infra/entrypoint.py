@@ -16,6 +16,7 @@ from memory_infra.bootstrap import (
     DEFAULT_SCAN_LIMIT,
     SkillBootstrap,
 )
+from memory_infra.dedup import ItemDedupPolicy, disabled_dedup, plan_items
 from memory_infra.importer import DUPLICATE_POLICY, parse_redacted, snapshot_digest, source_ref_for
 from memory_infra.redaction import DEFAULT_POLICY, RedactionPolicy, RedactionReport
 from memory_infra.source_adapter import SourceConfig
@@ -38,6 +39,8 @@ class SkillHandle:
         self._root: Path | None = None
         self._artifacts: Mapping[str, bytes | None] | None = None
         self._imports: dict[tuple[str, str], list[dict]] = {}
+        # Content key -> {"text", "record"} for this handle's session only.
+        self._item_index: dict[str, dict] = {}
 
     def start(
         self,
@@ -53,6 +56,7 @@ class SkillHandle:
         self._root = Path(root) if root is not None else None
         self._artifacts = artifacts
         self._imports = {}
+        self._item_index = {}
         note = self._session.install(
             root=root,
             artifacts=artifacts,
@@ -117,8 +121,11 @@ class SkillHandle:
         Discovery never calls this. Unknown and unreadable selections are
         reported and are not ingested. Duplicate policy is idempotent by
         source path plus the SHA-256 of the selected source snapshot.
-        Distinct parsed occurrences in that snapshot are preserved.
-        Caller files are not rewritten.
+        Distinct parsed occurrences in that snapshot are preserved unless
+        the entrypoint was constructed with ``item_dedup``. That index is
+        per handle and per session. Caller files are not rewritten.
+        Redaction runs before item dedup and stays at the entrypoint policy
+        (enabled unless the caller opts out).
         """
 
         if self._session is None or "discovery" not in self._sequence:
@@ -129,8 +136,12 @@ class SkillHandle:
         created: list[dict] = []
         rejected: list[dict] = []
         reused: list[dict] = []
+        skipped: list[dict] = []
+        merged: list[dict] = []
+        superseded: list[dict] = []
         redaction_total = RedactionReport()
         policy = self._entry._redaction
+        dedup = self._entry._item_dedup
         for path in paths:
             item = by_path.get(path)
             if item is None:
@@ -154,33 +165,68 @@ class SkillHandle:
             if existing is not None:
                 reused.extend(existing)
                 continue
+            prior = {item_key: slot["text"] for item_key, slot in self._item_index.items()}
+            decisions, _planned = plan_items(parsed, dedup, prior)
             records: list[dict] = []
-            for occurrence, parsed_item in enumerate(parsed):
-                observed = self.invoke(
-                    "observe",
-                    {"content": parsed_item["text"], "source": source_ref},
-                )
-                promoted = self.invoke(
-                    "signal",
-                    {
-                        "name": "promote",
-                        "point_id": observed["point_id"],
-                        "reason": "explicit historical import",
-                    },
-                )
-                mechanism = promoted["result"]["result"]
-                record = {
+            for decision, parsed_item in zip(decisions, parsed):
+                occurrence = decision.index
+                if decision.action == "create" or decision.action == "keep_latest":
+                    record = self._import_observation(
+                        path, source_ref, source_digest, occurrence, parsed_item["text"]
+                    )
+                    if dedup is not None and decision.key is not None:
+                        record["dedup_action"] = (
+                            "kept_latest" if decision.action == "keep_latest" else "created"
+                        )
+                        if decision.action == "keep_latest":
+                            prior_slot = self._item_index[decision.key]
+                            record["supersedes"] = prior_slot["record"]["point_id"]
+                            superseded.append(
+                                {
+                                    "path": prior_slot["record"]["path"],
+                                    "status": "superseded",
+                                    "point_id": prior_slot["record"]["point_id"],
+                                    "event_id": prior_slot["record"]["event_id"],
+                                    "superseded_by": record["point_id"],
+                                }
+                            )
+                        self._item_index[decision.key] = {
+                            "text": parsed_item["text"],
+                            "record": record,
+                        }
+                    records.append(record)
+                    created.append(record)
+                    continue
+                if decision.key is None or decision.key not in self._item_index:
+                    raise RuntimeError("item dedup decision is missing a content key")
+                slot = self._item_index[decision.key]
+                duplicate = {
                     "path": path,
-                    "status": "imported",
+                    "status": "skipped" if decision.action == "skip" else "merged",
+                    "dedup_action": decision.action,
+                    "reason": "duplicate",
                     "source_digest": source_digest,
                     "occurrence": occurrence,
                     "source_ref": source_ref,
-                    "point_id": observed["point_id"],
-                    "event_id": mechanism["event_id"],
-                    "evidence_ref": mechanism["evidence_ref"],
+                    "point_id": slot["record"]["point_id"],
+                    "event_id": slot["record"]["event_id"],
+                    "evidence_ref": slot["record"]["evidence_ref"],
+                    "matched_path": slot["record"]["path"],
+                    "matched_occurrence": slot["record"]["occurrence"],
+                    "text_equal": parsed_item["text"] == slot["text"],
                 }
-                records.append(record)
-                created.append(record)
+                if decision.action == "merge":
+                    slot["record"].setdefault("also_seen", []).append(
+                        {
+                            "path": path,
+                            "occurrence": occurrence,
+                            "source_digest": source_digest,
+                            "text_equal": duplicate["text_equal"],
+                        }
+                    )
+                    merged.append(duplicate)
+                else:
+                    skipped.append(duplicate)
             self._imports[key] = records
             redaction_total.items_total += path_report.items_total
             redaction_total.items_redacted += path_report.items_redacted
@@ -188,17 +234,21 @@ class SkillHandle:
                 redaction_total.counts[cat] = redaction_total.counts.get(cat, 0) + n
         if "import" not in self._sequence:
             self._sequence.append("import")
-        imported = bool(created or reused)
+        imported = bool(created or reused or skipped or merged)
         return {
             "ok": True,
             "phase": "imported" if imported else "import_reported",
             "caller_id": self.caller_id,
             "explicit_import": "invoked",
             "duplicate_policy": DUPLICATE_POLICY,
+            "item_dedup": dedup.describe() if dedup is not None else disabled_dedup(),
             "imported": imported,
             "mechanism_memory_created": bool(created),
             "created": created,
             "reused": reused,
+            "skipped": skipped,
+            "merged": merged,
+            "superseded": superseded,
             "rejected": rejected,
             "redaction": {"enabled": policy.enabled, **redaction_total.as_dict()},
             "sequence": list(self._sequence),
@@ -209,7 +259,9 @@ class SkillHandle:
 
         Reports per source how many items would be created and how many
         redactions (counts per category, never values) would be applied.
-        Does not enable memory operations and creates no mechanism state.
+        When item dedup is enabled, also reports how many items would be
+        skipped, merged, or kept as latest. Does not enable memory
+        operations and creates no mechanism state.
         """
 
         if self._session is None or "discovery" not in self._sequence:
@@ -217,8 +269,10 @@ class SkillHandle:
         inventory = self.inventory() or {"sources": []}
         by_path = {item["path"]: item for item in inventory["sources"]}
         policy = self._entry._redaction
+        dedup = self._entry._item_dedup
         sources: list[dict] = []
         total = RedactionReport()
+        planned_index = {item_key: slot["text"] for item_key, slot in self._item_index.items()}
         for path in paths:
             item = by_path.get(path)
             if item is None:
@@ -240,12 +294,20 @@ class SkillHandle:
             for cat, n in report.counts.items():
                 total.counts[cat] = total.counts.get(cat, 0) + n
             distinct = len({row["digest"] for row in parsed})
+            decisions, planned_index = plan_items(parsed, dedup, planned_index)
+            counts = {"create": 0, "skip": 0, "merge": 0, "keep_latest": 0}
+            for decision in decisions:
+                counts[decision.action] += 1
             sources.append(
                 {
                     "path": path,
                     "status": "would_import",
                     "items": report.items_total,
                     "distinct_after_redaction": distinct,
+                    "would_create": counts["create"] + counts["keep_latest"],
+                    "would_skip": counts["skip"],
+                    "would_merge": counts["merge"],
+                    "would_keep_latest": counts["keep_latest"],
                     "source_digest": snapshot_digest(payload),
                     "redaction": report.as_dict(),
                 }
@@ -257,9 +319,40 @@ class SkillHandle:
             "caller_id": self.caller_id,
             "imported": False,
             "mechanism_memory_created": False,
+            "duplicate_policy": DUPLICATE_POLICY,
+            "item_dedup": dedup.describe() if dedup is not None else disabled_dedup(),
             "redaction": {"enabled": policy.enabled, **total.as_dict()},
             "sources": sources,
             "sequence": list(self._sequence),
+        }
+
+    def _import_observation(
+        self,
+        path: str,
+        source_ref: str,
+        source_digest: str,
+        occurrence: int,
+        text: str,
+    ) -> dict:
+        observed = self.invoke("observe", {"content": text, "source": source_ref})
+        promoted = self.invoke(
+            "signal",
+            {
+                "name": "promote",
+                "point_id": observed["point_id"],
+                "reason": "explicit historical import",
+            },
+        )
+        mechanism = promoted["result"]["result"]
+        return {
+            "path": path,
+            "status": "imported",
+            "source_digest": source_digest,
+            "occurrence": occurrence,
+            "source_ref": source_ref,
+            "point_id": observed["point_id"],
+            "event_id": mechanism["event_id"],
+            "evidence_ref": mechanism["evidence_ref"],
         }
 
     def _read_source(self, path: str) -> tuple[bytes | None, str | None]:
@@ -299,9 +392,13 @@ class SkillEntrypoint:
         path: str | Path | None = None,
         redaction: RedactionPolicy = DEFAULT_POLICY,
         sources: SourceConfig | None = None,
+        item_dedup: ItemDedupPolicy | None = None,
     ) -> None:
         self._redaction = redaction
         self._sources = sources if sources is not None else SourceConfig()
+        if item_dedup is not None and not isinstance(item_dedup, ItemDedupPolicy):
+            raise TypeError("item_dedup must be an ItemDedupPolicy or None")
+        self._item_dedup = item_dedup
         if backend not in {"memory", "file"}:
             raise ValueError("backend must be memory or file")
         if backend == "file" and path is None:

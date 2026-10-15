@@ -1,0 +1,26 @@
+[
+  {
+    "id": "pref-1",
+    "text": "The workspace prefers explicit confirmation before import.",
+    "tags": ["preference"],
+    "embedding": [1.0, 0.0],
+    "success": 2,
+    "failure": 0
+  },
+  {
+    "id": "pref-2",
+    "text": "The  Workspace prefers explicit confirmation before import.",
+    "tags": ["confirm"],
+    "embedding": [0.2, 0.8],
+    "success": 1,
+    "failure": 1
+  },
+  {
+    "id": "review-1",
+    "text": "JSON-only reminder: review the dry-run report before import.",
+    "tags": ["review"],
+    "embedding": [0.0, 1.0],
+    "success": 0,
+    "failure": 0
+  }
+]
