@@ -15,8 +15,10 @@ Synthetic files live in `tests/fixtures/synthetic/` (`openclaw-agent.sqlite`, `o
 
 `root` is a directory you choose. Paths in the inventory are relative to that directory, and import refuses a path that escapes it.
 
+From the repo root after the README quick-start install (`pip install -e ".[dev]"`):
+
 ```bash
-PYTHONPATH=src python examples/local_source_import.py \
+python3 examples/local_source_import.py \
   --root "$HOME/.openclaw/agents/<agentId>" \
   --max-depth 2 \
   --scan-limit 32 \

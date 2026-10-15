@@ -26,6 +26,8 @@ Exit gate: controlled experiments determine whether historical feedback improves
 
 Exit gate: at least two heterogeneous Agent/storage combinations work without changing the policy core.
 
+The Skill API, the file backend, and Markdown/JSON/SQLite/JSONL source adapters are in the tree. A drop-in package for an external agent host, and anonymous evaluation signals, have not started. Hub, Memory Bridge, MCP/HTTP, and a vector database stay in Stage 3.
+
 ## Stage 3 — Real-World Learning
 
 1. Optional anonymous telemetry
@@ -56,3 +58,4 @@ External usage data begins here, not before.
 - [x] opt-in memory-item dedup (`skip` / `merge` / `keep_latest`) and synthetic fixtures (`docs/DEDUP.md`, `tests/fixtures/synthetic/`)
 - [x] Read-only SQLite and JSONL source adapters (`docs/LOCAL_SOURCES.md`, `tests/fixtures/synthetic/`)
 - [ ] evaluation-signal expansion beyond the recorded contract (follow-up)
+- [ ] drop-in Skill package for an external agent host (in-process `SkillEntrypoint` is the supported path; see the README quick start)
