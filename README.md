@@ -5,7 +5,7 @@
 
 This path is the in-process Agent Memory Skill on your own machine. It discovers local files, imports only what you select, and retrieves through the memory policy. Agent Memory Hub, Memory Bridge, an MCP or HTTP server, a vector database, and anonymous telemetry are out of scope here.
 
-Python 3.11 or newer. From a clean clone:
+Python 3.11 or newer. From a clean clone. On Debian or Ubuntu, install the matching venv package first (`sudo apt install python3.12-venv`); Homebrew and python.org builds on macOS already include it.
 
 ```bash
 git clone https://github.com/lilei0311/agent-memory-infra.git
