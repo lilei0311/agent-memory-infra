@@ -31,3 +31,8 @@ The named browser-evidence gap is closed by `experiments/stage14_issue43_chromiu
 
 ## Next-stage boundary
 Issue #46 is design/contract only. Do not implement adapters, packaging, Hub, Memory Bridge, telemetry, UI, server, MCP, GraphRAG, or vector DB under that issue. After the contract is independently accepted, open one implementation issue from the approved contract.
+
+## Triage update (2026-10-15)
+- Issue #46 is closed (API contract accepted); the 'stays open pending review' line above is historical.
+- Issue #52 acceptance verified locally: `python examples/first_run_journey.py --consent` exits 0 (import 2, graph 6 nodes, 2nd-session retrieval 2, sources unchanged); decline path exits 0 with no import. Suite: `python -m pytest -q tests` -> 163 passed. Note bare `pytest` fails collection (tests.skill_conformance import); use `python -m pytest`.
+- Open issues #1-#38 are completed stage/acceptance items awaiting owner closure.
