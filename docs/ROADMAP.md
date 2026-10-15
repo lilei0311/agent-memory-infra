@@ -51,5 +51,5 @@ External usage data begins here, not before.
 - [x] simulator
 - [x] evaluator (metrics recorded in experiment scripts; no separate module yet)
 - [x] first experiment (Issue #1 A/B/C, plus later D/E)
-- [ ] learning-curve analysis beyond the recorded windows
+- [ ] learning-curve analysis beyond the recorded windows (deferred to research Stage 3; needs real data)
 - [ ] V0.2 graph dynamics review (Issue #5 / #6)

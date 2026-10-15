@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+.pytest_cache/
+# never commit real memory or generated explorer output
+local-memory/
+real-memory/
+*.explorer.html

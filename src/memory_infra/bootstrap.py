@@ -25,8 +25,8 @@ __all__ = [
 ]
 
 
-def _kind_for(name: str) -> str:
-    if name in RECOGNIZED_NAMES:
+def _kind_for(name: str, names: frozenset[str] = RECOGNIZED_NAMES) -> str:
+    if name in names:
         if name.endswith(".json"):
             return "json_memory"
         return "markdown_memory"
@@ -43,7 +43,7 @@ def _entry(rel: str, kind: str, status: str, size: int | None, detail: str) -> d
     }
 
 
-def _scan_root(root: Path, *, scan_limit: int, max_depth: int) -> tuple[list[dict], bool]:
+def _scan_root(root: Path, *, scan_limit: int, max_depth: int, names: frozenset[str] = RECOGNIZED_NAMES) -> tuple[list[dict], bool]:
     root = root.resolve()
     found: list[tuple[str, Path]] = []
     unreadable_dirs: list[str] = []
@@ -64,13 +64,13 @@ def _scan_root(root: Path, *, scan_limit: int, max_depth: int) -> tuple[list[dic
         dirnames.sort()
         filenames.sort()
         try:
-            names = list(filenames)
+            file_names = list(filenames)
         except OSError as exc:
             unreadable_dirs.append(str(rel_dir))
             dirnames[:] = []
             found.append((str(rel_dir), current))
             continue
-        for name in names:
+        for name in file_names:
             path = current / name
             rel = path.relative_to(root).as_posix()
             found.append((rel, path))
@@ -92,7 +92,7 @@ def _scan_root(root: Path, *, scan_limit: int, max_depth: int) -> tuple[list[dic
             entries.append(_entry(rel, "unknown", "unreadable", None, type(exc).__name__))
             continue
         name = path.name
-        kind = _kind_for(name)
+        kind = _kind_for(name, names)
         if kind == "unknown":
             entries.append(_entry(rel, "unknown", "unknown", size, "unrecognized source"))
         else:
@@ -100,7 +100,9 @@ def _scan_root(root: Path, *, scan_limit: int, max_depth: int) -> tuple[list[dic
     return entries, truncated
 
 
-def _scan_artifacts(artifacts: Mapping[str, bytes | None], *, scan_limit: int) -> tuple[list[dict], bool]:
+def _scan_artifacts(
+    artifacts: Mapping[str, bytes | None], *, scan_limit: int, names: frozenset[str] = RECOGNIZED_NAMES
+) -> tuple[list[dict], bool]:
     keys = sorted(artifacts)
     truncated = len(keys) > scan_limit
     entries: list[dict] = []
@@ -110,7 +112,7 @@ def _scan_artifacts(artifacts: Mapping[str, bytes | None], *, scan_limit: int) -
         if payload is None:
             entries.append(_entry(key, "unknown", "unreadable", None, "unreadable artifact"))
             continue
-        kind = _kind_for(name)
+        kind = _kind_for(name, names)
         if kind == "unknown":
             entries.append(_entry(key, "unknown", "unknown", len(payload), "unrecognized source"))
         else:
@@ -125,12 +127,14 @@ def discover_environment(
     artifacts: Mapping[str, bytes | None] | None = None,
     scan_limit: int = DEFAULT_SCAN_LIMIT,
     max_depth: int = DEFAULT_MAX_DEPTH,
+    recognized_names: frozenset[str] | None = None,
 ) -> dict:
     """Read-only bounded inventory. Does not create mechanism memory."""
     if not caller_id or not str(caller_id).strip():
         raise ValueError("caller_id is required")
     if scan_limit < 1:
         raise ValueError("scan_limit must be positive")
+    names = frozenset(recognized_names) if recognized_names is not None else RECOGNIZED_NAMES
     if root is None and artifacts is None:
         entries: list[dict] = []
         truncated = False
@@ -140,12 +144,14 @@ def discover_environment(
         truncated = False
         diagnostics = []
         if root is not None:
-            root_entries, root_truncated = _scan_root(Path(root), scan_limit=scan_limit, max_depth=max_depth)
+            root_entries, root_truncated = _scan_root(Path(root), scan_limit=scan_limit, max_depth=max_depth, names=names)
             entries.extend(root_entries)
             truncated = truncated or root_truncated
         if artifacts is not None:
             remaining = max(scan_limit - len(entries), 0)
-            art_entries, art_truncated = _scan_artifacts(artifacts, scan_limit=remaining if root is not None else scan_limit)
+            art_entries, art_truncated = _scan_artifacts(
+                artifacts, scan_limit=remaining if root is not None else scan_limit, names=names
+            )
             if root is not None and len(artifacts) > remaining:
                 art_truncated = True
             entries.extend(art_entries)
@@ -178,7 +184,7 @@ def discover_environment(
             "max_depth": max_depth,
         },
         "diagnostics": diagnostics,
-        "supported_sources": sorted(RECOGNIZED_NAMES),
+        "supported_sources": sorted(names),
     }
 
 
@@ -197,6 +203,7 @@ class BootstrapSession:
         artifacts: Mapping[str, bytes | None] | None = None,
         scan_limit: int = DEFAULT_SCAN_LIMIT,
         max_depth: int = DEFAULT_MAX_DEPTH,
+        recognized_names: frozenset[str] | None = None,
     ) -> dict:
         return self._bootstrap._install_for(
             self,
@@ -204,6 +211,7 @@ class BootstrapSession:
             artifacts=artifacts,
             scan_limit=scan_limit,
             max_depth=max_depth,
+            recognized_names=recognized_names,
         )
 
     def last_inventory(self) -> dict | None:
@@ -229,6 +237,7 @@ class SkillBootstrap:
         artifacts: Mapping[str, bytes | None] | None = None,
         scan_limit: int = DEFAULT_SCAN_LIMIT,
         max_depth: int = DEFAULT_MAX_DEPTH,
+        recognized_names: frozenset[str] | None = None,
     ) -> dict:
         session = self.open(caller_id)
         return session.install(
@@ -236,6 +245,7 @@ class SkillBootstrap:
             artifacts=artifacts,
             scan_limit=scan_limit,
             max_depth=max_depth,
+            recognized_names=recognized_names,
         )
 
     def last_inventory(self, caller_id: str | None = None) -> None:
@@ -251,6 +261,7 @@ class SkillBootstrap:
         artifacts: Mapping[str, bytes | None] | None,
         scan_limit: int,
         max_depth: int,
+        recognized_names: frozenset[str] | None = None,
     ) -> dict:
         result = discover_environment(
             caller_id=session.caller_id,
@@ -258,6 +269,7 @@ class SkillBootstrap:
             artifacts=artifacts,
             scan_limit=scan_limit,
             max_depth=max_depth,
+            recognized_names=recognized_names,
         )
         self._notes[session._token] = result
         return result

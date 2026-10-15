@@ -16,7 +16,9 @@ from memory_infra.bootstrap import (
     DEFAULT_SCAN_LIMIT,
     SkillBootstrap,
 )
-from memory_infra.importer import DUPLICATE_POLICY, parse_recognized, snapshot_digest, source_ref_for
+from memory_infra.importer import DUPLICATE_POLICY, parse_redacted, snapshot_digest, source_ref_for
+from memory_infra.redaction import DEFAULT_POLICY, RedactionPolicy, RedactionReport
+from memory_infra.source_adapter import SourceConfig
 from memory_infra.skill import SkillApi
 
 __all__ = ["DUPLICATE_POLICY", "SKILL_NAME", "SkillEntrypoint", "SkillHandle"]
@@ -56,6 +58,7 @@ class SkillHandle:
             artifacts=artifacts,
             scan_limit=scan_limit,
             max_depth=max_depth,
+            recognized_names=self._entry._sources.recognized_names,
         )
         self._api = None
         self._sequence = ["discovery"]
@@ -126,6 +129,8 @@ class SkillHandle:
         created: list[dict] = []
         rejected: list[dict] = []
         reused: list[dict] = []
+        redaction_total = RedactionReport()
+        policy = self._entry._redaction
         for path in paths:
             item = by_path.get(path)
             if item is None:
@@ -138,7 +143,7 @@ class SkillHandle:
             if read_error is not None or payload is None:
                 rejected.append({"path": path, "status": "rejected", "reason": read_error or "unreadable"})
                 continue
-            parsed, parse_error = parse_recognized(path, payload)
+            parsed, parse_error, path_report = parse_redacted(path, payload, policy, self._entry._sources)
             if parse_error is not None:
                 rejected.append({"path": path, "status": "rejected", "reason": parse_error})
                 continue
@@ -177,6 +182,10 @@ class SkillHandle:
                 records.append(record)
                 created.append(record)
             self._imports[key] = records
+            redaction_total.items_total += path_report.items_total
+            redaction_total.items_redacted += path_report.items_redacted
+            for cat, n in path_report.counts.items():
+                redaction_total.counts[cat] = redaction_total.counts.get(cat, 0) + n
         if "import" not in self._sequence:
             self._sequence.append("import")
         imported = bool(created or reused)
@@ -191,6 +200,65 @@ class SkillHandle:
             "created": created,
             "reused": reused,
             "rejected": rejected,
+            "redaction": {"enabled": policy.enabled, **redaction_total.as_dict()},
+            "sequence": list(self._sequence),
+        }
+
+    def preview_import(self, paths: list[str]) -> dict:
+        """Dry run of explicit import: parse and redact, write nothing.
+
+        Reports per source how many items would be created and how many
+        redactions (counts per category, never values) would be applied.
+        Does not enable memory operations and creates no mechanism state.
+        """
+
+        if self._session is None or "discovery" not in self._sequence:
+            raise RuntimeError("import preview requires completed discovery")
+        inventory = self.inventory() or {"sources": []}
+        by_path = {item["path"]: item for item in inventory["sources"]}
+        policy = self._entry._redaction
+        sources: list[dict] = []
+        total = RedactionReport()
+        for path in paths:
+            item = by_path.get(path)
+            if item is None:
+                sources.append({"path": path, "status": "rejected", "reason": "not_in_discovery"})
+                continue
+            if item["status"] != "recognized":
+                sources.append({"path": path, "status": "rejected", "reason": item["status"]})
+                continue
+            payload, read_error = self._read_source(path)
+            if read_error is not None or payload is None:
+                sources.append({"path": path, "status": "rejected", "reason": read_error or "unreadable"})
+                continue
+            parsed, parse_error, report = parse_redacted(path, payload, policy, self._entry._sources)
+            if parse_error is not None:
+                sources.append({"path": path, "status": "rejected", "reason": parse_error})
+                continue
+            total.items_total += report.items_total
+            total.items_redacted += report.items_redacted
+            for cat, n in report.counts.items():
+                total.counts[cat] = total.counts.get(cat, 0) + n
+            distinct = len({row["digest"] for row in parsed})
+            sources.append(
+                {
+                    "path": path,
+                    "status": "would_import",
+                    "items": report.items_total,
+                    "distinct_after_redaction": distinct,
+                    "source_digest": snapshot_digest(payload),
+                    "redaction": report.as_dict(),
+                }
+            )
+        return {
+            "ok": True,
+            "phase": "import_preview",
+            "dry_run": True,
+            "caller_id": self.caller_id,
+            "imported": False,
+            "mechanism_memory_created": False,
+            "redaction": {"enabled": policy.enabled, **total.as_dict()},
+            "sources": sources,
             "sequence": list(self._sequence),
         }
 
@@ -229,7 +297,11 @@ class SkillEntrypoint:
         policy: str = "none",
         backend: str = "memory",
         path: str | Path | None = None,
+        redaction: RedactionPolicy = DEFAULT_POLICY,
+        sources: SourceConfig | None = None,
     ) -> None:
+        self._redaction = redaction
+        self._sources = sources if sources is not None else SourceConfig()
         if backend not in {"memory", "file"}:
             raise ValueError("backend must be memory or file")
         if backend == "file" and path is None:
