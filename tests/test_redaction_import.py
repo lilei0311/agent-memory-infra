@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from memory_infra.entrypoint import SkillEntrypoint
+from memory_infra.importer import parse_redacted
 from memory_infra.redaction import (
     ALL_CATEGORIES,
     RedactionPolicy,
@@ -89,7 +90,14 @@ def _source(tmp_path: Path) -> Path:
     return src
 
 
-def test_preview_is_dry_run_with_counts_only(tmp_path: Path):
+def test_parse_redacted_default_keeps_text():
+    items, err, report = parse_redacted("MEMORY.md", f"- contact {EMAIL}\n".encode())
+    assert err is None
+    assert EMAIL in items[0]["text"]
+    assert report.items_redacted == 0
+
+
+def test_preview_default_is_dry_run_without_redaction(tmp_path: Path):
     src = _source(tmp_path)
     before = (src / "MEMORY.md").read_bytes()
     handle = SkillEntrypoint(backend="memory").open("a")
@@ -97,12 +105,33 @@ def test_preview_is_dry_run_with_counts_only(tmp_path: Path):
     report = handle.preview_import(["MEMORY.md"])
     assert report["dry_run"] is True and report["imported"] is False
     assert report["mechanism_memory_created"] is False
+    assert report["redaction"]["enabled"] is False
+    assert report["redaction"]["counts"] == {}
+    assert report["redaction"]["items_redacted"] == 0
+    assert report["sources"][0]["status"] == "would_import"
+    assert report["sources"][0]["items"] == 3
+    flat = str(report)
+    assert SK not in flat and EMAIL not in flat
+    assert "memory" not in report["sequence"]
+    assert (src / "MEMORY.md").read_bytes() == before
+    with pytest.raises(RuntimeError):
+        handle.invoke("read_graph", {})
+
+
+def test_preview_opt_in_reports_counts_only(tmp_path: Path):
+    src = _source(tmp_path)
+    before = (src / "MEMORY.md").read_bytes()
+    handle = SkillEntrypoint(backend="memory").open("a")
+    handle.start(root=src)
+    report = handle.preview_import(["MEMORY.md"], redact=True)
+    assert report["dry_run"] is True and report["imported"] is False
+    assert report["mechanism_memory_created"] is False
+    assert report["redaction"]["enabled"] is True
     assert report["redaction"]["counts"] == {"api_key": 1, "email": 1}
     assert report["sources"][0]["status"] == "would_import"
     assert report["sources"][0]["items"] == 3
     flat = str(report)
     assert SK not in flat and EMAIL not in flat
-    # no memory enabled, files untouched
     assert "memory" not in report["sequence"]
     assert (src / "MEMORY.md").read_bytes() == before
     with pytest.raises(RuntimeError):
@@ -115,12 +144,32 @@ def test_preview_reports_rejections(tmp_path: Path):
     handle.start(root=src)
     report = handle.preview_import(["missing.md"])
     assert report["sources"][0]["reason"] == "not_in_discovery"
+    opted = handle.preview_import(["missing.md"], redact=True)
+    assert opted["sources"][0]["reason"] == "not_in_discovery"
+    assert opted["redaction"]["enabled"] is True
 
 
-def test_import_stores_only_redacted_text(tmp_path: Path):
+def test_default_import_leaves_secret_like_strings_intact(tmp_path: Path):
     src = _source(tmp_path)
     handle = SkillEntrypoint(backend="memory").open("a")
     handle.start(root=src)
+    result = handle.import_selected(["MEMORY.md"])
+    assert result["redaction"]["enabled"] is False
+    assert result["redaction"]["items_redacted"] == 0
+    assert result["redaction"]["counts"] == {}
+    assert len(result["created"]) == 3
+    dump = str(handle.invoke("read_graph", {}))
+    assert SK in dump and EMAIL in dump
+    assert "[REDACTED:" not in dump
+
+
+def test_constructor_redact_flag_stores_only_redacted_text(tmp_path: Path):
+    src = _source(tmp_path)
+    handle = SkillEntrypoint(backend="memory", redact=True).open("a")
+    handle.start(root=src)
+    preview = handle.preview_import(["MEMORY.md"])
+    assert preview["redaction"]["enabled"] is True
+    assert preview["redaction"]["counts"] == {"api_key": 1, "email": 1}
     result = handle.import_selected(["MEMORY.md"])
     assert result["redaction"]["enabled"] is True
     assert result["redaction"]["counts"] == {"api_key": 1, "email": 1}
@@ -130,11 +179,33 @@ def test_import_stores_only_redacted_text(tmp_path: Path):
     assert "[REDACTED:api_key]" in dump
 
 
-def test_import_with_redaction_disabled_is_explicit_opt_out(tmp_path: Path):
+def test_import_call_redact_flag_stores_only_redacted_text(tmp_path: Path):
     src = _source(tmp_path)
-    handle = SkillEntrypoint(backend="memory", redaction=RedactionPolicy.disabled()).open("a")
+    handle = SkillEntrypoint(backend="memory").open("a")
     handle.start(root=src)
-    result = handle.import_selected(["MEMORY.md"])
+    result = handle.import_selected(["MEMORY.md"], redact=True)
+    assert result["redaction"]["enabled"] is True
+    assert result["redaction"]["counts"] == {"api_key": 1, "email": 1}
+    dump = str(handle.invoke("read_graph", {}))
+    assert SK not in dump and EMAIL not in dump
+    assert "[REDACTED:email]" in dump
+
+
+def test_narrow_policy_is_opt_in_and_disabled_policy_matches_default(tmp_path: Path):
+    src = _source(tmp_path)
+    narrow = SkillEntrypoint(backend="memory", redaction=RedactionPolicy.only("email")).open("a")
+    narrow.start(root=src)
+    narrowed = narrow.import_selected(["MEMORY.md"])
+    assert narrowed["redaction"]["enabled"] is True
+    assert narrowed["redaction"]["counts"] == {"email": 1}
+    graph = str(narrow.invoke("read_graph", {}))
+    assert EMAIL not in graph and SK in graph
+
+    explicit_off = SkillEntrypoint(backend="memory", redaction=RedactionPolicy.disabled()).open("a")
+    explicit_off.start(root=src)
+    result = explicit_off.import_selected(["MEMORY.md"])
     assert result["redaction"]["enabled"] is False
     assert result["redaction"]["items_redacted"] == 0
-    assert EMAIL in str(handle.invoke("read_graph", {}))
+    assert EMAIL in str(explicit_off.invoke("read_graph", {}))
+    with pytest.raises(ValueError):
+        SkillEntrypoint(redact=True, redaction=RedactionPolicy.disabled())

@@ -31,12 +31,12 @@ Not public. Callers must not depend on these:
 
 Preferred install path:
 
-1. `SkillEntrypoint(seed=7, context_budget=4, policy="none", backend="memory"|"file", path=...)`
+1. `SkillEntrypoint(seed=7, context_budget=4, policy="none", backend="memory"|"file", path=..., redact=False)`
 2. `handle = entry.open(caller_id)` then `handle.start(root=..., artifacts=...)`, or `entry.start(caller_id, ...)`
 3. Read inventory and diagnostics. Unknown or unreadable sources do not abort startup and are not ingested.
 4. `handle.enable_memory()` after discovery.
 5. `handle.invoke(op, payload)`
-6. Optional `handle.import_selected(paths)` only after discovery. It does not rewrite caller files.
+6. Optional `handle.import_selected(paths)` only after discovery. It stores text as written unless `redact=True` or an enabled redaction policy is set. It does not rewrite caller files.
 
 `backend` must be `memory` or `file`. Any other backend raises `ValueError`: `backend must be memory or file`. A file backend without `path` raises `ValueError`: `file backend requires a path`. `SkillEntrypoint.open` rejects an empty `caller_id` with `ValueError`: `caller_id is required`. `SkillApi.invoke` rejects an empty bound `caller_id` with `SnapshotError`: `caller_id must be a non-empty string`.
 

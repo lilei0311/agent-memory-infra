@@ -11,7 +11,6 @@ import pytest
 from memory_infra.dedup import ItemDedupPolicy, item_key, normalize_text
 from memory_infra.entrypoint import SkillEntrypoint
 from memory_infra.memory import MemoryItem, MemoryStore
-from memory_infra.redaction import RedactionPolicy
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures" / "synthetic"
 PREFERENCE = "The workspace prefers explicit confirmation before import."
@@ -109,7 +108,7 @@ def test_default_import_does_not_collapse_fixture_lines():
     report = handle.import_selected(["MEMORY.md"])
     assert report["item_dedup"] == {"enabled": False, "mode": None, "near": None, "equality": None}
     assert report["duplicate_policy"] == "idempotent_by_source_digest"
-    assert report["redaction"]["enabled"] is True
+    assert report["redaction"]["enabled"] is False
     assert report["skipped"] == [] and report["merged"] == [] and report["superseded"] == []
     assert len(report["created"]) == 6
     assert len({item["point_id"] for item in report["created"]}) == 6
@@ -128,7 +127,7 @@ def test_import_skip_collapses_near_duplicates_across_files():
         handle.invoke("read_graph", {})
 
     report = handle.import_selected(["MEMORY.md", "memories.json"])
-    assert report["redaction"]["enabled"] is True
+    assert report["redaction"]["enabled"] is False
     assert len(report["created"]) == 4
     assert len(report["skipped"]) == 4
     assert report["merged"] == [] and report["superseded"] == []
@@ -198,31 +197,35 @@ def test_import_keep_latest_supersedes_without_deleting():
     assert exact_report["superseded"] == []
 
 
-def test_dedup_sees_redacted_text_and_opt_out_still_stores_raw(tmp_path: Path):
+def test_default_redact_is_false_and_opt_in_dedups_placeholders(tmp_path: Path):
+    import inspect
+
     left = "someone" + "@" + "example.org"
     right = "other" + "@" + "example.org"
-    secret = "sk-" + "a1B2c3D4e5F6g7H8i9J0"
     source = tmp_path / "MEMORY.md"
     source.write_text(f"- contact {left}\n- contact {right}\n- plain fact\n", encoding="utf-8")
-    handle = _open(tmp_path, ItemDedupPolicy("skip"))
+    assert inspect.signature(SkillEntrypoint.__init__).parameters["redact"].default is False
+    entry = SkillEntrypoint(backend="memory", item_dedup=ItemDedupPolicy("skip"))
+    assert entry._redaction.enabled is False
+    handle = entry.open("fixture-agent")
+    handle.start(root=tmp_path)
     report = handle.import_selected(["MEMORY.md"])
-    assert report["redaction"]["enabled"] is True
-    assert report["redaction"]["counts"] == {"email": 2}
-    assert len(report["created"]) == 2 and len(report["skipped"]) == 1
+    assert report["redaction"]["enabled"] is False
+    assert report["redaction"]["counts"] == {}
+    assert len(report["created"]) == 3 and report["skipped"] == []
     dump = str(handle.invoke("read_graph", {}))
-    assert left not in dump and right not in dump and secret not in dump
-    assert "[REDACTED:email]" in dump
+    assert left in dump and right in dump
+    assert "[REDACTED:" not in dump
 
-    raw = SkillEntrypoint(
-        backend="memory",
-        item_dedup=ItemDedupPolicy("skip"),
-        redaction=RedactionPolicy.disabled(),
-    ).open("fixture-agent")
-    raw.start(root=tmp_path)
-    raw_report = raw.import_selected(["MEMORY.md"])
-    assert raw_report["redaction"]["enabled"] is False
-    assert len(raw_report["created"]) == 3 and raw_report["skipped"] == []
-    assert left in str(raw.invoke("read_graph", {}))
+    redacted = SkillEntrypoint(backend="memory", item_dedup=ItemDedupPolicy("skip"), redact=True).open("fixture-agent")
+    redacted.start(root=tmp_path)
+    redacted_report = redacted.import_selected(["MEMORY.md"])
+    assert redacted_report["redaction"]["enabled"] is True
+    assert redacted_report["redaction"]["counts"] == {"email": 2}
+    assert len(redacted_report["created"]) == 2 and len(redacted_report["skipped"]) == 1
+    redacted_dump = str(redacted.invoke("read_graph", {}))
+    assert left not in redacted_dump and right not in redacted_dump
+    assert "[REDACTED:email]" in redacted_dump
 
 
 def test_fixtures_have_no_secret_shaped_tokens():
@@ -243,4 +246,4 @@ def test_example_skip_import_matches_policy():
     assert report["item_dedup"]["mode"] == "skip"
     assert len(report["created"]) == 4
     assert len(report["skipped"]) == 4
-    assert report["redaction"]["enabled"] is True
+    assert report["redaction"]["enabled"] is False

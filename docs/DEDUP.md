@@ -17,7 +17,7 @@ A content key is the SHA-256 of a comparison string.
 
 `The  Workspace` matches `the workspace` only when `near` is true. `Hello` does not match `Hello!`. This is not embedding similarity and not an edit distance.
 
-Dedup runs after redaction. Two different addresses that both become `[REDACTED:email]` share a key. Redaction itself stays the phase-1 default: enabled unless the caller passes `RedactionPolicy.disabled()`.
+Dedup compares the text import will store. Redaction is off by default (`redact=False`), so that text is what was written. When the caller opts in with `redact=True`, two different addresses that both become `[REDACTED:email]` share a key.
 
 ## Modes
 

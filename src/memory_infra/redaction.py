@@ -1,9 +1,11 @@
-"""Redaction at import: strip secrets and personal identifiers from text items.
+"""Pattern redaction for secrets and personal identifiers.
 
-Applied to caller-selected items *before* they are recorded as mechanism
-memory. Matches are replaced by ``[REDACTED:<category>]`` placeholders. Reports
-carry only category counts (never matched values), so they are safe to print
-or log. The redaction is deterministic and has no I/O.
+``redact_text`` and ``redact_items`` apply ``DEFAULT_POLICY`` (every category)
+when no policy is passed. Import does not. ``SkillEntrypoint`` stores text as
+written unless the caller opts in with ``redact=True`` or an explicit enabled
+policy. Matches are replaced by ``[REDACTED:<category>]`` placeholders.
+Reports carry only category counts (never matched values), so they are safe
+to print or log. Redaction is deterministic and has no I/O.
 """
 
 from __future__ import annotations
@@ -45,7 +47,11 @@ ALL_CATEGORIES: tuple[str, ...] = tuple(name for name, _ in _RULES)
 
 @dataclass(frozen=True)
 class RedactionPolicy:
-    """Which categories to redact. Default: all of them."""
+    """Which categories to redact.
+
+    ``RedactionPolicy()`` enables every category. That object is the opt-in
+    policy. Import leaves redaction off unless the caller asks for it.
+    """
 
     categories: frozenset[str] = frozenset(ALL_CATEGORIES)
     enabled: bool = True
@@ -64,6 +70,8 @@ class RedactionPolicy:
         return cls(categories=frozenset(), enabled=False)
 
 
+# Full category set used by redact_text/redact_items, and by import when the
+# caller opts in with redact=True and no narrower policy. Not the import default.
 DEFAULT_POLICY = RedactionPolicy()
 
 

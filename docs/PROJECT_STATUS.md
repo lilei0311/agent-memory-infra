@@ -41,5 +41,5 @@ Issue #46 is design/contract only. Do not implement adapters, packaging, Hub, Me
 - No open issue named dedup or synthetic fixtures. This slice follows the Stage 12 import seam: source-snapshot idempotency stays the default, and item dedup is opt-in (`docs/DEDUP.md`).
 - `MemoryStore.add` does not collapse equal text. `MemoryStore.add_deduped` applies `skip`, `merge`, or `keep_latest`.
 - Synthetic fixtures live in `tests/fixtures/synthetic/`. They are invented notes and contain no secrets.
-- Import redaction remains enabled by default, matching phase 1 on main. `RedactionPolicy.disabled()` is the opt-out.
+- Import redaction is off by default (`redact=False`), matching main after #54. Opt in with `redact=True` or `--redact`. Item dedup stays opt-in.
 - SQLite/JSONL adapters and further evaluation work are not in this slice.
