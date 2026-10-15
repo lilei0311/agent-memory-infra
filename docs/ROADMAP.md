@@ -53,3 +53,6 @@ External usage data begins here, not before.
 - [x] first experiment (Issue #1 A/B/C, plus later D/E)
 - [ ] learning-curve analysis beyond the recorded windows (deferred to research Stage 3; needs real data)
 - [ ] V0.2 graph dynamics review (Issue #5 / #6)
+- [x] opt-in memory-item dedup (`skip` / `merge` / `keep_latest`) and synthetic fixtures (`docs/DEDUP.md`, `tests/fixtures/synthetic/`)
+- [ ] SQLite and JSONL storage adapters (follow-up; not part of the item-dedup slice)
+- [ ] evaluation-signal expansion beyond the recorded contract (follow-up)

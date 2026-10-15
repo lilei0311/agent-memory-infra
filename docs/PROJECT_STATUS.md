@@ -36,3 +36,10 @@ Issue #46 is design/contract only. Do not implement adapters, packaging, Hub, Me
 - Issue #46 is closed (API contract accepted); the 'stays open pending review' line above is historical.
 - Issue #52 acceptance verified locally: `python examples/first_run_journey.py --consent` exits 0 (import 2, graph 6 nodes, 2nd-session retrieval 2, sources unchanged); decline path exits 0 with no import. Suite: `python -m pytest -q tests` -> 163 passed. Note bare `pytest` fails collection (tests.skill_conformance import); use `python -m pytest`.
 - Open issues #1-#38 are completed stage/acceptance items awaiting owner closure.
+
+## Phase 2 slice (2026-10-15)
+- No open issue named dedup or synthetic fixtures. This slice follows the Stage 12 import seam: source-snapshot idempotency stays the default, and item dedup is opt-in (`docs/DEDUP.md`).
+- `MemoryStore.add` does not collapse equal text. `MemoryStore.add_deduped` applies `skip`, `merge`, or `keep_latest`.
+- Synthetic fixtures live in `tests/fixtures/synthetic/`. They are invented notes and contain no secrets.
+- Import redaction is off by default (`redact=False`), matching main after #54. Opt in with `redact=True` or `--redact`. Item dedup stays opt-in.
+- SQLite/JSONL adapters and further evaluation work are not in this slice.

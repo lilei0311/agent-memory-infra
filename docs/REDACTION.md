@@ -6,7 +6,7 @@ Opt in with `SkillEntrypoint(redact=True)`, `handle.import_selected(paths, redac
 
 `SkillHandle.preview_import(paths)` is the dry run for either mode: it parses, redacts only when redaction is on, writes nothing, does not enable memory operations, and reports counts only. `redact_text` and `redact_items` stay available and still apply every category when called with no policy.
 
-When redaction is on, matches become `[REDACTED:<category>]`. Reports contain per-category counts, never matched values. With redaction off, counts stay empty and the stored text is unchanged.
+When redaction is on, matches become `[REDACTED:<category>]`. Reports contain per-category counts, never matched values. With redaction off, counts stay empty and the stored text is unchanged. Item dedup, when opted in, compares that stored text, so placeholders match only when redaction is on (see [DEDUP.md](DEDUP.md)).
 
 Categories used when redaction is opted in: `private_key`, `aws_access_key`, `github_token`, `slack_token`, `api_key` (sk-...), `bearer_token`, `credential_assignment` (key/secret/token/password = value), `email`, `cn_phone`, `home_path` (/Users/<name>, /home/<name>).
 
