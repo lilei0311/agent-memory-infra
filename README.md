@@ -141,7 +141,7 @@ After the quick-start install, scan a directory outside this repo with:
 python3 examples/local_source_import.py --root /path/to/local/copy --consent --select agent/openclaw-agent.sqlite
 ```
 
-The default root is `tests/fixtures/synthetic/`. See [Local sources](docs/LOCAL_SOURCES.md).
+The default root is `tests/fixtures/synthetic/`. See [Local sources](docs/LOCAL_SOURCES.md). A private dry-run checklist (snapshot, `sqlite3 .backup`, redaction left off, aggregates only) is [Local evaluation](docs/LOCAL_EVAL.md).
 
 ────────
 
@@ -351,6 +351,8 @@ Initial metrics may include:
 * Policy convergence
 
 The first experiment should run controlled simulations before connecting to real Agents.
+
+A synthetic use-case check is `python3 experiments/synthetic_usecase_eval.py`. It scores hit@k for preference recall, a prior fix, duplicate suppression, and a stale dated bullet, and writes `experiments/results/usable_c_synthetic_eval.md` (invented labels only). Adaptive scoring is reported beside the baseline and is not required to win. Private data stays out of that file; the dry-run steps are [Local evaluation](docs/LOCAL_EVAL.md).
 
 ────────
 

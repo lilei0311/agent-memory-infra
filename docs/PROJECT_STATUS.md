@@ -42,7 +42,7 @@ Issue #46 is design/contract only. Do not implement adapters, packaging, Hub, Me
 - `MemoryStore.add` does not collapse equal text. `MemoryStore.add_deduped` applies `skip`, `merge`, or `keep_latest`.
 - Synthetic fixtures live in `tests/fixtures/synthetic/`. They are invented notes and contain no secrets.
 - Import redaction is off by default (`redact=False`), matching main after #54. Opt in with `redact=True` or `--redact`. Item dedup stays opt-in.
-- This slice stopped at opt-in item dedup and synthetic fixtures. Read-only SQLite and JSONL source adapters landed in the following section. Use-case evaluation beyond the recorded signal contract is still follow-up.
+- This slice stopped at opt-in item dedup and synthetic fixtures. Read-only SQLite and JSONL source adapters landed in the following section. Synthetic use-case hit@k is the section after the personal quick start.
 
 ## Local source adapters (2026-10-15)
 - Read-only SQLite (`memory_index_chunks` / `memory_index_sources`) and JSONL adapters are wired through `SourceConfig` and `SkillEntrypoint` discovery plus `import_selected`. `backend="sqlite"` is still rejected.
@@ -53,3 +53,9 @@ Issue #46 is design/contract only. Do not implement adapters, packaging, Hub, Me
 - Clean-clone entry is the README section “Quick start (personal Skill)”: `python3 -m venv .venv`, `python3 -m pip install -e ".[dev]"`, `python3 -m pytest`, `python3 examples/first_run_journey.py --consent`, and `python3 examples/local_source_import.py --consent` on `tests/fixtures/synthetic/`. The editable install exposes `memory_infra`, which is what the examples import.
 - `--consent` calls `import_selected`. `--redact` stays off unless passed. Real memory stays outside the repo.
 - Agent Memory Hub, Memory Bridge, MCP/HTTP, a vector database, and anonymous telemetry stay out of scope for this path.
+
+## Synthetic use-case eval (2026-10-15)
+
+- `experiments/synthetic_usecase_eval.py` scores hit@k on synthetic tasks (preference recall, prior decision, duplicate suppression, stale/contradiction) for cosine baseline vs adaptive utility, and records what Skill API `retrieve` returns (`policy="none"` vs `automatic`).
+- Results: `experiments/results/usable_c_synthetic_eval.md` (synthetic labels only). Adaptive is not required to beat baseline.
+- Local dry-run playbook: `docs/LOCAL_EVAL.md`. Real memory stays outside the repo. Redaction remains off by default.

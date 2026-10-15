@@ -7,3 +7,6 @@ __pycache__/
 local-memory/
 real-memory/
 *.explorer.html
+# local dry-run aggregates (usable(c)); write these outside the clone when you can
+local-eval/
+experiments/results/local-eval/
