@@ -172,6 +172,132 @@ def test_local_aggregate_writes_counts_outside_the_repo(tmp_path):
     assert preview["imported_path_count"] == 0
 
 
+def test_extra_markdown_names_are_tier_a_and_importable(tmp_path):
+    root = tmp_path / "snapshot"
+    root.mkdir()
+    (root / "MEMORY.md").write_text("- Default synthetic note stays importable.\n", encoding="utf-8")
+    (root / "side-notes.md").write_text("- Synthetic extra basename should import.\n", encoding="utf-8")
+    (root / "agents").mkdir()
+    (root / "agents" / "Custom.md").write_text("- Second synthetic extra.\n", encoding="utf-8")
+
+    assert usecase.classify_local_path("side-notes.md", include_stores=False) == "excluded_unlisted"
+    default = usecase.run_local_aggregate(root, tmp_path / "default.md")
+    assert default["created"] == 1
+    assert default["imported_path_count"] == 1
+    assert default["excluded_unlisted"] == 0
+    assert default["extra_markdown_name_count"] == 0
+    assert default["recognize_dated_markdown"] is False
+
+    sources = usecase.local_source_config({"side-notes.md", "Custom.md"})
+    names = usecase._tier_names(sources)
+    assert usecase.classify_local_path("agents/main/side-notes.md", include_stores=False, tier_names=names) == "tier_a"
+    extra = usecase.run_local_aggregate(
+        root, tmp_path / "extra.md", extra_markdown_names={"side-notes.md", "Custom.md"}
+    )
+    body = (tmp_path / "extra.md").read_text(encoding="utf-8")
+    assert extra["created"] == 3
+    assert extra["imported_path_count"] == 3
+    assert extra["excluded_unlisted"] == 0
+    assert extra["extra_markdown_name_count"] == 2
+    assert "Synthetic extra basename" not in body
+    assert "Default synthetic note" not in body
+
+    cli_out = tmp_path / "cli.md"
+    code = usecase.main(
+        [
+            "--local-root",
+            str(root),
+            "--output",
+            str(cli_out),
+            "--preview-only",
+            "--extra-markdown-names",
+            "side-notes.md,Custom.md",
+            "--extra-markdown-names",
+            "Absent.md",
+        ]
+    )
+    assert code == 0
+    cli_body = cli_out.read_text(encoding="utf-8")
+    assert "preview_path_count: 3" in cli_body
+    assert "extra_markdown_name_count: 3" in cli_body
+    assert "recognize_dated_markdown: false" in cli_body
+    assert usecase.main(
+        ["--local-root", str(root), "--output", str(tmp_path / "bad.md"), "--extra-markdown-names", "nested/Foo.md"]
+    ) == 2
+    assert usecase.main(["--extra-markdown-names", "side-notes.md"]) == 2
+
+
+def test_recognize_dated_markdown_when_enabled(tmp_path):
+    root = tmp_path / "snapshot"
+    (root / "memory").mkdir(parents=True)
+    (root / "memory" / "2026-04-02.md").write_text("- Dated synthetic fact.\n", encoding="utf-8")
+    (root / "memory" / "2026-13-01.md").write_text("- Invalid month stays out.\n", encoding="utf-8")
+    (root / "notes-2026-04-02.md").write_text("- A date inside a longer name stays out.\n", encoding="utf-8")
+    (root / "2026-04-02.txt").write_text("not markdown\n", encoding="utf-8")
+
+    assert usecase.classify_local_path("memory/2026-04-02.md", include_stores=False) == "excluded_unlisted"
+    off = usecase.run_local_aggregate(root, tmp_path / "off.md", preview_only=True)
+    assert off["preview_path_count"] == 0
+    assert off["excluded_unlisted"] == 0
+    assert off["recognize_dated_markdown"] is False
+
+    names = usecase._tier_names(usecase.local_source_config(recognize_dated_markdown=True))
+    assert usecase.classify_local_path("memory/2026-04-02.md", include_stores=False, tier_names=names) == "tier_a"
+    assert usecase.classify_local_path("2026-13-01.md", include_stores=False, tier_names=names) == "excluded_unlisted"
+    assert usecase.classify_local_path("2026-4-02.md", include_stores=False, tier_names=names) == "excluded_unlisted"
+
+    on = usecase.run_local_aggregate(root, tmp_path / "on.md", recognize_dated_markdown=True)
+    body = (tmp_path / "on.md").read_text(encoding="utf-8")
+    assert on["created"] == 1
+    assert on["imported_path_count"] == 1
+    assert on["excluded_unlisted"] == 0
+    assert on["recognize_dated_markdown"] is True
+    assert on["extra_markdown_name_count"] == 0
+    assert "Dated synthetic fact" not in body
+    assert "Invalid month" not in body
+
+    token = usecase.run_local_aggregate(
+        root, tmp_path / "token.md", extra_markdown_names={usecase.DATED_MARKDOWN_TOKEN}, preview_only=True
+    )
+    assert token["preview_path_count"] == 1
+    assert token["recognize_dated_markdown"] is True
+
+    cli = tmp_path / "cli-dated.md"
+    assert usecase.main(
+        ["--local-root", str(root), "--output", str(cli), "--recognize-dated-markdown", "--preview-only"]
+    ) == 0
+    assert "preview_path_count: 1" in cli.read_text(encoding="utf-8")
+    assert "recognize_dated_markdown: true" in cli.read_text(encoding="utf-8")
+
+
+def test_default_local_eval_without_flags_is_unchanged(tmp_path):
+    assert usecase.classify_local_path("AGENTS.md", include_stores=False) == "tier_a"
+    assert usecase.classify_local_path("MEMORY.md", include_stores=False) == "tier_a"
+    assert usecase.classify_local_path("notes-custom.md", include_stores=False) == "excluded_unlisted"
+    assert usecase.classify_local_path("2026-04-02.md", include_stores=False) == "excluded_unlisted"
+    assert usecase.DATED_MARKDOWN_TOKEN not in usecase._tier_names()
+
+    root = tmp_path / "snapshot"
+    root.mkdir()
+    (root / "AGENTS.md").write_text("- Persona synthetic line.\n", encoding="utf-8")
+    (root / "2026-04-02.md").write_text("- Dated synthetic fact stays out.\n", encoding="utf-8")
+    (root / "side-notes.md").write_text("- Extra basename stays out.\n", encoding="utf-8")
+    summary = usecase.run_local_aggregate(root, tmp_path / "default.md")
+    body = (tmp_path / "default.md").read_text(encoding="utf-8")
+    assert summary["created"] == 1
+    assert summary["imported_path_count"] == 1
+    assert summary["excluded_unlisted"] == 0
+    assert summary["recognize_dated_markdown"] is False
+    assert summary["extra_markdown_name_count"] == 0
+    assert "Dated synthetic fact" not in body
+    assert "Extra basename" not in body
+    assert "Persona synthetic" not in body
+
+    target = tmp_path / "synthetic.md"
+    assert usecase.main(["--output", str(target)]) == 0
+    assert target.read_text(encoding="utf-8") == RESULTS.read_text(encoding="utf-8")
+
+
 def test_local_output_inside_the_repo_is_refused(tmp_path):
     with pytest.raises(usecase.LocalEvalError):
         usecase.run_local_aggregate(tmp_path, ROOT / "experiments" / "results" / "local-eval" / "nope.md")
