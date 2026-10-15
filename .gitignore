@@ -10,3 +10,6 @@ real-memory/
 # local dry-run aggregates (usable(c)); write these outside the clone when you can
 local-eval/
 experiments/results/local-eval/
+# personal file-backend store if a scratch copy is created inside a clone
+# (the documented path is ~/.agent-memory-infra/store, outside the repo)
+.agent-memory-infra/

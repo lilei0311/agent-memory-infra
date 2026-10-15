@@ -50,6 +50,8 @@ Discovery (`start`) lists sources and stops there. Import runs when you pass `--
 
 Synthetic fixtures under `tests/fixtures/synthetic/` are invented notes. They are the safe stand-in for Markdown, JSON, SQLite, and JSONL shapes. Do not commit real memory, session databases, or explorer HTML from a real import. Point `--root` at a directory outside this repo when you want to read a local copy. Item dedup is also off unless you opt in (`--dedup`, or `examples/dedup_import.py`). See [Local sources](docs/LOCAL_SOURCES.md) and [Dedup](docs/DEDUP.md).
 
+To call this from Cursor or Grok without walking the API, use the in-process tools in [Agent install](docs/AGENT_INSTALL.md). That path copies or links `src/memory_infra/SKILL.md`. It is not a marketplace or MCP launch.
+
 ## Overview
 Most Agent memory systems focus on **storing** and **retrieving** information.
 This project focuses on a different question:
@@ -142,6 +144,20 @@ python3 examples/local_source_import.py --root /path/to/local/copy --consent --s
 ```
 
 The default root is `tests/fixtures/synthetic/`. See [Local sources](docs/LOCAL_SOURCES.md). A private dry-run checklist (snapshot, `sqlite3 .backup`, redaction left off, aggregates only) is [Local evaluation](docs/LOCAL_EVAL.md).
+
+────────
+
+## Call it from a personal agent
+
+Cursor or Grok can run the same Skill in-process. Install the package with the [quick start](#quick-start-personal-skill), then copy or symlink [`src/memory_infra/SKILL.md`](src/memory_infra/SKILL.md) into that agent's skill directory. The steps for a personal Mac, including `~/.cursor/skills/agent-memory/SKILL.md` and the home store `~/.agent-memory-infra/store`, are in [Agent install](docs/AGENT_INSTALL.md).
+
+The agent calls `memory_infra.agent_tools`: `discover`, `preview`, `import_sources` (only with `consent=True`), `retrieve`, and `record_outcome`. Those map onto `start`, `preview_import`, `import_selected`, `invoke("retrieve")`, and `invoke("signal")`. Redaction stays off unless you pass it. A scripted session on the synthetic fixtures:
+
+```bash
+python3 examples/agent_session.py --select MEMORY.md --consent --signal
+```
+
+Discovery does not import. The example store is a temporary directory unless you pass `--store`. No MCP server is required.
 
 ────────
 
@@ -448,7 +464,7 @@ Phase 3 — Agent Skill
 
 * [x] Define the Skill specification ([Skill API](docs/SKILL_API.md))
 * [x] Build the file store backend and source adapters for Markdown, JSON, read-only SQLite, and JSONL (`backend="sqlite"` remains rejected; SQLite here is a source file, not the mechanism store)
-* [ ] Package a drop-in Skill for an external agent host (the editable install and in-process `SkillEntrypoint` are the supported entry)
+* [x] Package the in-process Skill for a personal Mac agent ([agent install](docs/AGENT_INSTALL.md): copy or link `SKILL.md`, editable install, `memory_infra.agent_tools`). A marketplace listing, MCP server, and external host SDK stay deferred
 * [x] Exercise two in-process Agent shapes on the memory and file backends (`tests/test_stage2_heterogeneous_integrations.py`)
 * [ ] Collect anonymous evaluation signals (deferred with telemetry)
 
@@ -462,7 +478,7 @@ Phase 4 — Real-World Learning (deferred)
 
 Product tracks:
 
-* Personal Agent Memory Skill (current): discovery → explicit import → Memory Graph → read-only visual inspection → policy retrieval. Start at the quick start.
+* Personal Agent Memory Skill (current): discovery → explicit import → Memory Graph → read-only visual inspection → policy retrieval. Start at the quick start and the [agent install](docs/AGENT_INSTALL.md).
 * Agent Memory Hub (deferred): Agent discovery → memory aggregation → unified graph/search → later Memory Bridge.
 
 Hub, Memory Bridge, MCP/HTTP, a vector database, and anonymous telemetry are out of scope for the personal Skill path.
@@ -505,7 +521,7 @@ Memory should learn from experience.
 
 Research / experimental.
 
-The supported entry is the personal in-process Skill in the [quick start](#quick-start-personal-skill). Research Stage 1 (controlled policy experiments) is frozen. Explicit import, the Skill API, opt-in redaction, opt-in item dedup, synthetic fixtures, and read-only SQLite/JSONL source adapters are on `main`. The Hub remains a later product track.
+The supported entry is the personal in-process Skill in the [quick start](#quick-start-personal-skill), plus the [agent install](docs/AGENT_INSTALL.md) for Cursor or Grok. Research Stage 1 (controlled policy experiments) is frozen. Explicit import, the Skill API, opt-in redaction, opt-in item dedup, synthetic fixtures, and read-only SQLite/JSONL source adapters are on `main`. Personal agent packaging is `SKILL.md` and `memory_infra.agent_tools`. The Hub remains a later product track. A marketplace or MCP launch is not part of that packaging.
 
 ## Stage 1 Design
 
