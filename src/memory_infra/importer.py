@@ -11,7 +11,7 @@ from __future__ import annotations
 import hashlib
 from pathlib import Path
 
-from memory_infra.redaction import DEFAULT_POLICY, RedactionPolicy, RedactionReport, redact_items
+from memory_infra.redaction import RedactionPolicy, RedactionReport, redact_items
 from memory_infra.source_adapter import JSON_ADAPTER, MARKDOWN_ADAPTER, SourceConfig
 
 RECOGNIZED_NAMES = frozenset({"MEMORY.md", "memory.md", "memories.json", "memory.json"})
@@ -66,11 +66,17 @@ def parse_recognized(
 def parse_redacted(
     name: str,
     payload: bytes,
-    policy: RedactionPolicy = DEFAULT_POLICY,
+    policy: RedactionPolicy | None = None,
     config: SourceConfig | None = None,
 ) -> tuple[list[dict], str | None, RedactionReport]:
-    """Parse then redact. Returns (items, rejection reason, report counts only)."""
+    """Parse, then apply ``policy``.
 
+    The default policy is disabled, so text is unchanged unless the caller
+    passes an enabled policy. Returns (items, rejection reason, report counts only).
+    """
+
+    if policy is None:
+        policy = RedactionPolicy.disabled()
     items, error = parse_recognized(name, payload, config)
     if error is not None:
         return [], error, RedactionReport()

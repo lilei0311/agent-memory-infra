@@ -20,6 +20,10 @@ Each accepted line becomes a mechanism observation and promotion through the pub
 
 Unknown, unreadable, not-in-discovery, and unparseable selections are reported in `rejected`. They are not ingested. Source files are not rewritten or deleted.
 
+## Redaction
+
+Import stores text as written. Redaction is off unless the caller passes `redact=True` (entrypoint, `import_selected`, or `preview_import`) or an enabled `RedactionPolicy`. Leave it off for local personal memory; turn it on before sharing or writing to a less-trusted store. See [REDACTION.md](REDACTION.md).
+
 ## Non-claims
 
 This is not a Memory Graph, migration framework, or Hub feature. Stage 12 is not marked PASS by this document.

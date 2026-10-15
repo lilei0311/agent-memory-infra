@@ -131,7 +131,7 @@ def test_import_with_v2_and_redaction_end_to_end(tmp_path: Path):
         f"---\nname: c\n---\n# Rules\n- mail {email} on 2026-09-30\n- keep tests green\n", encoding="utf-8"
     )
     before = (tmp_path / "CLAUDE.md").read_bytes()
-    h = SkillEntrypoint(backend="memory", sources=SourceConfig.extended()).open("agent")
+    h = SkillEntrypoint(backend="memory", sources=SourceConfig.extended(), redact=True).open("agent")
     h.start(root=tmp_path)
     preview = h.preview_import(["CLAUDE.md"])
     assert preview["sources"][0]["items"] == 2 and preview["redaction"]["counts"] == {"email": 1}

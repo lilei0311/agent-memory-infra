@@ -4,7 +4,7 @@
 Demonstrates discovery-first startup, explicit consent/selection for import,
 read-only graph, cross-session retrieval via file backend, and source immutability.
 No new infrastructure.
-Run with: PYTHONPATH=src python examples/first_run_journey.py [--consent] [--select PATH ...]
+Run with: PYTHONPATH=src python examples/first_run_journey.py [--consent] [--select PATH ...] [--redact]
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ from memory_infra.entrypoint import SkillEntrypoint
 from memory_infra.explorer import render_explorer
 
 
-def run_journey(consent: bool = False, select: list[str] | None = None) -> None:
+def run_journey(consent: bool = False, select: list[str] | None = None, redact: bool = False) -> None:
     with tempfile.TemporaryDirectory() as tmp:
         tmp_path = Path(tmp)
         source = tmp_path / "source"
@@ -34,7 +34,7 @@ def run_journey(consent: bool = False, select: list[str] | None = None) -> None:
         store_path = tmp_path / "memory_store"
 
         # First session
-        entry1 = SkillEntrypoint(backend="file", path=store_path)
+        entry1 = SkillEntrypoint(backend="file", path=store_path, redact=redact)
         handle1 = entry1.open("demo-agent")
         discovery = handle1.start(root=source)
         print("Discovery phase (session 1):")
@@ -94,8 +94,13 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Single-Agent Skill first-run journey")
     parser.add_argument("--consent", action="store_true", help="Explicitly consent to import (all recognized by default)")
     parser.add_argument("--select", nargs="*", help="Optional list of recognized paths to import (subset)")
+    parser.add_argument(
+        "--redact",
+        action="store_true",
+        help="Opt in to secret/PII redaction on import (off by default for local memory)",
+    )
     args = parser.parse_args()
-    run_journey(consent=args.consent, select=args.select)
+    run_journey(consent=args.consent, select=args.select, redact=args.redact)
 
 
 if __name__ == "__main__":

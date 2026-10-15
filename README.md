@@ -80,10 +80,10 @@ See [Product Architecture](docs/PRODUCT_ARCHITECTURE.md) for the detailed bounda
 A minimal, framework-neutral demonstration of the complete single-Agent Skill path is in `examples/first_run_journey.py`.
 
 ```bash
-PYTHONPATH=src python examples/first_run_journey.py [--consent] [--select PATH ...]
+PYTHONPATH=src python examples/first_run_journey.py [--consent] [--select PATH ...] [--redact]
 ```
 
-Expected high-level output includes discovery without auto-import, explicit `--consent` (default decline) and optional `--select` for subset of recognized sources; all-recognized on consent alone, read-only graph rendering, and cross-session retrieval via file backend packaging handoff after explicit save/load. Decline leaves source and memory unchanged. See the script and `tests/test_first_run_journey.py` for the exact flow.
+Expected high-level output includes discovery without auto-import, explicit `--consent` (default decline) and optional `--select` for subset of recognized sources; all-recognized on consent alone, read-only graph rendering, and cross-session retrieval via file backend packaging handoff after explicit save/load. Decline leaves source and memory unchanged. Import redaction is off unless `--redact` is passed; leave it off for local personal memory and turn it on before sharing or writing to a less-trusted store. See the script and `tests/test_first_run_journey.py` for the exact flow.
 
 ────────
 
