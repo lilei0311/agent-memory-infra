@@ -11,9 +11,11 @@ The default directory is the synthetic fixture set. Those files are invented
 notes, not a person's memory, and they contain no secrets. To try a copy that
 lives outside this repo, pass ``--root``:
 
-    PYTHONPATH=src python examples/local_source_import.py \\
+    python3 examples/local_source_import.py \\
         --root "$HOME/.openclaw/agents/<agentId>" \\
         --consent --select agent/openclaw-agent.sqlite
+
+Run that from the repo root after `pip install -e ".[dev]"`.
 
 See docs/LOCAL_SOURCES.md for depth, scan bounds, and a quiescent SQLite copy.
 """

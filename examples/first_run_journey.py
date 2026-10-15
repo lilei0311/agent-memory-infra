@@ -4,7 +4,8 @@
 Demonstrates discovery-first startup, explicit consent/selection for import,
 read-only graph, cross-session retrieval via file backend, and source immutability.
 No new infrastructure.
-Run with: PYTHONPATH=src python examples/first_run_journey.py [--consent] [--select PATH ...] [--redact]
+After `pip install -e ".[dev]"` from the repo root:
+  python3 examples/first_run_journey.py [--consent] [--select PATH ...] [--redact]
 """
 
 from __future__ import annotations

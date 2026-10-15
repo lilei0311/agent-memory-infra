@@ -42,9 +42,14 @@ Issue #46 is design/contract only. Do not implement adapters, packaging, Hub, Me
 - `MemoryStore.add` does not collapse equal text. `MemoryStore.add_deduped` applies `skip`, `merge`, or `keep_latest`.
 - Synthetic fixtures live in `tests/fixtures/synthetic/`. They are invented notes and contain no secrets.
 - Import redaction is off by default (`redact=False`), matching main after #54. Opt in with `redact=True` or `--redact`. Item dedup stays opt-in.
-- SQLite/JSONL adapters and further evaluation work are not in this slice.
+- This slice stopped at opt-in item dedup and synthetic fixtures. Read-only SQLite and JSONL source adapters landed in the following section. Use-case evaluation beyond the recorded signal contract is still follow-up.
 
 ## Local source adapters (2026-10-15)
 - Read-only SQLite (`memory_index_chunks` / `memory_index_sources`) and JSONL adapters are wired through `SourceConfig` and `SkillEntrypoint` discovery plus `import_selected`. `backend="sqlite"` is still rejected.
 - Synthetic fixtures: `tests/fixtures/synthetic/openclaw-agent.sqlite`, `session.jsonl`, `memory.jsonl`. No real agent database is in the repo.
 - How to point `root` at a local copy, including a quiescent SQLite backup, is `docs/LOCAL_SOURCES.md`. Redaction and item dedup stay opt-in.
+
+## Personal quick start (2026-10-15)
+- Clean-clone entry is the README section “Quick start (personal Skill)”: `python3 -m venv .venv`, `python3 -m pip install -e ".[dev]"`, `python3 -m pytest`, `python3 examples/first_run_journey.py --consent`, and `python3 examples/local_source_import.py --consent` on `tests/fixtures/synthetic/`. The editable install exposes `memory_infra`, which is what the examples import.
+- `--consent` calls `import_selected`. `--redact` stays off unless passed. Real memory stays outside the repo.
+- Agent Memory Hub, Memory Bridge, MCP/HTTP, a vector database, and anonymous telemetry stay out of scope for this path.

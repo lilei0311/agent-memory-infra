@@ -4,7 +4,7 @@
 The fixtures under tests/fixtures/synthetic are invented notes. They are not
 a user's memory and contain no secrets. Source files are only read.
 
-Run with: PYTHONPATH=src python examples/dedup_import.py
+After `pip install -e ".[dev]"` from the repo root: python3 examples/dedup_import.py
 """
 
 from __future__ import annotations
