@@ -17,13 +17,39 @@ from memory_infra.bootstrap import (
     SkillBootstrap,
 )
 from memory_infra.importer import DUPLICATE_POLICY, parse_redacted, snapshot_digest, source_ref_for
-from memory_infra.redaction import DEFAULT_POLICY, RedactionPolicy, RedactionReport
+from memory_infra.redaction import RedactionPolicy, RedactionReport
 from memory_infra.source_adapter import SourceConfig
 from memory_infra.skill import SkillApi
 
 __all__ = ["DUPLICATE_POLICY", "SKILL_NAME", "SkillEntrypoint", "SkillHandle"]
 
 SKILL_NAME = "agent-memory-infra"
+
+
+def resolve_import_redaction(
+    redact: bool = False, redaction: RedactionPolicy | None = None
+) -> RedactionPolicy:
+    """Import policy. Off unless ``redact=True`` or an explicit policy is passed."""
+
+    if redaction is not None:
+        if redact and not redaction.enabled:
+            raise ValueError("redact=True conflicts with a disabled redaction policy")
+        return redaction
+    if redact:
+        return RedactionPolicy()
+    return RedactionPolicy.disabled()
+
+
+def policy_for_call(configured: RedactionPolicy, redact: bool | None) -> RedactionPolicy:
+    """Per-call override. ``None`` keeps the entrypoint policy."""
+
+    if redact is None:
+        return configured
+    if not redact:
+        return RedactionPolicy.disabled()
+    if configured.enabled and configured.categories:
+        return configured
+    return RedactionPolicy()
 
 
 class SkillHandle:
@@ -111,7 +137,7 @@ class SkillHandle:
             raise RuntimeError("memory operations require completed discovery")
         return self._api.invoke(self.caller_id, op, payload)
 
-    def import_selected(self, paths: list[str]) -> dict:
+    def import_selected(self, paths: list[str], *, redact: bool | None = None) -> dict:
         """Explicit structuring of selected discovered sources.
 
         Discovery never calls this. Unknown and unreadable selections are
@@ -119,6 +145,10 @@ class SkillHandle:
         source path plus the SHA-256 of the selected source snapshot.
         Distinct parsed occurrences in that snapshot are preserved.
         Caller files are not rewritten.
+
+        Text is stored as written. Redaction is off unless the entrypoint was
+        built with ``redact=True`` or an enabled ``redaction`` policy, or this
+        call passes ``redact=True``. ``redact=False`` forces this call off.
         """
 
         if self._session is None or "discovery" not in self._sequence:
@@ -130,7 +160,7 @@ class SkillHandle:
         rejected: list[dict] = []
         reused: list[dict] = []
         redaction_total = RedactionReport()
-        policy = self._entry._redaction
+        policy = self._policy_for_call(redact)
         for path in paths:
             item = by_path.get(path)
             if item is None:
@@ -204,19 +234,20 @@ class SkillHandle:
             "sequence": list(self._sequence),
         }
 
-    def preview_import(self, paths: list[str]) -> dict:
-        """Dry run of explicit import: parse and redact, write nothing.
+    def preview_import(self, paths: list[str], *, redact: bool | None = None) -> dict:
+        """Dry run of explicit import. Parse, and redact only when enabled.
 
-        Reports per source how many items would be created and how many
-        redactions (counts per category, never values) would be applied.
-        Does not enable memory operations and creates no mechanism state.
+        Reports per source how many items would be created and, when redaction
+        is on, category counts (never values). Writes nothing, does not enable
+        memory operations, and creates no mechanism state. ``redact`` overrides
+        the entrypoint the same way as ``import_selected``.
         """
 
         if self._session is None or "discovery" not in self._sequence:
             raise RuntimeError("import preview requires completed discovery")
         inventory = self.inventory() or {"sources": []}
         by_path = {item["path"]: item for item in inventory["sources"]}
-        policy = self._entry._redaction
+        policy = self._policy_for_call(redact)
         sources: list[dict] = []
         total = RedactionReport()
         for path in paths:
@@ -280,6 +311,9 @@ class SkillHandle:
         except OSError:
             return None, "unreadable"
 
+    def _policy_for_call(self, redact: bool | None) -> RedactionPolicy:
+        return policy_for_call(self._entry._redaction, redact)
+
     def inventory(self) -> dict | None:
         if self._session is None:
             return None
@@ -287,7 +321,13 @@ class SkillHandle:
 
 
 class SkillEntrypoint:
-    """Minimal distributable Skill entry. Holds no mechanism state."""
+    """Minimal distributable Skill entry. Holds no mechanism state.
+
+    Import redaction is off by default so local personal memory keeps text as
+    written. Pass ``redact=True`` to enable every category, or ``redaction=``
+    for a narrower ``RedactionPolicy``, before sharing or writing to a
+    less-trusted store.
+    """
 
     def __init__(
         self,
@@ -297,10 +337,11 @@ class SkillEntrypoint:
         policy: str = "none",
         backend: str = "memory",
         path: str | Path | None = None,
-        redaction: RedactionPolicy = DEFAULT_POLICY,
+        redact: bool = False,
+        redaction: RedactionPolicy | None = None,
         sources: SourceConfig | None = None,
     ) -> None:
-        self._redaction = redaction
+        self._redaction = resolve_import_redaction(redact, redaction)
         self._sources = sources if sources is not None else SourceConfig()
         if backend not in {"memory", "file"}:
             raise ValueError("backend must be memory or file")
