@@ -14,15 +14,18 @@ Two retrieval paths:
   retrieval event and is not a similarity feature.
 
 Local aggregates (``--local-root``) write counts only, and only outside
-this repository. See ``docs/LOCAL_EVAL.md``. ``--extra-markdown-names`` adds
+this repository. ``--hits`` records hand-scored 0/1 values (``preference``,
+``prior-decision``, ``stale-note``) in the markdown aggregate and a sibling
+JSON file. See ``docs/LOCAL_EVAL.md``. ``--extra-markdown-names`` adds
 exact basenames. ``--recognize-dated-markdown`` also recognizes
 ``YYYY-MM-DD.md``. Both stay off unless passed, and both feed discovery and
-tier classification for that run.
+tier classification for that run, including a hit@k run over those notes.
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -134,6 +137,7 @@ _TASKS = (
 
 _TRAJECTORY_MARKERS = ("trajectory", "archive-tier")
 _DEFAULT_LOCAL_QUERIES = ("preference", "prior-decision", "stale-note")
+_PR_LINE_PREFIX = "PR-eligible one-liner (numbers only): "
 
 
 class LocalEvalError(ValueError):
@@ -579,20 +583,90 @@ def classify_local_path(
     return "excluded_unlisted"
 
 
-def _parse_hits(text: str) -> list[tuple[str, int]]:
-    if not text.strip():
+def _consume_hit(part: str, seen: set[str]) -> tuple[str, int]:
+    if "=" not in part:
+        raise LocalEvalError("hit labels must look like task=0 or task=1")
+    label, value = part.split("=", 1)
+    label = label.strip()
+    if not label or any(char.isspace() for char in label) or any(char in label for char in "/\\="):
+        raise LocalEvalError("hit labels must be short task names")
+    if value.strip() not in {"0", "1"}:
+        raise LocalEvalError("hit values must be 0 or 1")
+    if label in seen:
+        raise LocalEvalError("hit labels must be unique")
+    seen.add(label)
+    return label, int(value.strip())
+
+
+def parse_hits(text: str) -> list[tuple[str, int]]:
+    """Parse ``task=0,task=1`` hand scores. Each value is 0 or 1."""
+
+    if not str(text).strip():
         return []
-    rows = []
-    for part in text.split(","):
-        if "=" not in part:
+    rows: list[tuple[str, int]] = []
+    seen: set[str] = set()
+    for part in str(text).split(","):
+        if not part.strip():
             raise LocalEvalError("hit labels must look like task=0 or task=1")
-        label, value = part.split("=", 1)
-        label = label.strip()
-        if not label or any(char in label for char in "\n\r/\\"):
-            raise LocalEvalError("hit labels must be short task names")
-        if value.strip() not in {"0", "1"}:
+        rows.append(_consume_hit(part, seen))
+    return rows
+
+
+def parse_hit_line(text: str) -> list[tuple[str, int]]:
+    """Parse a ``hit@k task=0 task=1`` aggregate line back into scores."""
+
+    body = text.strip()
+    if body.startswith("hit@k "):
+        body = body[len("hit@k ") :].strip()
+    elif body == "hit@k":
+        return []
+    if not body:
+        return []
+    rows: list[tuple[str, int]] = []
+    seen: set[str] = set()
+    for part in body.split():
+        rows.append(_consume_hit(part, seen))
+    return rows
+
+
+def format_hit_line(hits: list[tuple[str, int]]) -> str:
+    if not hits:
+        return ""
+    return "hit@k " + " ".join(f"{label}={value}" for label, value in hits)
+
+
+def aggregate_json_path(markdown_path: Path) -> Path:
+    """Sibling JSON path for a markdown aggregate ``--output``."""
+
+    if markdown_path.suffix.lower() == ".md":
+        return markdown_path.with_suffix(".json")
+    return markdown_path.with_name(markdown_path.name + ".json")
+
+
+def hits_from_aggregate_markdown(text: str) -> list[tuple[str, int]]:
+    """Read the single PR-eligible hit@k line out of an aggregate markdown file."""
+
+    lines = [line[len(_PR_LINE_PREFIX) :] for line in text.splitlines() if line.startswith(_PR_LINE_PREFIX)]
+    if not lines:
+        return []
+    if len(lines) != 1:
+        raise LocalEvalError("aggregate markdown must contain one hit@k line")
+    return parse_hit_line(lines[0])
+
+
+def hits_from_aggregate_json(payload: dict) -> list[tuple[str, int]]:
+    """Read ``hits`` out of an aggregate JSON object. Values stay 0 or 1."""
+
+    rows: list[tuple[str, int]] = []
+    seen: set[str] = set()
+    for row in payload.get("hits") or []:
+        if not isinstance(row, dict) or "task" not in row or "hit" not in row:
+            raise LocalEvalError("hit labels must look like task=0 or task=1")
+        label = row["task"]
+        value = row["hit"]
+        if not isinstance(label, str) or isinstance(value, bool) or not isinstance(value, int):
             raise LocalEvalError("hit values must be 0 or 1")
-        rows.append((label, int(value.strip())))
+        rows.append(_consume_hit(f"{label}={value}", seen))
     return rows
 
 
@@ -612,21 +686,26 @@ def run_local_aggregate(
 ) -> dict:
     """Import a local root in memory and write counts. No observation text.
 
-    ``output`` must resolve outside the git repository. The default query
-    list is task labels, not memory quotes. ``extra_markdown_names`` are
-    exact basenames passed to ``SourceConfig.extended``. When
-    ``recognize_dated_markdown`` is true, ``YYYY-MM-DD.md`` basenames are
-    recognized too. Classification uses that same name set.
+    ``output`` is the markdown aggregate. A sibling JSON file (``.md``
+    replaced with ``.json``) is written beside it. Both must resolve outside
+    the git repository. ``hits`` is a comma-separated ``task=0`` / ``task=1``
+    list; Tier A hand scores use ``preference``, ``prior-decision``, and
+    ``stale-note``. The default query list is those task labels, not memory
+    quotes. ``extra_markdown_names`` are exact basenames passed to
+    ``SourceConfig.extended``. When ``recognize_dated_markdown`` is true,
+    ``YYYY-MM-DD.md`` basenames are recognized too. Classification uses that
+    same name set.
     """
 
-    if _repo_contains(output):
+    output = output.resolve()
+    json_path = aggregate_json_path(output)
+    if _repo_contains(output) or _repo_contains(json_path):
         raise LocalEvalError("refusing to write local-eval output inside the git repository")
     chosen_queries = list(queries) if queries is not None else list(_DEFAULT_LOCAL_QUERIES)
     if any(not isinstance(query, str) or not query.strip() for query in chosen_queries):
         raise LocalEvalError("local queries must be non-empty task labels")
-    judgments = _parse_hits(hits)
+    judgments = parse_hits(hits)
     root = root.resolve()
-    output = output.resolve()
     sources = local_source_config(
         extra_markdown_names, recognize_dated_markdown=recognize_dated_markdown
     )
@@ -686,9 +765,11 @@ def run_local_aggregate(
         "extra_markdown_name_count": len(sources.markdown_names - _tier_names() - {DATED_MARKDOWN_TOKEN}),
         "selected_counts": selected_counts,
         "hits": [{"task": label, "hit": value} for label, value in judgments],
+        "pr_one_liner": format_hit_line(judgments),
     }
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(_render_local(summary), encoding="utf-8")
+    json_path.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return summary
 
 
@@ -732,8 +813,7 @@ def _render_local(summary: dict) -> str:
     if summary["hits"]:
         for row in summary["hits"]:
             lines.append(f"- {row['task']}: {row['hit']}")
-        bits = " ".join(f"{row['task']}={row['hit']}" for row in summary["hits"])
-        lines.extend(["", f"PR-eligible one-liner (numbers only): hit@k {bits}"])
+        lines.extend(["", f"{_PR_LINE_PREFIX}{summary['pr_one_liner']}"])
     else:
         lines.append("- none recorded")
     lines.append("")
@@ -748,7 +828,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--dedup", action="store_true")
     parser.add_argument("--include-stores", action="store_true")
     parser.add_argument("--preview-only", action="store_true")
-    parser.add_argument("--hits", default="", help="Optional hand scores, for example preference=1,prior-decision=0")
+    parser.add_argument(
+        "--hits",
+        default="",
+        help=(
+            "Hand scores as task=0 or task=1, comma-separated. "
+            "Tier A tasks: preference, prior-decision, stale-note. "
+            "Written into the markdown aggregate and its sibling JSON."
+        ),
+    )
     parser.add_argument("--scan-limit", type=int, default=128)
     parser.add_argument("--max-depth", type=int, default=4)
     parser.add_argument(

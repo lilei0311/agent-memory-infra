@@ -60,6 +60,13 @@ Issue #46 is design/contract only. Do not implement adapters, packaging, Hub, Me
 - Results: `experiments/results/usable_c_synthetic_eval.md` (synthetic labels only). Adaptive is not required to beat baseline.
 - Local dry-run playbook: `docs/LOCAL_EVAL.md`. Real memory stays outside the repo. Redaction remains off by default.
 
+## Local hit@k gate (2026-10-16)
+
+- Synthetic hit@k is already in `experiments/results/usable_c_synthetic_eval.md` (invented labels). Adaptive is not required to beat baseline.
+- Local hand-score procedure: after a Tier A import, record `preference`, `prior-decision`, and `stale-note` as 0 or 1 with `experiments/synthetic_usecase_eval.py --local-root ... --output ... --hits ...`. The steps are `docs/LOCAL_EVAL.md`. The command writes the aggregate markdown and a sibling JSON outside the repository. A pull request may quote that one aggregate line. The aggregate holds counts and those 0/1 scores. Observation text stays out of the aggregate and out of the pull request.
+- Skill `retrieve` with `policy="none"` returns the earliest ids. The query string is stored on the retrieval event and is not a ranking feature, so Tier A hit@k can be all-zero until query-aware ranking exists. That ranking is a later change. The cosine-plus-utility comparison remains the synthetic policy-layer table.
+- Local hit@k (Tier A, 2026-10-16): preference=0 prior-decision=0 stale-note=0; recognized=47 created=4630; retrieve still non-query (selected_count==budget).
+
 ## Agent Skill packaging (2026-10-15)
 - In-process tools: `memory_infra.agent_tools.AgentMemoryTools` maps discover, preview, import, retrieve, and record_outcome onto `start`, `preview_import`, `import_selected`, `invoke("retrieve")`, and `invoke("signal")`. No MCP server.
 - Instruction file: `src/memory_infra/SKILL.md`. Personal Mac install (editable install, copy or link into `~/.cursor/skills/agent-memory/SKILL.md`, store at `~/.agent-memory-infra/store`) is `docs/AGENT_INSTALL.md`.

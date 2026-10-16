@@ -143,7 +143,7 @@ After the quick-start install, scan a directory outside this repo with:
 python3 examples/local_source_import.py --root /path/to/local/copy --consent --select agent/openclaw-agent.sqlite
 ```
 
-The default root is `tests/fixtures/synthetic/`. See [Local sources](docs/LOCAL_SOURCES.md). A private dry-run checklist (snapshot, `sqlite3 .backup`, redaction left off, aggregates only) is [Local evaluation](docs/LOCAL_EVAL.md). The local eval command accepts `--extra-markdown-names` and `--recognize-dated-markdown`; both stay off unless you pass them.
+The default root is `tests/fixtures/synthetic/`. See [Local sources](docs/LOCAL_SOURCES.md). A private dry-run checklist (snapshot, `sqlite3 .backup`, redaction left off, aggregates only) is [Local evaluation](docs/LOCAL_EVAL.md). The hit@k path on that command is `--hits` (`preference`, `prior-decision`, `stale-note` as 0 or 1), written to the aggregate markdown and sibling JSON. `--extra-markdown-names` and `--recognize-dated-markdown` stay off unless you pass them, including when those notes are part of the Tier A set you score.
 
 ────────
 
@@ -368,7 +368,7 @@ Initial metrics may include:
 
 The first experiment should run controlled simulations before connecting to real Agents.
 
-A synthetic use-case check is `python3 experiments/synthetic_usecase_eval.py`. It scores hit@k for preference recall, a prior fix, duplicate suppression, and a stale dated bullet, and writes `experiments/results/usable_c_synthetic_eval.md` (invented labels only). Adaptive scoring is reported beside the baseline and is not required to win. Private data stays out of that file; the dry-run steps are [Local evaluation](docs/LOCAL_EVAL.md).
+A synthetic use-case check is `python3 experiments/synthetic_usecase_eval.py`. It scores hit@k for preference recall, a prior fix, duplicate suppression, and a stale dated bullet, and writes `experiments/results/usable_c_synthetic_eval.md` (invented labels only). Adaptive scoring is reported beside the baseline and is not required to win. Private data stays out of that file. A local Tier A hand score uses the same script with `--hits` and is recorded in [Local evaluation](docs/LOCAL_EVAL.md). Skill `retrieve` on that run ranks by recency or attention; the cosine-plus-utility comparison stays in the synthetic report.
 
 ────────
 
