@@ -8,10 +8,14 @@ Two retrieval paths:
 
 * Policy layer (``memory_infra.retrieval.retrieve``): baseline score is
   cosine similarity; adaptive score is similarity + alpha * utility.
-* Skill API (``SkillEntrypoint`` → ``invoke("retrieve")``): ``policy="none"``
-  ranks by recency. Any other policy ranks by attention weight plus a small
-  recency and contextual-fit term. The query string is stored on the
-  retrieval event and is not a similarity feature.
+* Skill API (``SkillEntrypoint`` → ``invoke("retrieve")``): a non-empty
+  query ranks by bag-of-words cosine (``query_relevance``) against
+  observation text. ``policy="none"`` orders by that score, then recency,
+  then earlier candidates. ``policy="automatic"`` uses
+  ``attention_weight + query_relevance + 0.01 * recency + 0.01 * contextual_fit``.
+  An empty query keeps recency (``none``) or the attention formula without
+  ``query_relevance``. ``query_used_for_ranking`` is true only when the
+  query term is applied. The V0.1 cosine-plus-utility table is separate.
 
 Local aggregates (``--local-root``) write counts only, and only outside
 this repository. ``--hits`` records hand-scored 0/1 values (``preference``,
@@ -200,13 +204,13 @@ def _label(text: str) -> str:
         raise RuntimeError("synthetic observation is not a known label") from exc
 
 
-def _selected_labels(handle, query: str) -> list[str]:
+def _selected_labels(handle, query: str) -> tuple[list[str], bool]:
     result = handle.invoke("retrieve", {"query": query})["result"]
     labels = []
     for event_id in result["selected"]:
         event = handle.invoke("read_event", {"event_id": event_id})["result"]
         labels.append(_label(event["observation"]))
-    return labels
+    return labels, bool(result["query_used_for_ranking"])
 
 
 def _event_id(handle, report: dict, text: str) -> str:
@@ -261,7 +265,7 @@ def _skill_row(
         current_text = handle.invoke("read_event", {"event_id": current_id})["result"]["observation"]
         contradiction_kept_both = stale_text == STALE_THEME and current_text == CURRENT_THEME
         handle.invoke("signal", {"name": "decay", "target_id": stale_id})
-    labels = _selected_labels(handle, query)
+    labels, query_used_for_ranking = _selected_labels(handle, query)
     hit_keys = {
         "pref-confirm": PREFERENCE,
         "unique-fact": UNIQUE,
@@ -281,7 +285,7 @@ def _skill_row(
         "selected_labels": labels,
         "hits": {name: int(LABELS[text] in labels) for name, text in hit_keys.items()},
         "contradiction_kept_both": contradiction_kept_both,
-        "query_used_for_ranking": False,
+        "query_used_for_ranking": query_used_for_ranking,
     }
 
 
@@ -387,9 +391,12 @@ def render_report(report: dict) -> str:
         f"Policy layer: baseline = cosine, adaptive = cosine + {report['alpha']} * utility, k={report['k']}. Alpha is fixed; the online learner is not updated. The scored store is the near-deduped corpus (`skip`, normalized text) unless a row says raw.",
         "",
         "Skill API: every import in this run used `redact=False`. `SkillEntrypoint` still defaults to `redact=False`; this eval does not change that. "
-        f"`context_budget={SKILL_BUDGET}`. `policy=\"none\"` is recency order. `policy=\"automatic\"` adds attention weight. "
-        "With no threads every attention weight is 0, so tied scores break on event-id text order. That tie break is not a query match. "
-        "The query string is not a similarity feature (`query_used_for_ranking` is false).",
+        f"`context_budget={SKILL_BUDGET}`. A non-empty query sets `query_used_for_ranking` true. "
+        "`query_relevance` is bag-of-words cosine over lowercase alphanumeric tokens, using the existing cosine helper. "
+        '`policy="none"` ranks by `query_relevance`, then recency, then earlier candidates. '
+        '`policy="automatic"` uses `attention_weight + query_relevance + 0.01 * recency + 0.01 * contextual_fit`, then event id. '
+        "An empty query stays on recency (`none`) or attention without the query term. "
+        "These rows all pass a non-empty query. The cosine-plus-utility numbers above are the V0.1 policy layer and are not this score.",
         "",
         "## Corpus",
         "",
@@ -487,11 +494,11 @@ def render_report(report: dict) -> str:
     lines.extend(
         [
             "",
-            "On `memory-dedup-off`, recency order keeps the first three confirmation lines and drops `unique-fact`. `automatic` selects a different trio because tied attention scores sort by event id, which is not chronological once ids pass 9. That is why `automatic` can list `unique-fact` without dedup. It did not match the query.",
+            "On `memory-dedup-off`, the preference query ranks the three confirmation lines above standup and `unique-fact`. Both policies keep `pref-confirm` inside the budget. Attention weight is 0 with no threads, so `automatic` follows the same relevance order.",
             "",
             "On `memory-dedup-on`, near-duplicate confirmation and standup lines collapse (`skip`). Three observations fit in the budget, including `unique-fact`, for both policies.",
             "",
-            "On `dated-notes`, both policies keep the first three bullets and drop `decision-backup`. The stale theme stays. After `contradict` (both observations kept) and one `decay` on the stale theme event, both policies drop `theme-stale` and include `decision-backup`. The date string did not do that. The decay signal did. The two policies still agree.",
+            "On `dated-notes`, the theme query ranks `theme-current` ahead of `theme-stale` because the current bullet repeats theme tokens, and both ahead of the decision bullets. `decision-backup` stays outside the budget. After `contradict` (both observations kept) and one `decay` on the stale theme, that event is still a candidate. Its relevance to the theme query still outranks the decision bullets, so `theme-stale` remains selected and `decision-backup` does not. Decay lowered recency. The lexical match still fills a budget slot. The two policies still agree.",
             "",
             "Skill retrieve does not implement the cosine-plus-utility score. Use the policy-layer table for that comparison.",
             "",
@@ -736,7 +743,13 @@ def run_local_aggregate(
         imported = handle.import_selected(selected)
         for query in chosen_queries:
             result = handle.invoke("retrieve", {"query": query})["result"]
-            selected_counts.append({"query": query, "selected_count": len(result["selected"])})
+            selected_counts.append(
+                {
+                    "query": query,
+                    "selected_count": len(result["selected"]),
+                    "query_used_for_ranking": bool(result["query_used_for_ranking"]),
+                }
+            )
     redaction = (imported or preview or {}).get("redaction") or {"enabled": False, "items_total": 0, "items_redacted": 0, "counts": {}}
     created = len(imported["created"]) if imported else 0
     skipped = len(imported["skipped"]) if imported else 0
@@ -806,7 +819,8 @@ def _render_local(summary: dict) -> str:
     ]
     if summary["selected_counts"]:
         for row in summary["selected_counts"]:
-            lines.append(f"- {row['query']}: {row['selected_count']}")
+            flag = "true" if row.get("query_used_for_ranking") else "false"
+            lines.append(f"- {row['query']}: {row['selected_count']} query_used_for_ranking={flag}")
     else:
         lines.append("- none")
     lines.extend(["", "## Hand-scored hit@k", ""])

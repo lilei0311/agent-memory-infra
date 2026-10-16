@@ -79,9 +79,10 @@ def test_skill_dedup_decay_and_redaction_stay_off():
     assert plain["created"] == 6 and plain["skipped"] == 0
     assert plain["hits"]["unique-fact"] == 0
     assert plain["hits"]["pref-confirm"] == 1
-    assert automatic["hits"]["unique-fact"] == 1
-    assert automatic["selected_labels"] != plain["selected_labels"]
-    assert all(row["query_used_for_ranking"] is False for row in report["skill"])
+    assert plain["selected_labels"][0] == "pref-confirm"
+    assert automatic["hits"]["unique-fact"] == 0
+    assert automatic["selected_labels"] == plain["selected_labels"]
+    assert all(row["query_used_for_ranking"] is True for row in report["skill"])
 
     assert deduped["created"] == 3 and deduped["skipped"] == 3
     assert deduped["hits"]["unique-fact"] == 1
@@ -91,11 +92,12 @@ def test_skill_dedup_decay_and_redaction_stay_off():
     assert dated["hits"]["theme-stale"] == 1
     assert dated["hits"]["theme-current"] == 1
     assert dated["hits"]["decision-backup"] == 0
+    assert dated["selected_labels"][0] == "theme-current"
     assert decayed["contradiction_kept_both"] is True
     assert decayed_auto["contradiction_kept_both"] is True
-    assert decayed["hits"]["theme-stale"] == 0
+    assert decayed["hits"]["theme-stale"] == 1
     assert decayed["hits"]["theme-current"] == 1
-    assert decayed["hits"]["decision-backup"] == 1
+    assert decayed["hits"]["decision-backup"] == 0
     assert decayed_auto["selected_labels"] == decayed["selected_labels"]
 
     assert all(row["redaction_enabled"] is False for row in report["skill"])

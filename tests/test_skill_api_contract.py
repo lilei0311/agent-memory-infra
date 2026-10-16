@@ -394,7 +394,14 @@ def test_exact_read_shapes_note_scope_and_import_rejection():
     )
     assert isinstance(graph["result"]["nodes"], tuple) and isinstance(graph["result"]["edges"], tuple)
     noted = api.invoke("agent-a", "retrieve", {"query": "fact", "note": "asked"})
-    assert set(noted["result"]) == {"retrieval_id", "query", "selected", "timestamp"}
+    assert set(noted["result"]) == {
+        "retrieval_id",
+        "query",
+        "selected",
+        "timestamp",
+        "query_used_for_ranking",
+    }
+    assert noted["result"]["query_used_for_ranking"] is True
     assert isinstance(noted["result"]["selected"], tuple)
     context = api.invoke("agent-a", "read_caller_context")
     assert context["result"]["notes"] == ("asked",)

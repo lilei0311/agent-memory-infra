@@ -8,7 +8,7 @@ Pass condition: the script finishes and writes this file. Adaptive hit@k is not 
 
 Policy layer: baseline = cosine, adaptive = cosine + 0.5 * utility, k=3. Alpha is fixed; the online learner is not updated. The scored store is the near-deduped corpus (`skip`, normalized text) unless a row says raw.
 
-Skill API: every import in this run used `redact=False`. `SkillEntrypoint` still defaults to `redact=False`; this eval does not change that. `context_budget=3`. `policy="none"` is recency order. `policy="automatic"` adds attention weight. With no threads every attention weight is 0, so tied scores break on event-id text order. That tie break is not a query match. The query string is not a similarity feature (`query_used_for_ranking` is false).
+Skill API: every import in this run used `redact=False`. `SkillEntrypoint` still defaults to `redact=False`; this eval does not change that. `context_budget=3`. A non-empty query sets `query_used_for_ranking` true. `query_relevance` is bag-of-words cosine over lowercase alphanumeric tokens, using the existing cosine helper. `policy="none"` ranks by `query_relevance`, then recency, then earlier candidates. `policy="automatic"` uses `attention_weight + query_relevance + 0.01 * recency + 0.01 * contextual_fit`, then event id. An empty query stays on recency (`none`) or attention without the query term. These rows all pass a non-empty query. The cosine-plus-utility numbers above are the V0.1 policy layer and are not this score.
 
 ## Corpus
 
@@ -61,18 +61,18 @@ Fixtures: `tests/fixtures/synthetic/MEMORY.md` and `dated-notes.md`. Import reda
 | scenario | policy | created | skipped | selected labels | unique-fact | theme-stale | theme-current | decision-backup |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | memory-dedup-off | none | 6 | 0 | pref-confirm, pref-near, pref-near-ws | 0 | 0 | 0 | 0 |
-| memory-dedup-off | automatic | 6 | 0 | standup, unique-fact, pref-confirm | 1 | 0 | 0 | 0 |
+| memory-dedup-off | automatic | 6 | 0 | pref-confirm, pref-near, pref-near-ws | 0 | 0 | 0 | 0 |
 | memory-dedup-on | none | 3 | 3 | pref-confirm, standup, unique-fact | 1 | 0 | 0 | 0 |
 | memory-dedup-on | automatic | 3 | 3 | pref-confirm, standup, unique-fact | 1 | 0 | 0 | 0 |
-| dated-notes | none | 4 | 0 | theme-stale, theme-current, decision-direct | 0 | 1 | 1 | 0 |
-| dated-notes | automatic | 4 | 0 | theme-stale, theme-current, decision-direct | 0 | 1 | 1 | 0 |
-| dated-notes-after-decay | none | 4 | 0 | theme-current, decision-direct, decision-backup | 0 | 0 | 1 | 1 |
-| dated-notes-after-decay | automatic | 4 | 0 | theme-current, decision-direct, decision-backup | 0 | 0 | 1 | 1 |
+| dated-notes | none | 4 | 0 | theme-current, theme-stale, decision-direct | 0 | 1 | 1 | 0 |
+| dated-notes | automatic | 4 | 0 | theme-current, theme-stale, decision-direct | 0 | 1 | 1 | 0 |
+| dated-notes-after-decay | none | 4 | 0 | theme-current, theme-stale, decision-direct | 0 | 1 | 1 | 0 |
+| dated-notes-after-decay | automatic | 4 | 0 | theme-current, theme-stale, decision-direct | 0 | 1 | 1 | 0 |
 
-On `memory-dedup-off`, recency order keeps the first three confirmation lines and drops `unique-fact`. `automatic` selects a different trio because tied attention scores sort by event id, which is not chronological once ids pass 9. That is why `automatic` can list `unique-fact` without dedup. It did not match the query.
+On `memory-dedup-off`, the preference query ranks the three confirmation lines above standup and `unique-fact`. Both policies keep `pref-confirm` inside the budget. Attention weight is 0 with no threads, so `automatic` follows the same relevance order.
 
 On `memory-dedup-on`, near-duplicate confirmation and standup lines collapse (`skip`). Three observations fit in the budget, including `unique-fact`, for both policies.
 
-On `dated-notes`, both policies keep the first three bullets and drop `decision-backup`. The stale theme stays. After `contradict` (both observations kept) and one `decay` on the stale theme event, both policies drop `theme-stale` and include `decision-backup`. The date string did not do that. The decay signal did. The two policies still agree.
+On `dated-notes`, the theme query ranks `theme-current` ahead of `theme-stale` because the current bullet repeats theme tokens, and both ahead of the decision bullets. `decision-backup` stays outside the budget. After `contradict` (both observations kept) and one `decay` on the stale theme, that event is still a candidate. Its relevance to the theme query still outranks the decision bullets, so `theme-stale` remains selected and `decision-backup` does not. Decay lowered recency. The lexical match still fills a budget slot. The two policies still agree.
 
 Skill retrieve does not implement the cosine-plus-utility score. Use the policy-layer table for that comparison.

@@ -90,7 +90,7 @@ Read results are frozen. Lists inside `result` are tuples, including `selected`,
 | --- | --- | --- | --- |
 | `observe` | required `content`; optional `source` (default: bound `caller_id`), optional `note` | top-level `point_id` and `caller_id`; no `result` | appends a candidate point; does not promote it |
 | `signal` | required `name`; signal fields below | top-level `caller_id`; `result.signal`, `result.result` | mechanism transition only; caller does not set lifecycle |
-| `retrieve` | required `query` | `result.retrieval_id`, `result.query`, `result.selected`, `result.timestamp` | retrieval event owned by the mechanism |
+| `retrieve` | required `query` | `result.retrieval_id`, `result.query`, `result.selected`, `result.timestamp`, `result.query_used_for_ranking` | retrieval event owned by the mechanism |
 | `read_lifecycle` | required `target_id` | exact `result` keys: `target_id`, `lifecycle_state`, `accessibility`, `recency`, `retrieval_history`, `contradiction_history` | none |
 | `read_event` | required `event_id` | event mapping in `result` (`event_id`, `timestamp`, `source`, `observation`, `evidence_ref`, `thread_id`) | none |
 | `read_relations` | none | tuple of relation records in `result`; each record keys: `relation_id`, `source_id`, `target_id`, `relation_type`, `evidence_ref`, `inferred` | none |
@@ -122,7 +122,9 @@ Minimum signal fields and `result.result` keys. Optional fields are omitted from
 - `resolve_reconsolidation`: `event_id`, `decision`, `evidence` → `target_id`, `lifecycle_state`
 - `consolidate`: `event_id`, `evidence` → `target_id`, `lifecycle_state`
 - `decay`: `target_id` → `target_id`, `lifecycle_state`
-- `retrieve`: `query` → `retrieval_id`, `selected`
+- `retrieve`: `query` → `retrieval_id`, `selected`, `query_used_for_ranking`
+
+`query_used_for_ranking` is true when `query` is non-empty after stripping whitespace. Ranking uses bag-of-words cosine (`query_relevance`) of lowercase alphanumeric tokens, via the existing cosine helper, against observation text. `policy="none"` orders by `query_relevance`, then recency, then earlier candidates. `policy="automatic"` uses `attention_weight + query_relevance + 0.01 * recency + 0.01 * contextual_fit`, with event-id tie breaks. An empty query keeps the previous rules: `policy="none"` is recency, and `policy="automatic"` is `attention_weight + 0.01 * recency + 0.01 * contextual_fit`. The retrieval trace signal list includes `query_used_for_ranking` only when that ranking runs. `memory_infra.retrieval.retrieve` (cosine plus utility) is unchanged. Phase G `assemble` and Phase H `GraphMemory.retrieve` keep `rank_by_query` off.
 
 Signal payloads must not include mechanism-owned fields such as `lifecycle_state` or `candidate_status`. That rejection is `BoundaryError` `caller cannot set mechanism-owned fields: ...`, not the `SnapshotError` ownership rejection used for `assign_ids` and the other ownership keys above.
 
