@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import inspect
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -170,6 +171,66 @@ def test_local_aggregate_writes_counts_outside_the_repo(tmp_path):
     assert preview["created"] == 0
     assert preview["preview_path_count"] == 1
     assert preview["imported_path_count"] == 0
+
+
+def test_hits_round_trip_into_markdown_and_json(tmp_path):
+    raw = "preference=1,prior-decision=0,stale-note=1"
+    parsed = usecase.parse_hits(raw)
+    assert parsed == [("preference", 1), ("prior-decision", 0), ("stale-note", 1)]
+    assert usecase.parse_hits("preference=1, prior-decision=0, stale-note=1") == parsed
+    assert usecase.parse_hit_line(usecase.format_hit_line(parsed)) == parsed
+    for bad in ("preference=2", "stale-note=no", "preference=1,preference=0", "prior decision=1", "preference="):
+        with pytest.raises(usecase.LocalEvalError):
+            usecase.parse_hits(bad)
+
+    root = tmp_path / "snapshot"
+    root.mkdir()
+    observation = "Synthetic preference note for the hit gate."
+    (root / "MEMORY.md").write_text(f"- {observation}\n", encoding="utf-8")
+    output = tmp_path / "aggregates.md"
+    summary = usecase.run_local_aggregate(root, output, hits=raw)
+    body = output.read_text(encoding="utf-8")
+    json_path = usecase.aggregate_json_path(output)
+    payload = json.loads(json_path.read_text(encoding="utf-8"))
+    assert summary["created"] == 1
+    assert summary["hits"] == [{"task": label, "hit": value} for label, value in parsed]
+    assert summary["pr_one_liner"] == "hit@k preference=1 prior-decision=0 stale-note=1"
+    assert usecase.hits_from_aggregate_markdown(body) == parsed
+    assert usecase.hits_from_aggregate_json(payload) == parsed
+    assert payload["pr_one_liner"] == summary["pr_one_liner"]
+    assert payload["pr_one_liner"] in body
+    for label, value in parsed:
+        assert payload["hits"][parsed.index((label, value))] == {"task": label, "hit": value}
+        assert isinstance(payload["hits"][parsed.index((label, value))]["hit"], int)
+        assert f"- {label}: {value}" in body
+    assert observation not in body
+    assert observation not in json_path.read_text(encoding="utf-8")
+    assert str(root) not in body
+    assert str(root) not in json_path.read_text(encoding="utf-8")
+
+    empty = usecase.run_local_aggregate(root, tmp_path / "empty.md", preview_only=True)
+    assert empty["hits"] == []
+    assert empty["pr_one_liner"] == ""
+    assert usecase.hits_from_aggregate_markdown((tmp_path / "empty.md").read_text(encoding="utf-8")) == []
+    assert json.loads((tmp_path / "empty.json").read_text(encoding="utf-8"))["hits"] == []
+
+    cli = tmp_path / "cli-hits.md"
+    code = usecase.main(
+        ["--local-root", str(root), "--output", str(cli), "--hits", raw]
+    )
+    assert code == 0
+    cli_body = cli.read_text(encoding="utf-8")
+    cli_payload = json.loads(usecase.aggregate_json_path(cli).read_text(encoding="utf-8"))
+    assert usecase.hits_from_aggregate_markdown(cli_body) == parsed
+    assert usecase.hits_from_aggregate_json(cli_payload) == parsed
+    assert observation not in cli_body
+
+    rejected = tmp_path / "rejected.md"
+    assert usecase.main(
+        ["--local-root", str(root), "--output", str(rejected), "--hits", "preference=2"]
+    ) == 2
+    assert not rejected.exists()
+    assert not usecase.aggregate_json_path(rejected).exists()
 
 
 def test_extra_markdown_names_are_tier_a_and_importable(tmp_path):
