@@ -85,13 +85,14 @@ class MemoryAdapter:
         return _freeze({"signal": name, "result": result})
 
     def retrieve(self, query: str) -> Mapping:
-        event = self._graph.retrieve(query)
+        event = self._graph.retrieve(query, rank_by_query=True)
         return _freeze(
             {
                 "retrieval_id": event.retrieval_id,
                 "query": event.query_context,
                 "selected": list(event.selected_refs),
                 "timestamp": event.timestamp,
+                "query_used_for_ranking": event.query_used_for_ranking,
             }
         )
 
@@ -204,8 +205,12 @@ class MemoryAdapter:
         return {"target_id": state.target_id, "lifecycle_state": state.lifecycle_state.value}
 
     def _signal_retrieve(self, query: str) -> dict:
-        event = self._graph.retrieve(query)
-        return {"retrieval_id": event.retrieval_id, "selected": list(event.selected_refs)}
+        event = self._graph.retrieve(query, rank_by_query=True)
+        return {
+            "retrieval_id": event.retrieval_id,
+            "selected": list(event.selected_refs),
+            "query_used_for_ranking": event.query_used_for_ranking,
+        }
 
 
 class DurableStorePort:

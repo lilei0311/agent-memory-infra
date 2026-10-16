@@ -1,6 +1,11 @@
+import re
+from collections import Counter
+
 from memory_infra.memory import MemoryItem, MemoryStore
 from memory_infra.policy import LearnedPolicy
 from memory_infra.trace import RetrievalTrace
+
+_TOKEN = re.compile(r"[a-z0-9]+")
 
 
 def cosine(a: list[float], b: list[float]) -> float:
@@ -10,6 +15,26 @@ def cosine(a: list[float], b: list[float]) -> float:
     if na == 0 or nb == 0:
         return 0.0
     return dot / (na * nb)
+
+
+def text_relevance(query: str, text: str) -> float:
+    """Bag-of-words cosine between a query string and observation text.
+
+    Tokens are lowercase alphanumeric runs. The vector cosine is the
+    existing ``cosine`` helper. This does not change ``retrieve`` (the
+    frozen V0.1 cosine-plus-utility policy layer).
+    """
+
+    if not query or not text:
+        return 0.0
+    query_counts = Counter(_TOKEN.findall(query.lower()))
+    text_counts = Counter(_TOKEN.findall(text.lower()))
+    if not query_counts or not text_counts:
+        return 0.0
+    vocab = sorted(set(query_counts) | set(text_counts))
+    query_vec = [float(query_counts[token]) for token in vocab]
+    text_vec = [float(text_counts[token]) for token in vocab]
+    return cosine(query_vec, text_vec)
 
 
 def retrieve(

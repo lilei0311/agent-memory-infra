@@ -11,7 +11,7 @@ Install and the Mac copy/link path: `docs/AGENT_INSTALL.md`. Prove the package w
 1. `discover` first. That is `handle.start`: bounded read-only discovery. Unknown and unreadable sources do not abort. Discovery does not import.
 2. Show the user the recognized paths. `preview` is `preview_import`: a dry run with counts. It writes nothing.
 3. `import_sources(..., consent=True)` is `import_selected`. Call it only after the user confirms those paths in this turn. It imports only that list and does not rewrite caller files.
-4. `retrieve` answers a task. It is `invoke("retrieve")`, then `read_event` for each selected id, so you get observation text without walking internal objects.
+4. `retrieve` answers a task. It is `invoke("retrieve")`, then `read_event` for each selected id, so you get observation text without walking internal objects. A non-empty query ranks observation text by bag-of-words overlap. An empty query keeps recency order when policy is `none`.
 5. `record_outcome` is optional and comes after you use a memory. It is `invoke("signal")` with an allowed signal name and that signal's fields.
 6. `read_graph` is `invoke("read_graph")`. It is a read-only projection of mechanism-owned objects. It does not create graph state. Do not dump the whole graph into the prompt.
 7. `save` / `load` are `invoke("save")` / `invoke("load")`. Call `save` before the process exits when `store_path` is set. Snapshots hold mechanism state, not caller notes.

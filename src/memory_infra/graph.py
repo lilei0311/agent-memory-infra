@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 from enum import Enum
 
+from memory_infra.retrieval import text_relevance
+
 
 class Lifecycle(str, Enum):
     FORMING = "FORMING"
@@ -138,6 +140,7 @@ class RetrievalEvent:
     selected_refs: list[str]
     mode: str
     attention_anchor: str | None
+    query_used_for_ranking: bool = False
 
 
 @dataclass
@@ -439,10 +442,34 @@ class GraphMemory:
         share = 1.0 / len(active)
         return {t: share for t in active}
 
-    def retrieve(self, query: str) -> RetrievalEvent:
+    def retrieve(self, query: str, *, rank_by_query: bool = False) -> RetrievalEvent:
+        """Allocate the context budget.
+
+        ``rank_by_query`` defaults off so Phase G ``assemble`` and Phase H
+        ``policy="none"`` retrieval keep their recorded allocation. Skill
+        ``retrieve`` turns it on.
+
+        Empty or whitespace query, or ``rank_by_query`` false:
+        - ``policy="none"``: recency descending, stable candidate order.
+        - any other policy: ``attention_weight + 0.01 * recency + 0.01 * contextual_fit``,
+          ties broken by event id ascending.
+
+        Non-empty query with ``rank_by_query`` true (``query_relevance`` is
+        bag-of-words cosine in ``[0, 1]``):
+        - ``policy="none"``: ``query_relevance`` descending, then recency
+          descending, then earlier candidate order.
+        - any other policy, including ``automatic``:
+          ``attention_weight + query_relevance + 0.01 * recency + 0.01 * contextual_fit``,
+          ties broken by event id ascending.
+        """
+
         self.tick += 1
         candidates = [eid for eid, st in self.states.items() if eid in self.events and st.accessibility > 0 and st.lifecycle_state != Lifecycle.INACCESSIBLE]
-        selected = self._allocate_with_attention(candidates) if self.policy != "none" else self._allocate_baseline(candidates)
+        apply_query = bool(rank_by_query) and isinstance(query, str) and bool(query.strip())
+        if self.policy == "none":
+            selected = self._allocate_by_query(candidates, query) if apply_query else self._allocate_baseline(candidates)
+        else:
+            selected = self._allocate_with_attention(candidates, query if apply_query else None)
         for eid in selected:
             state = self.states[eid]
             state.retrieval_history.append(query)
@@ -450,9 +477,19 @@ class GraphMemory:
             if state.lifecycle_state in (Lifecycle.DORMANT, Lifecycle.STABLE):
                 self._move(eid, Lifecycle.REACTIVATED, "retrieval", (query,), "retrieval reactivates", (self.events[eid].evidence_ref,))
                 state.accessibility = 1.0
-        rec = RetrievalEvent(self._id("ret"), self.tick, query, candidates, selected, self.attention.mode.value, self.attention.current_anchor)
+        rec = RetrievalEvent(
+            self._id("ret"),
+            self.tick,
+            query,
+            candidates,
+            selected,
+            self.attention.mode.value,
+            self.attention.current_anchor,
+            query_used_for_ranking=apply_query,
+        )
         self.retrievals.append(rec)
-        self._transition("retrieval.log", rec.retrieval_id, "", ",".join(selected), "retrieve", (query,), "allocation recorded", tuple(selected))
+        signals = (query, "query_used_for_ranking") if apply_query else (query,)
+        self._transition("retrieval.log", rec.retrieval_id, "", ",".join(selected), "retrieve", signals, "allocation recorded", tuple(selected))
         return rec
 
     def assemble(self, query: str) -> list[ContextItem]:
@@ -477,14 +514,29 @@ class GraphMemory:
         ranked = sorted(candidates, key=lambda eid: self.states[eid].recency, reverse=True)
         return ranked[: self.attention.context_budget]
 
-    def _allocate_with_attention(self, candidates: list[str]) -> list[str]:
+    def _allocate_by_query(self, candidates: list[str], query: str) -> list[str]:
+        """policy=none with a non-empty query: relevance, then recency, then earlier ids."""
+
+        scored = []
+        for index, eid in enumerate(candidates):
+            relevance = text_relevance(query, self.events[eid].observation)
+            scored.append((relevance, self.states[eid].recency, index, eid))
+        scored.sort(key=lambda row: (-row[0], -row[1], row[2]))
+        return [eid for _, _, _, eid in scored[: self.attention.context_budget]]
+
+    def _allocate_with_attention(self, candidates: list[str], query: str | None = None) -> list[str]:
+        """Attention score. A query adds bag-of-words cosine; an empty query does not."""
+
         budget = self.attention.context_budget
+        use_query = query is not None and bool(query.strip())
         scored = []
         for eid in candidates:
             thread_id = self.events[eid].thread_id or ""
             weight = self.attention.active_thread_distribution.get(thread_id, 0.0)
             state = self.states[eid]
             score = weight + 0.01 * state.recency + 0.01 * state.contextual_fit
+            if use_query:
+                score += text_relevance(query, self.events[eid].observation)
             scored.append((score, eid))
         scored.sort(key=lambda row: (-row[0], row[1]))
         return [eid for _, eid in scored[:budget]]

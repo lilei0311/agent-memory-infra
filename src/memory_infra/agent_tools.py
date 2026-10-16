@@ -187,6 +187,7 @@ class AgentMemoryTools:
             "op": "retrieve",
             "query": result["query"],
             "retrieval_id": result["retrieval_id"],
+            "query_used_for_ranking": bool(result["query_used_for_ranking"]),
             "memories": tuple(memories),
         }
 
