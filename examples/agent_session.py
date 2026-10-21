@@ -11,6 +11,9 @@ The default store is a temporary directory, not your home directory. Pass
 ``--store ~/.agent-memory-infra/store`` only when you want the personal file
 backend. Do not point ``--root`` at real memory if you also pass ``--show-text``.
 Without ``--show-text``, a non-fixture root prints counts and omits memory text.
+Persona markdown names are recognized on this path. Dated ``YYYY-MM-DD.md``
+names stay off. Freeze a real tree outside the clone first; see
+``docs/AGENT_INSTALL.md``.
 
 See docs/AGENT_INSTALL.md and src/memory_infra/SKILL.md.
 """

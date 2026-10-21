@@ -151,7 +151,7 @@ The default root is `tests/fixtures/synthetic/`. See [Local sources](docs/LOCAL_
 
 Cursor or Grok can run the same Skill in-process. Install the package with the [quick start](#quick-start-personal-skill), then copy or symlink [`src/memory_infra/SKILL.md`](src/memory_infra/SKILL.md) into that agent's skill directory. The steps for a personal Mac, including `~/.cursor/skills/agent-memory/SKILL.md` and the home store `~/.agent-memory-infra/store`, are in [Agent install](docs/AGENT_INSTALL.md).
 
-The agent calls `memory_infra.agent_tools`: `discover`, `preview`, `import_sources` (only with `consent=True`), `retrieve`, and `record_outcome`. Those map onto `start`, `preview_import`, `import_selected`, `invoke("retrieve")`, and `invoke("signal")`. Redaction stays off unless you pass it. A scripted session on the synthetic fixtures:
+The agent calls `memory_infra.agent_tools`: `discover`, `preview`, `import_sources` (only with `consent=True`), `retrieve`, and `record_outcome`. Those map onto `start`, `preview_import`, `import_selected`, `invoke("retrieve")`, and `invoke("signal")`. On this path, discovery uses the extended markdown names (`AGENTS.md`, `SOUL.md`, `USER.md`, and the rest listed in the install doc). `redact=False`. Freeze Markdown into `$HOME/agent-memory-infra-eval/` (outside the clone) before a real import. Do not scan a live agent tree. The short OpenClaw checklist — personal store `~/.agent-memory-infra/store`, Tier B only from a `sqlite3 .backup` copy, never commit real memory — is [Agent install](docs/AGENT_INSTALL.md#openclaw-hygiene). A scripted session on the synthetic fixtures:
 
 ```bash
 python3 examples/agent_session.py --select MEMORY.md --consent --signal
