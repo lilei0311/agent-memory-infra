@@ -37,6 +37,8 @@ That directory is under the user home and outside this git repo. Pass it as `sto
 
 If a scratch store must sit inside a clone, use `local-memory/` or `.agent-memory-infra/`. Both are gitignored. Real memory stays outside the public repo. Point `root` at a directory you choose, not at a committed personal copy. Synthetic stand-ins live in `tests/fixtures/synthetic/`.
 
+`AgentMemoryTools.open` recognizes `AGENTS.md`, `SOUL.md`, `USER.md`, `IDENTITY.md`, `TOOLS.md`, `HEARTBEAT.md`, and `CLAUDE.md` in addition to `MEMORY.md` and `memory.md`. A basename that is exactly `YYYY-MM-DD.md` stays unrecognized. Do not scan a live agent tree. Freeze Markdown under `$HOME/agent-memory-infra-eval/` first. Tier B SQLite, if imported at all, is a `sqlite3 .backup` copy in that same outside directory. `redact=False` for personal use. Never commit what you imported. The checklist is `docs/AGENT_INSTALL.md`.
+
 ## Redaction
 
 Off by default. Personal import stores text as written.

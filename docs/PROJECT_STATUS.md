@@ -1,6 +1,18 @@
 # Project Status — Agent Memory Infra
 
-Observation date: 2026-10-10. This is a coordination map, not a substitute for issue-level acceptance evidence.
+Observation date: 2026-10-21. This is a coordination map, not a substitute for issue-level acceptance evidence.
+
+## Current main
+
+HEAD is around the experiment-design commit `a8912d8` ("Draft minimal experiment design for task continuity across topic switches", #62). That commit is `docs/TASK_CONTINUITY_EXPERIMENT.md` only. It does not add a runner and does not change retrieve. Issue #62 stays open. Issue #61 (shared Memory Core / cross-harness adapter RFC) stays open. This path does not implement either one. They are the only open issues in the tracker.
+
+Issue #46 (public Skill API contract) is closed. It is historical. Sections below that still describe #46 as current work are the 2026-10-10 record. The 2026-10-15 triage note already marked that line historical.
+
+Personal usable slices (a)–(e) are on main. The pulls that use those letters are usable(c) #58 (synthetic hit@k and `docs/LOCAL_EVAL.md`), usable(d) #57 (README quick start), and usable(e) #59 (in-process `AgentMemoryTools`, `src/memory_infra/SKILL.md`, `docs/AGENT_INSTALL.md`). No merged pull is titled usable(a) or usable(b). This map does not assign those letters. The slices those pulls sit on are also merged: first-run consent journey (#52), redaction off by default (#54), opt-in item dedup and synthetic fixtures (#55), read-only SQLite and JSONL adapters (#56), local-eval extra and dated markdown flags (#60), Tier A `--hits` aggregate round-trip (#63), and query-text ranking on Skill retrieve (#64).
+
+usable(f), this change: `AgentMemoryTools.open` defaults discovery and import to `SourceConfig.extended()`. Persona markdown names are visible on the personal agent path. `SkillEntrypoint()` with no `sources` argument stays bare `SourceConfig()`. Stage and conformance tests keep that default. Dated `YYYY-MM-DD.md` names and item dedup stay opt-in. OpenClaw import hygiene for a frozen copy under `$HOME/agent-memory-infra-eval/` is the short section in `docs/AGENT_INSTALL.md`.
+
+The recorded Tier A line is unchanged and was not re-scored here: preference=0 prior-decision=0 stale-note=0; recognized=47 created=4630 (2026-10-16, before query ranking). Re-score stays off this repository. Hub, Memory Bridge, MCP, telemetry, and a vector database stay out.
 
 ## Immutable product goal
 The core hypothesis in README is that historical task feedback should improve what an agent remembers, retrieves, retains, or forgets beyond relevance-only retrieval. Product priority remains Agent Memory Skill for a single agent. Agent Memory Hub, Memory Bridge, telemetry, and external usage learning remain deferred. Storage remains outside this project.
@@ -10,7 +22,7 @@ V0.1 A/B/C/D/E, Phase G assets/config/results, V0.2 semantics, and Phase H confi
 ## Stage terminology
 The research roadmap stages in `docs/ROADMAP.md` are not the numbered implementation stages. Research Stage 1 is the frozen controlled-policy experiment; research Stage 2 is Skill packaging; research Stage 3 is real-world learning and has not started. Numbered Stages 12–14 are the Skill path: explicit import seam, Memory Graph projection, and read-only visual explorer.
 
-## Current implementation and evidence
+## Current implementation and evidence (historical, 2026-10-10)
 - Default-branch HEAD before the Skill API contract commit: `fc443b86feea38fa1216c16f9c34d99c6028067a` (evidence-only Stage 14 Chromium probe record). The contract commit adds `docs/SKILL_API.md`, `tests/test_skill_api_contract.py`, and this map only.
 - Stage 14 implementation under review: `e6b97ffb47b3d33fa5f36d18cf01234052741e5e`.
 - Exact-SHA evidence: `experiments/results/stage14_issue43_e6b97ff.md`.
@@ -24,18 +36,18 @@ Source and evidence review supports the search fix, kind-qualified endpoint hand
 
 The named browser-evidence gap is closed by `experiments/stage14_issue43_chromium_probe.py` and `experiments/results/stage14_issue43_e6b97ff_chromium.md`. The probe ran at implementation SHA `e6b97ffb47b3d33fa5f36d18cf01234052741e5e`: Chromium exit 0, probe assert exit 0. It covers All/Threads/Events/Contradictions, relation id/type, evidence, endpoint-only, no-match, and edge/label/inspector visibility. Pytest and Phase H were not repeated.
 
-## Canonical open work
+## Canonical open work (historical, 2026-10-10)
 - Issue #43 was closed completed by the owner on 2026-10-09. This map does not re-open Stage 14 and does not claim a fresh independent execution in this commit.
 - Issue #46 is the active work unit: public Skill API contract in `docs/SKILL_API.md`. Contract revision `skill-api-2026-10-10.6`. Pinning tests: `tests/test_skill_api_contract.py` (ops, envelopes, missing fields, invalid signal, exact multi-key scope/ownership suffixes, impersonation-before-ownership, scope-before-graph-write, read_graph write-key suffixes, signal BoundaryError distinct from SnapshotError ownership, entrypoint backend errors, exact lifecycle/relation keys, note-on-any-op, note kept after failed dispatch, ownership rejection does not append note, whitespace caller id, import rejection, rejected import still enables memory). Issue #46 stays open pending independent review.
 - Do not create a duplicate Stage 14 issue or a second API-contract issue.
 
-## Next-stage boundary
+## Next-stage boundary (historical, 2026-10-10)
 Issue #46 is design/contract only. Do not implement adapters, packaging, Hub, Memory Bridge, telemetry, UI, server, MCP, GraphRAG, or vector DB under that issue. After the contract is independently accepted, open one implementation issue from the approved contract.
 
 ## Triage update (2026-10-15)
 - Issue #46 is closed (API contract accepted); the 'stays open pending review' line above is historical.
 - Issue #52 acceptance verified locally: `python examples/first_run_journey.py --consent` exits 0 (import 2, graph 6 nodes, 2nd-session retrieval 2, sources unchanged); decline path exits 0 with no import. Suite: `python -m pytest -q tests` -> 163 passed. Note bare `pytest` fails collection (tests.skill_conformance import); use `python -m pytest`.
-- Open issues #1-#38 are completed stage/acceptance items awaiting owner closure.
+- Open issues #1-#38 were completed stage/acceptance items at this triage. They are closed. As of 2026-10-21 the only open issues are #61 and #62.
 
 ## Phase 2 slice (2026-10-15)
 - No open issue named dedup or synthetic fixtures. This slice follows the Stage 12 import seam: source-snapshot idempotency stays the default, and item dedup is opt-in (`docs/DEDUP.md`).
@@ -72,3 +84,4 @@ Issue #46 is design/contract only. Do not implement adapters, packaging, Hub, Me
 - Instruction file: `src/memory_infra/SKILL.md`. Personal Mac install (editable install, copy or link into `~/.cursor/skills/agent-memory/SKILL.md`, store at `~/.agent-memory-infra/store`) is `docs/AGENT_INSTALL.md`.
 - Scripted session: `examples/agent_session.py` and `tests/test_agent_session.py` import a synthetic `MEMORY.md`, retrieve, and optionally signal. Import runs only when consent is exactly true. Redaction stays off unless requested.
 - This slice does not reopen the synthetic eval above and does not add a marketplace package or an MCP/HTTP service.
+- usable(f): `AgentMemoryTools.open` defaults to `SourceConfig.extended()` (persona markdown names and the v2 parser). `SkillEntrypoint()` stays on bare `SourceConfig()`. Dated markdown names and item dedup stay opt-in. Hygiene for a frozen OpenClaw markdown copy is in `docs/AGENT_INSTALL.md`.

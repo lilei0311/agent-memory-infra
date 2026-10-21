@@ -4,6 +4,12 @@ Maps discover, preview, import, retrieve, and record_outcome onto
 ``SkillEntrypoint``. This is not an MCP server, HTTP service, or marketplace
 plugin. Redaction stays off unless the caller passes ``redact=True``.
 Discovery never imports. ``import_sources`` runs only when ``consent is True``.
+
+``open`` discovers and imports with ``SourceConfig.extended()``: the OpenClaw
+persona markdown names and the v2 parser, plus the usual JSON, SQLite, and
+JSONL names. Dated ``YYYY-MM-DD.md`` names stay off unless the caller passes
+``sources=``. Item dedup stays off. ``SkillEntrypoint()`` with no ``sources``
+argument is still the narrow set.
 """
 
 from __future__ import annotations
@@ -13,6 +19,7 @@ from pathlib import Path
 from typing import Mapping
 
 from memory_infra.entrypoint import SkillEntrypoint
+from memory_infra.source_adapter import SourceConfig
 
 __all__ = ["AgentMemoryTools", "personal_store_path", "run_scripted_session"]
 
@@ -63,14 +70,22 @@ class AgentMemoryTools:
         seed: int = 7,
         context_budget: int = 4,
         policy: str = "none",
+        sources: SourceConfig | None = None,
     ) -> "AgentMemoryTools":
-        """Open a session. ``redact`` defaults to false. ``store_path`` selects the file backend."""
+        """Open a session.
+
+        ``redact`` defaults to false. ``store_path`` selects the file backend.
+        Discovery and import use ``SourceConfig.extended()`` unless ``sources``
+        is passed. Dated ``YYYY-MM-DD.md`` names stay off on that default.
+        Item dedup is not enabled.
+        """
 
         kwargs = {
             "seed": seed,
             "context_budget": context_budget,
             "policy": policy,
             "redact": redact,
+            "sources": sources if sources is not None else SourceConfig.extended(),
         }
         if store_path is None:
             entry = SkillEntrypoint(**kwargs)
@@ -253,6 +268,7 @@ def run_scripted_session(
     outcome_signal: str | None = None,
     outcome_fields: Mapping[str, object] | None = None,
     redact: bool = False,
+    sources: SourceConfig | None = None,
 ) -> dict:
     """Discover, preview, maybe import, retrieve, and optionally signal.
 
@@ -263,7 +279,9 @@ def run_scripted_session(
 
     root_path = Path(root)
     before = _tree_digest(root_path)
-    tools = AgentMemoryTools.open(caller_id, store_path=store_path, redact=redact)
+    tools = AgentMemoryTools.open(
+        caller_id, store_path=store_path, redact=redact, sources=sources
+    )
     discovered = tools.discover(root=root_path)
     recognized = [item["path"] for item in discovered["sources"] if item["status"] == "recognized"]
     chosen = recognized if select is None else [path for path in select if path in recognized]

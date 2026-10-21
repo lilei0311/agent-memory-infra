@@ -48,7 +48,9 @@ tools = AgentMemoryTools.open("cursor", store_path=personal_store_path())
 
 `personal_store_path()` is `~/.agent-memory-infra/store`, under your home and outside this repo. Do not commit it. A scratch store inside a checkout belongs in `local-memory/` or `.agent-memory-infra/` (both gitignored).
 
-Point `discover(root=...)` at a directory outside the repo when the files are real. Use `tests/fixtures/synthetic/` when you want a safe stand-in. Redaction is off unless you pass `redact=True`. Import only with `import_sources(..., consent=True)` for paths you selected. Details are in `SKILL.md`.
+`AgentMemoryTools.open` discovers and imports with `SourceConfig.extended()`: `MEMORY.md`, `memory.md`, `AGENTS.md`, `SOUL.md`, `USER.md`, `IDENTITY.md`, `TOOLS.md`, `HEARTBEAT.md`, `CLAUDE.md`, plus `memories.json`, `memory.json`, `*.sqlite`, `*.sqlite3`, and `*.jsonl`. The v2 Markdown parser is on for those files. A basename that is exactly `YYYY-MM-DD.md` stays unrecognized unless you pass `sources=SourceConfig.extended(recognize_dated_markdown=True)`. Item dedup stays off. `SkillEntrypoint()` with no `sources` argument is still the narrow set. Stage and conformance tests keep that default.
+
+Point `discover(root=...)` at a directory outside the repo when the files are real. Use `tests/fixtures/synthetic/` when you want a safe stand-in. Redaction is off unless you pass `redact=True`. Import only with `import_sources(..., consent=True)` for paths you selected. Details are in `SKILL.md`. The OpenClaw freeze rules are the next section.
 
 ## 4. Synthetic smoke
 
@@ -68,6 +70,37 @@ Expected:
 - `sources unchanged: True`
 
 The example store is a temporary directory, not your home directory. Pass `--store ~/.agent-memory-infra/store` only when you want that personal file. Omit `--show-text` when `--root` is a real directory; the command then prints counts and leaves memory text out of the terminal.
+
+## OpenClaw hygiene
+
+Clone, install the Skill, freeze a Markdown copy, discover, import only after consent, then retrieve. This path does not start Hub or MCP.
+
+Freeze Markdown into `$HOME/agent-memory-infra-eval/` (outside this git clone) before `discover`. Copy only the curated notes you intend to import. Do not scan a live multi-gigabyte agent tree, and do not point discovery at a live `~/.openclaw` tree. CI does not touch a live `~/.openclaw` tree.
+
+The personal mechanism store is `~/.agent-memory-infra/store` (`personal_store_path()`), also outside the clone. Leave `redact=False`. Personal import stores text as written.
+
+Tier B SQLite is not part of the default import. If you import an index later, copy it with `sqlite3 .backup` to a file under `$HOME/agent-memory-infra-eval/`, then discover that copy. The live database stays where it is. The snapshot stays outside the repo.
+
+```bash
+sqlite3 "$SOURCE_DB" ".backup $HOME/agent-memory-infra-eval/openclaw-agent-snapshot.sqlite"
+```
+
+Never commit real memory, session databases, explorer HTML, observation text, or personal paths. A pull request may quote an aggregate count. It does not quote observation text. Scan caps, dated-name flags, and the Tier A checklist are [LOCAL_EVAL.md](LOCAL_EVAL.md).
+
+```python
+from pathlib import Path
+from memory_infra.agent_tools import AgentMemoryTools, personal_store_path
+
+frozen = Path.home() / "agent-memory-infra-eval" / "openclaw-md-copy"
+tools = AgentMemoryTools.open("cursor", store_path=personal_store_path())
+found = tools.discover(root=frozen)
+chosen = [item["path"] for item in found["sources"] if item["status"] == "recognized"]
+tools.preview(chosen)  # dry run
+# consent=True only after you confirm this list in this turn
+tools.import_sources(chosen, consent=True)
+tools.retrieve("the question")
+tools.save()
+```
 
 ## What stays out
 
