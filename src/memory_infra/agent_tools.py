@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Mapping
 
 from memory_infra.entrypoint import SkillEntrypoint
-from memory_infra.source_adapter import SourceConfig
+from memory_infra.source_adapter import SourceConfig, select_discovered_paths
 
 __all__ = ["AgentMemoryTools", "personal_store_path", "run_scripted_session"]
 
@@ -284,7 +284,7 @@ def run_scripted_session(
     )
     discovered = tools.discover(root=root_path)
     recognized = [item["path"] for item in discovered["sources"] if item["status"] == "recognized"]
-    chosen = recognized if select is None else [path for path in select if path in recognized]
+    chosen = recognized if select is None else select_discovered_paths(select, recognized)
     preview = tools.preview(chosen)
     graph_before = tools.read_graph()
     imported = tools.import_sources(chosen, consent=consent)

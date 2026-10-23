@@ -26,6 +26,7 @@ from memory_infra.source_adapter import (
     SQLITE_ADAPTER,
     SourceConfig,
     kind_for_filename,
+    matches_recognized_name,
 )
 
 RECOGNIZED_NAMES = frozenset({"MEMORY.md", "memory.md", "memories.json", "memory.json"})
@@ -65,7 +66,7 @@ def parse_recognized(
 
     base = Path(name).name
     if config is None:
-        if base not in RECOGNIZED_NAMES:
+        if not matches_recognized_name(base, RECOGNIZED_NAMES):
             return [], "unknown"
         if MARKDOWN_ADAPTER.can_handle(name):
             return MARKDOWN_ADAPTER.parse(payload)

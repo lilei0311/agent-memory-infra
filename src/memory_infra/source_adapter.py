@@ -17,7 +17,7 @@ import re
 import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Protocol
+from typing import Iterable, Protocol
 
 
 def _digest(text: str) -> str:
@@ -41,8 +41,12 @@ def is_dated_markdown_basename(filename: str) -> bool:
 
 
 def matches_recognized_name(filename: str, names: frozenset[str]) -> bool:
-    """True when ``filename`` is an exact recognized name or a ``*.ext`` token.
+    """True when ``filename`` matches a recognized name or a ``*.ext`` token.
 
+    Exact names match case-insensitively so ``MEMORY.md``, ``memory.md``, and
+    ``Memory.md`` are the same alias. That is required on case-insensitive
+    volumes (default Mac APFS) and still accepts each casing as its own file
+    on case-sensitive Linux or APFS. ``*.ext`` tokens already match that way.
     If ``names`` contains ``DATED_MARKDOWN_TOKEN``, basenames that pass
     ``is_dated_markdown_basename`` match as well. The token itself is not
     a dated basename.
@@ -53,11 +57,46 @@ def matches_recognized_name(filename: str, names: frozenset[str]) -> bool:
         return True
     if DATED_MARKDOWN_TOKEN in names and is_dated_markdown_basename(base):
         return True
-    lower = base.lower()
+    folded = base.casefold()
     for token in names:
-        if token.startswith("*.") and len(token) > 2 and lower.endswith(token[1:].lower()):
+        if token == DATED_MARKDOWN_TOKEN:
+            continue
+        if token.startswith("*.") and len(token) > 2 and folded.endswith(token[1:].casefold()):
+            return True
+        if not token.startswith("*.") and token.casefold() == folded:
             return True
     return False
+
+
+def resolve_discovered_path(paths: Iterable[str], requested: str) -> str | None:
+    """Bind ``requested`` to one discovered path.
+
+    Exact match wins. Otherwise a unique case-insensitive match is accepted
+    so ``MEMORY.md`` finds on-disk ``memory.md`` after APFS case folding.
+    Two distinct files that differ only by case stay unambiguous: the exact
+    name is required.
+    """
+
+    known = list(paths)
+    if requested in known:
+        return requested
+    folded = requested.casefold()
+    matches = [path for path in known if path.casefold() == folded]
+    if len(matches) == 1:
+        return matches[0]
+    return None
+
+
+def select_discovered_paths(requested: Iterable[str], discovered: Iterable[str]) -> list[str]:
+    """Filter caller selections to discovered paths, honoring case aliases."""
+
+    known = list(discovered)
+    chosen: list[str] = []
+    for path in requested:
+        resolved = resolve_discovered_path(known, path)
+        if resolved is not None:
+            chosen.append(resolved)
+    return chosen
 
 
 def kind_for_filename(filename: str, names: frozenset[str]) -> str:
@@ -91,7 +130,7 @@ class MarkdownSourceAdapter:
     """
 
     def can_handle(self, path: str) -> bool:
-        return Path(path).name in {"MEMORY.md", "memory.md"}
+        return Path(path).name.casefold() == "memory.md"
 
     def parse(self, payload: bytes) -> tuple[list[dict], str | None]:
         try:
@@ -121,7 +160,7 @@ class JsonSourceAdapter:
     """
 
     def can_handle(self, path: str) -> bool:
-        return Path(path).name in {"memories.json", "memory.json"}
+        return Path(path).name.casefold() in {"memories.json", "memory.json"}
 
     def parse(self, payload: bytes) -> tuple[list[dict], str | None]:
         try:
@@ -560,8 +599,9 @@ class JsonlMemorySourceAdapter:
 class SourceConfig:
     """Which sources discovery recognizes and which adapter parses them.
 
-    Markdown and JSON names stay exact (``MEMORY.md``, ``memory.md``,
-    ``memories.json``, ``memory.json``). ``*.sqlite``, ``*.sqlite3``, and
+    Markdown and JSON names match case-insensitively (``MEMORY.md``,
+    ``memory.md``, ``Memory.md``, ``memories.json``, ``memory.json``).
+    ``*.sqlite``, ``*.sqlite3``, and
     ``*.jsonl`` are recognized as well, on the file's base name. Pass
     ``recognize_sqlite=False`` or ``recognize_jsonl=False`` to opt out of
     those suffixes. ``SourceConfig.extended()`` enables the v2 Markdown

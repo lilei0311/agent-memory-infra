@@ -10,7 +10,16 @@ from pathlib import Path
 
 from memory_infra.agent_tools import AgentMemoryTools
 from memory_infra.entrypoint import SkillEntrypoint
-from memory_infra.source_adapter import EXTENDED_MARKDOWN_NAMES, SourceConfig
+from memory_infra.importer import parse_recognized
+from memory_infra.source_adapter import (
+    DEFAULT_MARKDOWN_NAMES,
+    EXTENDED_MARKDOWN_NAMES,
+    MARKDOWN_ADAPTER,
+    SourceConfig,
+    matches_recognized_name,
+    resolve_discovered_path,
+    select_discovered_paths,
+)
 
 REPO = Path(__file__).resolve().parents[1]
 
@@ -29,8 +38,10 @@ def _persona_tree(root: Path) -> None:
         "AGENTS.md",
         "---\nname: persona\n---\n# Rules\n- keep the suite green\n",
     )
+    # One memory.md casing only. Writing both in the same directory folds
+    # together on case-insensitive APFS, then status["memory.md"] KeyErrors
+    # when os.walk reports MEMORY.md (or the reverse).
     _write(root, "MEMORY.md", "- synthetic fact from MEMORY.md\n")
-    _write(root, "memory.md", "- synthetic fact from memory.md\n")
     _write(root, "2026-04-02.md", "- dated fact stays out\n")
     _write(root, "notes-2026-04-02.md", "- date inside a longer name stays out\n")
     _write(root, "random.md", "- not a persona file\n")
@@ -48,10 +59,14 @@ def test_agent_tools_discover_extended_markdown_names(tmp_path: Path):
     assert found["tool"] == "discover"
     status = _status(found)
     kinds = {item["path"]: item["kind"] for item in found["sources"]}
-    expected = set(EXTENDED_MARKDOWN_NAMES) | {"MEMORY.md", "memory.md"}
+    expected = set(EXTENDED_MARKDOWN_NAMES)
     for name in expected:
         assert status[name] == "recognized"
         assert kinds[name] == "markdown_memory"
+    memory_path = resolve_discovered_path(status, "MEMORY.md")
+    assert memory_path is not None
+    assert status[memory_path] == "recognized"
+    assert kinds[memory_path] == "markdown_memory"
     assert status["2026-04-02.md"] == "unknown"
     assert status["notes-2026-04-02.md"] == "unknown"
     assert status["random.md"] == "unknown"
@@ -133,3 +148,52 @@ def test_install_docs_state_openclaw_hygiene_and_current_main():
     assert "#46" in top
     assert "active work unit" not in top
     assert "#61" in top
+
+
+def test_memory_md_name_aliases_are_case_insensitive():
+    names = DEFAULT_MARKDOWN_NAMES
+    for alias in ("MEMORY.md", "memory.md", "Memory.md", "MEMORY.MD"):
+        assert matches_recognized_name(alias, names)
+        assert MARKDOWN_ADAPTER.can_handle(alias)
+    assert not matches_recognized_name("memory.json", names)
+    items, err = parse_recognized("Memory.md", b"- alias fact\n")
+    assert err is None and items[0]["text"] == "alias fact"
+    assert resolve_discovered_path(["memory.md", "notes.txt"], "MEMORY.md") == "memory.md"
+    assert resolve_discovered_path(["MEMORY.md"], "memory.md") == "MEMORY.md"
+    assert resolve_discovered_path(["MEMORY.md", "memory.md"], "MEMORY.md") == "MEMORY.md"
+    assert resolve_discovered_path(["MEMORY.md", "memory.md"], "Memory.md") is None
+    assert select_discovered_paths(["MEMORY.md", "missing.md"], ["memory.md"]) == ["memory.md"]
+
+
+def test_lowercase_memory_md_is_recognized_and_importable(tmp_path: Path):
+    _write(tmp_path, "memory.md", "- lowercase synthetic fact\n")
+    tools = AgentMemoryTools.open("cursor")
+    found = tools.discover(root=tmp_path)
+    status = _status(found)
+    actual = resolve_discovered_path(status, "MEMORY.md")
+    assert actual is not None
+    assert status[actual] == "recognized"
+    preview = tools.preview(["MEMORY.md"])
+    assert preview["sources"][0]["status"] == "would_import"
+    imported = tools.import_sources(["MEMORY.md"], consent=True)
+    assert imported["imported"] is True
+    assert imported["created_count"] == 1
+    assert imported["created"][0]["path"] == actual
+
+
+def test_both_memory_md_casings_when_filesystem_allows(tmp_path: Path):
+    _write(tmp_path, "MEMORY.md", "- synthetic fact from MEMORY.md\n")
+    _write(tmp_path, "memory.md", "- synthetic fact from memory.md\n")
+    on_disk = {path.name for path in tmp_path.iterdir() if path.is_file()}
+    tools = AgentMemoryTools.open("cursor")
+    status = _status(tools.discover(root=tmp_path))
+    memory_status = {
+        path: value for path, value in status.items() if path.casefold() == "memory.md"
+    }
+    assert memory_status and all(value == "recognized" for value in memory_status.values())
+    if {"MEMORY.md", "memory.md"} <= on_disk:
+        assert status["MEMORY.md"] == "recognized"
+        assert status["memory.md"] == "recognized"
+        refused = tools.import_sources(["Memory.md"], consent=True)
+        assert refused["created_count"] == 0
+        assert refused["rejected"][0]["reason"] == "not_in_discovery"

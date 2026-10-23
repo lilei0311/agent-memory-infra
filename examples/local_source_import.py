@@ -27,6 +27,7 @@ from pathlib import Path
 
 from memory_infra.dedup import ItemDedupPolicy
 from memory_infra.entrypoint import SkillEntrypoint
+from memory_infra.source_adapter import select_discovered_paths
 
 FIXTURES = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "synthetic"
 
@@ -61,7 +62,7 @@ def run(
     recognized = [item["path"] for item in discovery["sources"] if item["status"] == "recognized"]
     report = None
     if consent:
-        chosen = recognized if select is None else [path for path in select if path in recognized]
+        chosen = recognized if select is None else select_discovered_paths(select, recognized)
         if chosen:
             report = handle.import_selected(chosen)
     after = _file_bytes(target)
