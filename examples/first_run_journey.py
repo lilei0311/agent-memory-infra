@@ -16,6 +16,7 @@ from pathlib import Path
 
 from memory_infra.entrypoint import SkillEntrypoint
 from memory_infra.explorer import render_explorer
+from memory_infra.source_adapter import select_discovered_paths
 
 
 def run_journey(consent: bool = False, select: list[str] | None = None, redact: bool = False) -> None:
@@ -51,7 +52,7 @@ def run_journey(consent: bool = False, select: list[str] | None = None, redact: 
         to_import = []
         if consent and recognized:
             if select:
-                to_import = [p for p in select if p in recognized]
+                to_import = select_discovered_paths(select, recognized)
                 print(f"Explicit selection for import: {to_import}")
             else:
                 to_import = recognized

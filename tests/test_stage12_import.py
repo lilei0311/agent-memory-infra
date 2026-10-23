@@ -183,6 +183,8 @@ def test_markdown_source_adapter_is_used_for_md(tmp_path: Path):
     md = "# title\n- alpha\n\nbeta\n"
     payload = md.encode("utf-8")
     assert MARKDOWN_ADAPTER.can_handle("MEMORY.md")
+    assert MARKDOWN_ADAPTER.can_handle("memory.md")
+    assert MARKDOWN_ADAPTER.can_handle("Memory.md")
     assert not MARKDOWN_ADAPTER.can_handle("memory.json")
     items, err = MARKDOWN_ADAPTER.parse(payload)
     assert err is None

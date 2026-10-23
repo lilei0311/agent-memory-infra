@@ -15,6 +15,7 @@ from memory_infra.source_adapter import (
     JSONL_ADAPTER,
     SQLITE_ADAPTER,
     SourceConfig,
+    resolve_discovered_path,
 )
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures" / "synthetic"
@@ -255,7 +256,8 @@ def test_discovery_lists_suffixes_and_does_not_import():
     assert kinds[SQLITE_NAME] == ("sqlite_memory", "recognized")
     assert kinds["session.jsonl"] == ("jsonl_memory", "recognized")
     assert kinds["memory.jsonl"] == ("jsonl_memory", "recognized")
-    assert kinds["MEMORY.md"][1] == "recognized"
+    memory_path = resolve_discovered_path(kinds, "MEMORY.md")
+    assert memory_path is not None and kinds[memory_path][1] == "recognized"
     assert kinds["store_items.json"] == ("unknown", "unknown")
     assert kinds["openclaw-agent.sql"] == ("unknown", "unknown")
     assert "*.sqlite" in note["discovery"]["supported_sources"]

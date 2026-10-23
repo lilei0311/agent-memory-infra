@@ -19,7 +19,7 @@ from memory_infra.bootstrap import (
 from memory_infra.dedup import ItemDedupPolicy, disabled_dedup, plan_items
 from memory_infra.importer import DUPLICATE_POLICY, parse_redacted, snapshot_digest, source_ref_for
 from memory_infra.redaction import RedactionPolicy, RedactionReport
-from memory_infra.source_adapter import SourceConfig
+from memory_infra.source_adapter import SourceConfig, resolve_discovered_path
 from memory_infra.skill import SkillApi
 
 __all__ = ["DUPLICATE_POLICY", "SKILL_NAME", "SkillEntrypoint", "SkillHandle"]
@@ -172,24 +172,26 @@ class SkillHandle:
         policy = self._policy_for_call(redact)
         dedup = self._entry._item_dedup
         for path in paths:
-            item = by_path.get(path)
+            resolved = resolve_discovered_path(by_path, path)
+            item = by_path.get(resolved) if resolved is not None else None
             if item is None:
                 rejected.append({"path": path, "status": "rejected", "reason": "not_in_discovery"})
                 continue
+            actual = item["path"]
             if item["status"] != "recognized":
                 rejected.append({"path": path, "status": "rejected", "reason": item["status"]})
                 continue
-            payload, read_error = self._read_source(path)
+            payload, read_error = self._read_source(actual)
             if read_error is not None or payload is None:
                 rejected.append({"path": path, "status": "rejected", "reason": read_error or "unreadable"})
                 continue
-            parsed, parse_error, path_report = parse_redacted(path, payload, policy, self._entry._sources)
+            parsed, parse_error, path_report = parse_redacted(actual, payload, policy, self._entry._sources)
             if parse_error is not None:
                 rejected.append({"path": path, "status": "rejected", "reason": parse_error})
                 continue
-            source_ref = source_ref_for(path)
+            source_ref = source_ref_for(actual)
             source_digest = snapshot_digest(payload)
-            key = (path, source_digest)
+            key = (actual, source_digest)
             existing = self._imports.get(key)
             if existing is not None:
                 reused.extend(existing)
@@ -201,7 +203,7 @@ class SkillHandle:
                 occurrence = decision.index
                 if decision.action == "create" or decision.action == "keep_latest":
                     record = self._import_observation(
-                        path, source_ref, source_digest, occurrence, parsed_item["text"]
+                        actual, source_ref, source_digest, occurrence, parsed_item["text"]
                     )
                     if dedup is not None and decision.key is not None:
                         record["dedup_action"] = (
@@ -230,7 +232,7 @@ class SkillHandle:
                     raise RuntimeError("item dedup decision is missing a content key")
                 slot = self._item_index[decision.key]
                 duplicate = {
-                    "path": path,
+                    "path": actual,
                     "status": "skipped" if decision.action == "skip" else "merged",
                     "dedup_action": decision.action,
                     "reason": "duplicate",
@@ -247,7 +249,7 @@ class SkillHandle:
                 if decision.action == "merge":
                     slot["record"].setdefault("also_seen", []).append(
                         {
-                            "path": path,
+                            "path": actual,
                             "occurrence": occurrence,
                             "source_digest": source_digest,
                             "text_equal": duplicate["text_equal"],
@@ -304,18 +306,20 @@ class SkillHandle:
         total = RedactionReport()
         planned_index = {item_key: slot["text"] for item_key, slot in self._item_index.items()}
         for path in paths:
-            item = by_path.get(path)
+            resolved = resolve_discovered_path(by_path, path)
+            item = by_path.get(resolved) if resolved is not None else None
             if item is None:
                 sources.append({"path": path, "status": "rejected", "reason": "not_in_discovery"})
                 continue
+            actual = item["path"]
             if item["status"] != "recognized":
                 sources.append({"path": path, "status": "rejected", "reason": item["status"]})
                 continue
-            payload, read_error = self._read_source(path)
+            payload, read_error = self._read_source(actual)
             if read_error is not None or payload is None:
                 sources.append({"path": path, "status": "rejected", "reason": read_error or "unreadable"})
                 continue
-            parsed, parse_error, report = parse_redacted(path, payload, policy, self._entry._sources)
+            parsed, parse_error, report = parse_redacted(actual, payload, policy, self._entry._sources)
             if parse_error is not None:
                 sources.append({"path": path, "status": "rejected", "reason": parse_error})
                 continue
@@ -330,7 +334,7 @@ class SkillHandle:
                 counts[decision.action] += 1
             sources.append(
                 {
-                    "path": path,
+                    "path": actual,
                     "status": "would_import",
                     "items": report.items_total,
                     "distinct_after_redaction": distinct,
